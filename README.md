@@ -12,7 +12,7 @@ Primary goal of frontend is to support both web and mobile (android) through sin
 
 Basic UI
 1. [ ] Single main page with single instance of Chat
-2. [ ] Multiple chats with navigation to and fro
+2. [x] Multiple chats with navigation to and fro
 3. [ ] Contacts UI - Name, Details, Search, Message
 4. [ ] Group Chat Interface
 5. [ ] Create Group
