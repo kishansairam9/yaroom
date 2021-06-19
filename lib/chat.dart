@@ -6,6 +6,8 @@ import 'dart:math';
 class ChatView extends StatefulWidget {
   final _chats = <ProfileView>[];
 
+  get tiles => _chats;
+
   ChatView() {
     for (int i = 0; i < 30; i++) {
       _chats.add(ProfileView());
@@ -19,97 +21,9 @@ class ChatView extends StatefulWidget {
 class ChatViewState extends State<ChatView> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('yaroom'),
-        actions: <Widget>[
-          IconButton(
-            onPressed: () => {},
-            icon: Icon(Icons.settings_applications),
-            tooltip: 'Settings',
-          ),
-          IconButton(
-            icon: Icon(Icons.search),
-            onPressed: () {
-              showSearch(
-                context: context,
-                // TODO: Currently using only chats, replace with contact list or something like that
-                delegate: ChatViewSearchDelegate(chats: widget._chats),
-              );
-            },
-            tooltip: 'Search',
-          ),
-        ],
-      ),
-      body: ListView(
-        children: widget._chats,
-      ),
+    return ListView(
+      children: widget._chats,
     );
-  }
-}
-
-class ChatViewSearchDelegate extends SearchDelegate {
-  final List<ProfileView> chats;
-
-  ChatViewSearchDelegate({required this.chats});
-
-  @override
-  List<Widget> buildActions(BuildContext context) {
-    return <Widget>[
-      IconButton(
-          onPressed: () => {close(context, null)},
-          icon: Icon(Icons.close),
-          tooltip: 'Cancel')
-    ];
-  }
-
-  @override
-  Widget buildLeading(BuildContext context) {
-    return IconButton(
-        onPressed: () => {close(context, null)},
-        icon: Icon(Icons.arrow_back),
-        tooltip: 'Cancel');
-  }
-
-  Widget nameSearch(BuildContext context) {
-    var results = chats
-        .where((ProfileView x) =>
-            x.name.toLowerCase().contains(query.toLowerCase()))
-        .map((e) {
-      return Card(
-        child: ListTile(
-          onTap: () {
-            close(context, null); // TODO: Is this casuing buggy transisiton?
-            Navigator.of(context)
-                .push(MaterialPageRoute(builder: (BuildContext context) {
-              return ChatPage(name: e.name, image: e.image);
-            }));
-          },
-          leading: CircleAvatar(
-            backgroundColor: Colors.grey[350],
-            foregroundImage: NetworkImage('${e.image}'),
-            backgroundImage: AssetImage('assets/no-profile.png'),
-          ),
-          title: Text(e.name),
-        ),
-      );
-    }).toList();
-    if (results.isEmpty) {
-      return Center(
-        child: Text("No matches"),
-      );
-    }
-    return ListView(children: results);
-  }
-
-  @override
-  Widget buildResults(BuildContext context) {
-    return nameSearch(context);
-  }
-
-  @override
-  Widget buildSuggestions(BuildContext context) {
-    return nameSearch(context);
   }
 }
 
@@ -145,7 +59,7 @@ class ChatPage extends StatelessWidget {
             tileColor: Colors.transparent,
             leading: CircleAvatar(
               backgroundColor: Colors.grey[350],
-              foregroundImage: NetworkImage('${image}'),
+              foregroundImage: NetworkImage('$image'),
               backgroundImage: AssetImage('assets/no-profile.png'),
             ),
             title: Text(name),
