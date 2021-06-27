@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:faker/faker.dart';
 import 'package:badges/badges.dart';
 import 'dart:math';
+import 'dart:io' show Platform; // OS Detection
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/services.dart'; // Web detection
 
 class ChatView extends StatefulWidget {
   final _chats = <ProfileView>[];
@@ -61,13 +64,13 @@ class ChatPageState extends State<ChatPage> {
   Random _rnd = Random();
   String getRandomString(int length) => String.fromCharCodes(Iterable.generate(
       length, (_) => _chars.codeUnitAt(_rnd.nextInt(_chars.length))));
-  
-  final myController = TextEditingController();
+
+  final inputController = TextEditingController();
 
   @override
   void dispose() {
     // Clean up the controller when the widget is disposed.
-    myController.dispose();
+    inputController.dispose();
     super.dispose();
   }
 
@@ -77,6 +80,7 @@ class ChatPageState extends State<ChatPage> {
     isShowSticker = false;
     for (int i = 0; i < random; i++) {
       sender.add(Random().nextInt(2));
+      // msgs.add('Hola');
       msgs.add(getRandomString(Random().nextInt(100) + 1));
       // datetime.add(RandomDate.withRange(2010, 2021));
     }
@@ -97,27 +101,24 @@ class ChatPageState extends State<ChatPage> {
 
   _buildMessage(int index, bool isMe) {
     return Container(
-      margin: isMe
-          ? EdgeInsets.only(top: 7.0, bottom: 7.0, left: 80.0)
-          : EdgeInsets.only(top: 7.0, bottom: 7.0, right: 80.0),
-      padding: EdgeInsets.symmetric(horizontal: 25.0, vertical: 15.0),
-      decoration: BoxDecoration(
-        borderRadius: isMe
-            ? BorderRadius.only(
-                topLeft: Radius.circular(15.0),
-                bottomLeft: Radius.circular(15.0))
-            : BorderRadius.only(
-                topRight: Radius.circular(15.0),
-                bottomRight: Radius.circular(15.0)),
-        color: isMe ? Colors.blueAccent : Colors.blueGrey,
-      ),
-      child: Column(
-        children: [
-          Text()
-          Text(msgs[index]),
-        ],
-      ),
-    );
+        padding: EdgeInsets.only(left: 14, right: 14, top: 10, bottom: 10),
+        child: Align(
+          alignment: isMe ? Alignment.bottomRight : Alignment.topLeft,
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 25.0, vertical: 15.0),
+            margin: isMe
+                ? EdgeInsets.only(top: 7.0, bottom: 7.0, left: 70.0)
+                : EdgeInsets.only(top: 7.0, bottom: 7.0, right: 70.0),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.all(Radius.circular(15.0)),
+              color: isMe ? Colors.blueAccent : Colors.blueGrey,
+            ),
+            child: Text(
+              msgs[index],
+              textAlign: isMe ? TextAlign.right : TextAlign.left,
+            ),
+          ),
+        ));
   }
 
   Widget showMessages() {
@@ -139,6 +140,7 @@ class ChatPageState extends State<ChatPage> {
   }
 
   Widget build(BuildContext context) {
+    inputController.clear();
     return WillPopScope(
       child: Stack(children: <Widget>[
         Scaffold(
@@ -176,17 +178,39 @@ class ChatPageState extends State<ChatPage> {
                   Row(
                     children: [
                       Expanded(
-                          child: TextField(
-                        controller: myController,
-                        decoration: InputDecoration(
-                            border: OutlineInputBorder(),
-                            hintText: 'Type a message'),
-                      )),
+                          child: RawKeyboardListener(
+                              focusNode: FocusNode(),
+                              onKey: (RawKeyEvent event) {
+                                if (kIsWeb ||
+                                    Platform.isMacOS ||
+                                    Platform.isLinux ||
+                                    Platform.isWindows) {
+                                  // Submit on Enter and new line on Shift + Enter only on desktop devices or Web
+                                  if (event.isKeyPressed(
+                                          LogicalKeyboardKey.enter) &&
+                                      !event.isShiftPressed) {
+                                    msgs.insert(0, inputController.text);
+                                    sender.insert(0, 1);
+                                    setState(() {});
+                                  }
+                                }
+                              },
+                              child: TextField(
+                                maxLines: null,
+                                controller: inputController,
+                                onEditingComplete: () {
+                                  msgs.insert(0, inputController.text);
+                                  sender.insert(0, 1);
+                                  setState(() {});
+                                },
+                                decoration: InputDecoration(
+                                    border: OutlineInputBorder(),
+                                    hintText: 'Type a message'),
+                              ))),
                       IconButton(
                           onPressed: () {
-                            msgs.insert(0, myController.text);
+                            msgs.insert(0, inputController.text);
                             sender.insert(0, 1);
-                            myController.clear();
                             setState(() {});
                           },
                           icon: Icon(Icons.send))
