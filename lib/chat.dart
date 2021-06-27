@@ -198,6 +198,8 @@ class ChatPageState extends State<ChatPage> {
                               child: TextField(
                                 maxLines: null,
                                 controller: inputController,
+                                textCapitalization:
+                                    TextCapitalization.sentences,
                                 onEditingComplete: () {
                                   msgs.insert(0, inputController.text);
                                   sender.insert(0, 1);
