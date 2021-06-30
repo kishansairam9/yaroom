@@ -1,5 +1,6 @@
 // Had to copy instead of dependency as bug wasn't fixed for null safety
 // Made changes from this PR https://github.com/Dn-a/flutter_inner_drawer/pull/69/files
+// Additionally exposed `move` `settle` for enabling gestures on tab switcher
 
 // InnerDrawer is based on Drawer.
 // The source code of the Drawer has been re-adapted for Inner Drawer.
@@ -352,6 +353,14 @@ class InnerDrawerState extends State<InnerDrawer>
   void close({InnerDrawerDirection? direction}) {
     if (direction != null) _position = direction;
     _controller.fling(velocity: _velocity);
+  }
+
+  void dragUpdate(var details) {
+    _move(details);
+  }
+
+  void dragEnd(var details) {
+    _settle(details);
   }
 
   /// Open or Close InnerDrawer

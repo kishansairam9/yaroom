@@ -15,9 +15,28 @@ class TabViewState extends State<TabView> {
   //  Current State of InnerDrawerState
   final GlobalKey<InnerDrawerState> _innerDrawerKey =
       GlobalKey<InnerDrawerState>();
+  double cumSum = 0;
+  int counter = 0;
+  bool startedLeftOpen = false;
 
   void toggle() {
     _innerDrawerKey.currentState!.toggle();
+  }
+
+  void open() {
+    _innerDrawerKey.currentState!.open();
+  }
+
+  void close() {
+    _innerDrawerKey.currentState!.close();
+  }
+
+  void dragUpdate(var details) {
+    _innerDrawerKey.currentState!.dragUpdate(details);
+  }
+
+  void dragEnd(var details) {
+    _innerDrawerKey.currentState!.dragEnd(details);
   }
 
   @override
@@ -53,6 +72,7 @@ class TabViewState extends State<TabView> {
             length: 2,
             child: Scaffold(
               appBar: AppBar(
+                automaticallyImplyLeading: false,
                 title: const TabBar(
                   tabs: <Widget>[
                     Tab(
@@ -66,7 +86,48 @@ class TabViewState extends State<TabView> {
               ),
               body: TabBarView(
                 children: <Widget>[
-                  ChatView(),
+                  Builder(
+                      builder: (context) => GestureDetector(
+                            behavior: HitTestBehavior.translucent,
+                            child: ChatView(),
+                            onHorizontalDragEnd: (details) {
+                              if (startedLeftOpen) startedLeftOpen = false;
+                              dragEnd(details);
+                            },
+                            onHorizontalDragUpdate: (details) {
+                              cumSum += details.delta.dx;
+                              counter += 1;
+                              if (counter < 4) return;
+                              if (cumSum / counter > 0.5 &&
+                                  details.delta.dx > 0) {
+                                startedLeftOpen = true;
+                                for (int i = 0;
+                                    i < (counter.toDouble() * 0.75).round();
+                                    i++) dragUpdate(details);
+                                counter = 0;
+                                cumSum = 0;
+                              } else if (cumSum / counter < -0.5) {
+                                if (startedLeftOpen) {
+                                  close();
+                                  counter = 0;
+                                  cumSum = 0;
+                                  return;
+                                }
+                                final TabController tabController =
+                                    DefaultTabController.of(context)!;
+                                if ((tabController.index + 1) <
+                                    tabController.length)
+                                  tabController
+                                      .animateTo((tabController.index + 1));
+                                counter = 0;
+                                cumSum = 0;
+                              }
+                              if (counter >= 6) {
+                                counter = 0;
+                                cumSum = 0;
+                              }
+                            },
+                          )),
                   Center(
                     child: Text("Groups here"),
                   ),
