@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'pullLeft.dart';
+import 'package:flutter_inner_drawer/inner_drawer.dart';
+import 'tabs.dart';
 
 class RoomsList extends StatelessWidget {
   late final bool animateInsteadOfNavigateHome;
@@ -13,7 +14,7 @@ class RoomsList extends StatelessWidget {
           title: IconButton(
               icon: Icon(Icons.home),
               onPressed: () => animateInsteadOfNavigateHome
-                  ? PullLeftWrapper.of(context)?.close()
+                  ? TabView.of(context)?.toggle()
                   : Navigator.of(context).pushReplacementNamed('/')),
         ),
         body: Container(
@@ -33,20 +34,12 @@ class Rooms extends StatefulWidget {
 class RoomsState extends State<StatefulWidget> {
   @override
   Widget build(BuildContext context) {
-    return PullLeftWrapper(
-        keepOpenAtStart: true,
-        leftContent: RoomsList(
-          animateInsteadOfNavigateHome: false,
-        ),
-        mainContent: PullLeftWrapper(
-          maxSlide: 500,
-          minDragStartEdge: 800,
-          leftContent: Container(
-            color: Colors.amber,
-          ),
-          mainContent: Container(
-            color: Colors.red,
-          ),
-        ));
+    return InnerDrawer(
+      scaffold: Container(color: Colors.red),
+      leftChild: RoomsList(
+        animateInsteadOfNavigateHome: false,
+      ),
+      rightChild: Container(color: Colors.lime),
+    );
   }
 }

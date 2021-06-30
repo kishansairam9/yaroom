@@ -1,22 +1,39 @@
 import 'package:flutter/material.dart';
 import 'chat.dart';
-import 'pullLeft.dart';
 import 'rooms.dart';
+import 'package:flutter_inner_drawer/inner_drawer.dart';
 
-class TabView extends StatelessWidget {
+class TabView extends StatefulWidget {
+  static TabViewState? of(BuildContext context) =>
+      context.findAncestorStateOfType<TabViewState>();
+
+  @override
+  TabViewState createState() => TabViewState();
+}
+
+class TabViewState extends State<TabView> {
+  //  Current State of InnerDrawerState
+  final GlobalKey<InnerDrawerState> _innerDrawerKey =
+      GlobalKey<InnerDrawerState>();
+
+  void toggle() {
+    _innerDrawerKey.currentState!.toggle();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return PullLeftWrapper(
-      leftContent: RoomsList(
+    return InnerDrawer(
+      key: _innerDrawerKey,
+      leftChild: RoomsList(
         animateInsteadOfNavigateHome: true,
       ),
-      mainContent: Builder(builder: (BuildContext context) {
+      scaffold: Builder(builder: (BuildContext context) {
         return Scaffold(
           appBar: AppBar(
             title: const Text('yaroom'),
             leading: IconButton(
               icon: Icon(Icons.radar),
-              onPressed: () => {PullLeftWrapper.of(context)?.toggle()},
+              onPressed: () => {TabView.of(context)?.toggle()},
             ),
             actions: <Widget>[
               IconButton(
