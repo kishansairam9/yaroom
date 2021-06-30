@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'chat.dart';
 import 'rooms.dart';
-import 'package:flutter_inner_drawer/inner_drawer.dart';
+import 'inner_drawer.dart';
 
 class TabView extends StatefulWidget {
   static TabViewState? of(BuildContext context) =>

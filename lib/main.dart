@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'rooms.dart';
 import 'router.dart';
 
 void main() {

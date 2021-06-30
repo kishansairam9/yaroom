@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_inner_drawer/inner_drawer.dart';
+import 'inner_drawer.dart';
 import 'tabs.dart';
 
 class RoomsList extends StatelessWidget {
@@ -11,6 +11,7 @@ class RoomsList extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
+          automaticallyImplyLeading: false,
           title: IconButton(
               icon: Icon(Icons.home),
               onPressed: () => animateInsteadOfNavigateHome
@@ -27,11 +28,22 @@ class RoomsList extends StatelessWidget {
 }
 
 class Rooms extends StatefulWidget {
+  static TabViewState? of(BuildContext context) =>
+      context.findAncestorStateOfType<TabViewState>();
+
   @override
   RoomsState createState() => RoomsState();
 }
 
 class RoomsState extends State<StatefulWidget> {
+  //  Current State of InnerDrawerState
+  final GlobalKey<InnerDrawerState> _innerDrawerKey =
+      GlobalKey<InnerDrawerState>();
+
+  void toggle() {
+    _innerDrawerKey.currentState!.toggle();
+  }
+
   @override
   Widget build(BuildContext context) {
     return InnerDrawer(
