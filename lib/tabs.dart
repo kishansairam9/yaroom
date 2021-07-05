@@ -50,6 +50,8 @@ class TabViewState extends State<TabView> {
         return Scaffold(
           appBar: AppBar(
             title: const Text('yaroom'),
+            bottomOpacity: 0.0,
+            elevation: 0.0,
             leading: IconButton(
               icon: Icon(Icons.radar),
               onPressed: () => {TabView.of(context)?.toggle()},

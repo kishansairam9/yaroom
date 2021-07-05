@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:faker/faker.dart';
-import 'package:badges/badges.dart';
 import 'dart:math';
 import 'dart:io' show Platform; // OS Detection
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart'; // Web detection
+import 'contact.dart';
 
 class ChatView extends StatefulWidget {
   final _chats = <ProfileView>[];
@@ -24,9 +24,14 @@ class ChatView extends StatefulWidget {
 class ChatViewState extends State<ChatView> {
   @override
   Widget build(BuildContext context) {
+    // return ListView(
+    //   children: widget._chats,
+    // );
     return ListView(
-      children: widget._chats,
-    );
+        children: ListTile.divideTiles(
+      context: context,
+      tiles: widget._chats,
+    ).toList());
   }
 }
 
@@ -116,9 +121,19 @@ class ChatPageState extends State<ChatPage> {
             child: Text(
               msgs[index],
               textAlign: isMe ? TextAlign.right : TextAlign.left,
+              style: TextStyle(color: Colors.white),
             ),
           ),
         ));
+  }
+
+  // To display profile
+  _showContact(context) {
+    showModalBottomSheet(
+        context: context,
+        builder: (BuildContext c) {
+          return ViewContact(widget);
+        });
   }
 
   Widget showMessages() {
@@ -147,6 +162,7 @@ class ChatPageState extends State<ChatPage> {
             appBar: AppBar(
               titleSpacing: 0,
               title: ListTile(
+                onTap: () => _showContact(context),
                 contentPadding: EdgeInsets.only(left: 0.0, right: 0.0),
                 tileColor: Colors.transparent,
                 leading: CircleAvatar(
@@ -154,7 +170,10 @@ class ChatPageState extends State<ChatPage> {
                   foregroundImage: NetworkImage('${widget.image}'),
                   backgroundImage: AssetImage('assets/no-profile.png'),
                 ),
-                title: Text(widget.name),
+                title: Text(
+                  widget.name,
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
               actions: <Widget>[
                 IconButton(
@@ -253,27 +272,33 @@ class ProfileViewState extends State<ProfileView> {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: ListTile(
-        onTap: _showChat,
-        leading: CircleAvatar(
-          backgroundColor: Colors.grey[350],
-          foregroundImage: NetworkImage('${widget.image}'),
-          backgroundImage: AssetImage('assets/no-profile.png'),
-        ),
-        title: Text(widget.name),
-        subtitle: _lastChat.isEmpty ? null : Text(_lastChat),
-        trailing: _unread > 0
-            ? Badge(
-                // TODO: Badge sizes differ for 1 digit and 2, 3 digits etc, fix this incositency
-                // Pad left space doesn't help
-                badgeContent: Text('$_unread'),
-                badgeColor: Theme.of(context).accentColor,
-                padding: EdgeInsets.all(10),
-                // TODO: Badges float around when puled from bottom to top agressively, should animate even slightly
-              )
-            : null,
+    // return Card(
+    return ListTile(
+      minVerticalPadding: 25.0,
+      onTap: _showChat,
+      leading: CircleAvatar(
+        backgroundColor: Colors.grey[350],
+        foregroundImage: NetworkImage('${widget.image}'),
+        backgroundImage: AssetImage('assets/no-profile.png'),
+        radius: 28.0,
       ),
+      title: Text(widget.name),
+      subtitle: _lastChat.isEmpty ? null : Text(_lastChat),
+      trailing: _unread > 0
+          ?
+          // TODO: Badges float around when puled from bottom to top agressively, should animate even slightly
+          MaterialButton(
+              onPressed: () {},
+              color: Colors.blueGrey[400],
+              child: Text(
+                '$_unread',
+                style: TextStyle(color: Theme.of(context).accentColor),
+              ),
+              // padding: EdgeInsets.all(5),
+              shape: CircleBorder(),
+            )
+          : null,
     );
+    // );
   }
 }
