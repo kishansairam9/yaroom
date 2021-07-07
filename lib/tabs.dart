@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:yaroom/groups.dart';
 import 'chat.dart';
 import 'rooms.dart';
 import 'inner_drawer.dart';
@@ -131,7 +132,7 @@ class TabViewState extends State<TabView> {
                             },
                           )),
                   Center(
-                    child: Text("Groups here"),
+                    child: GroupChatView(),
                   ),
                 ],
               ),
