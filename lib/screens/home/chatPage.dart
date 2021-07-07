@@ -16,7 +16,8 @@ class ChatPage extends StatefulWidget {
 
 class ChatPageState extends State<ChatPage> {
   late bool isShowSticker;
-  late Stream<List<ChatMessage>> dataStream;
+  late Stream<List<ChatMessage>>
+      dataStream; // TODO: REMOVE USAGE STREAM AND USE BLOC
 
   final inputController = TextEditingController();
 
@@ -33,7 +34,7 @@ class ChatPageState extends State<ChatPage> {
     isShowSticker = false;
     dataStream = RepositoryProvider.of<AppDb>(context)
         .getUserChat(otherUser: widget.userId)
-        .watch();
+        .watch(); // TODO: Remove this and use BLOC
   }
 
   // handling backPress when emoji keyboard is implemented
@@ -165,6 +166,7 @@ class ChatPageState extends State<ChatPage> {
                                   if (event.isKeyPressed(
                                           LogicalKeyboardKey.enter) &&
                                       !event.isShiftPressed) {
+                                    // TODO: EXTRACT SAME CALL INTO ONE THING 3 times duplicated
                                     // TODO: Get msg id by sending data to server
                                     String data = inputController.text;
                                     inputController.clear();
@@ -186,6 +188,7 @@ class ChatPageState extends State<ChatPage> {
                                 textCapitalization:
                                     TextCapitalization.sentences,
                                 onEditingComplete: () async {
+                                  // TODO: EXTRACT SAME CALL INTO ONE THING 3 times duplicated
                                   // TODO: Get msg id by sending data to server
                                   String data = inputController.text;
                                   inputController.clear();
@@ -204,6 +207,7 @@ class ChatPageState extends State<ChatPage> {
                               ))),
                       IconButton(
                           onPressed: () async {
+                            // TODO: EXTRACT SAME CALL INTO ONE THING 3 times duplicated
                             // TODO: Get msg id by sending data to server
                             String data = inputController.text;
                             inputController.clear();
