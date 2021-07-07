@@ -961,7 +961,7 @@ class ChatMessagesTextIndex extends Table
   bool get dontWriteConstraints => true;
   @override
   String get moduleAndArgs =>
-      'fts5(fromUser UNINDEXED, toUser UNINDEXED, time UNINDEXED, content, media UNINDEXED, replyTo UNINDEXED, content=\'ChatMessages\', content_rowid=\'msgId\')';
+      'fts5(fromUser UNINDEXED, toUser UNINDEXED, time UNINDEXED, content, media UNINDEXED, replyTo UNINDEXED, content=\'ChatMessages\', content_rowid=\'msgId\', tokenize = \'porter ascii\')';
 }
 
 abstract class _$AppDb extends GeneratedDatabase {
@@ -1061,17 +1061,22 @@ abstract class _$AppDb extends GeneratedDatabase {
     );
   }
 
-  Selectable<ChatMessagesTextIndexData> searchChatMessages(
+  Selectable<SearchChatMessagesResult> searchChatMessages(
       {required String query, int? limit}) {
     return customSelect(
-        'SELECT * FROM ChatMessagesTextIndex WHERE content MATCH :query ORDER BY rank LIMIT :limit',
+        'SELECT fromUser, content FROM ChatMessagesTextIndex WHERE content MATCH :query ORDER BY rank LIMIT :limit',
         variables: [
           Variable<String>(query),
           Variable<int?>(limit)
         ],
         readsFrom: {
           chatMessagesTextIndex,
-        }).map(chatMessagesTextIndex.mapFromRow);
+        }).map((QueryRow row) {
+      return SearchChatMessagesResult(
+        fromUser: row.read<String>('fromUser'),
+        content: row.read<String>('content'),
+      );
+    });
   }
 
   @override
@@ -1113,4 +1118,13 @@ abstract class _$AppDb extends GeneratedDatabase {
           ),
         ],
       );
+}
+
+class SearchChatMessagesResult {
+  final String fromUser;
+  final String content;
+  SearchChatMessagesResult({
+    required this.fromUser,
+    required this.content,
+  });
 }

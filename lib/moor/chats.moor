@@ -16,7 +16,7 @@ CREATE INDEX toUserIndex ON ChatMessages(toUser);
 
 -- Text Content with full search
 ---------------------------------
-CREATE VIRTUAL TABLE ChatMessagesTextIndex USING fts5(fromUser UNINDEXED, toUser UNINDEXED, time UNINDEXED, content, media UNINDEXED, replyTo UNINDEXED, content='ChatMessages', content_rowid='msgId');
+CREATE VIRTUAL TABLE ChatMessagesTextIndex USING fts5(fromUser UNINDEXED, toUser UNINDEXED, time UNINDEXED, content, media UNINDEXED, replyTo UNINDEXED, content='ChatMessages', content_rowid='msgId', tokenize = 'porter ascii');
 
 -- Triggers to keep index in sync
 CREATE TRIGGER ChatMessagesTextIndex_AI AFTER INSERT ON ChatMessages BEGIN
@@ -42,4 +42,4 @@ insertMediaMessage(:msgId AS BIGINT, :fromUser AS BIGINT, :toUser AS BIGINT, :ti
 -- Search
 -- Possible BUG! -> if 'uvw AND xyz' is search string then the query we execute searchs for match of both 'uvw' and 'xyz'
 -- Remove key words from search string if this happens
-searchChatMessages(:query AS TEXT, :limit AS INT OR NULL): SELECT * FROM ChatMessagesTextIndex WHERE content MATCH :query ORDER BY rank LIMIT :limit;
+searchChatMessages(:query AS TEXT, :limit AS INT OR NULL): SELECT fromUser, content FROM ChatMessagesTextIndex WHERE content MATCH :query ORDER BY rank LIMIT :limit;

@@ -215,6 +215,14 @@ class ChatPageState extends State<ChatPage> {
                                     toUser: widget.userId,
                                     time: DateTime.now(),
                                     content: data.trim());
+                            var k = await RepositoryProvider.of<AppDb>(context)
+                                .searchChatMessages(query: data, limit: 5)
+                                .get();
+                            for (var x in k) {
+                              print(x.fromUser);
+                              print(x.content);
+                            }
+                            print(k);
                           },
                           icon: Icon(Icons.send))
                     ],
