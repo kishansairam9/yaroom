@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'inner_drawer.dart';
-import 'tabs.dart';
+import '../home/tabs.dart';
 
 class RoomsList extends StatelessWidget {
   late final bool animateInsteadOfNavigateHome;
@@ -24,34 +23,5 @@ class RoomsList extends StatelessWidget {
             onTap: () => Navigator.of(context).pushReplacementNamed('/rooms'),
           ),
         ));
-  }
-}
-
-class Rooms extends StatefulWidget {
-  static TabViewState? of(BuildContext context) =>
-      context.findAncestorStateOfType<TabViewState>();
-
-  @override
-  RoomsState createState() => RoomsState();
-}
-
-class RoomsState extends State<StatefulWidget> {
-  //  Current State of InnerDrawerState
-  final GlobalKey<InnerDrawerState> _innerDrawerKey =
-      GlobalKey<InnerDrawerState>();
-
-  void toggle() {
-    _innerDrawerKey.currentState!.toggle();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return InnerDrawer(
-      scaffold: Container(color: Colors.red),
-      leftChild: RoomsList(
-        animateInsteadOfNavigateHome: false,
-      ),
-      rightChild: Container(color: Colors.lime),
-    );
   }
 }
