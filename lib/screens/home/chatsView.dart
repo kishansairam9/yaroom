@@ -1,18 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:faker/faker.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:math';
 import 'chatPage.dart';
+import '../../utils/types.dart';
 
 class ChatView extends StatefulWidget {
   final _chats = <ProfileTile>[];
 
   get tiles => _chats;
-
-  ChatView() {
-    for (int i = 0; i < 30; i++) {
-      _chats.add(ProfileTile());
-    }
-  }
 
   @override
   ChatViewState createState() => ChatViewState();
@@ -21,29 +16,32 @@ class ChatView extends StatefulWidget {
 class ChatViewState extends State<ChatView> {
   @override
   Widget build(BuildContext context) {
-    // return ListView(
-    //   children: widget._chats,
-    // );
-    return ListView(
-        children: ListTile.divideTiles(
-      context: context,
-      tiles: widget._chats,
-    ).toList());
+    return StreamBuilder(
+        stream: RepositoryProvider.of<AppDb>(context).getAllUsers().watch(),
+        builder: (BuildContext context, AsyncSnapshot<List<User>> snapshot) {
+          if (snapshot.hasData) {
+            return ListView(
+                children: ListTile.divideTiles(
+              context: context,
+              tiles: snapshot.data!.map((e) => ProfileTile(
+                  userId: e.userId, name: e.name, image: e.profileImg)),
+            ).toList());
+          } else if (snapshot.hasError) {
+            print(snapshot.data);
+            return SnackBar(
+                content: Text('Error has occured while reading from DB'));
+          }
+          return Container();
+        });
   }
 }
 
 class ProfileTile extends StatefulWidget {
-  late final _image;
-  late final String _name;
+  late final int userId;
+  late final image;
+  late final String name;
 
-  get image => _image;
-  get name => _name;
-
-  ProfileTile() {
-    _image = faker.image.image(
-        width: 150, height: 150, keywords: ['people', 'nature'], random: true);
-    _name = faker.person.name();
-  }
+  ProfileTile({required this.userId, required this.image, required this.name});
 
   @override
   ProfileTileState createState() => ProfileTileState();
@@ -60,7 +58,8 @@ class ProfileTileState extends State<ProfileTile> {
   void _showChat() {
     Navigator.of(context)
         .push(MaterialPageRoute(builder: (BuildContext context) {
-      return ChatPage(name: widget.name, image: widget.image);
+      return ChatPage(
+          userId: widget.userId, name: widget.name, image: widget.image);
     }));
   }
 

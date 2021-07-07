@@ -1,27 +1,22 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
 import 'dart:io' show Platform; // OS Detection
 import 'package:flutter/foundation.dart' show kIsWeb; // Web detection
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:yaroom/fakegen.dart';
 import '../components/contactView.dart';
+import 'package:provider/provider.dart';
+import '../../utils/types.dart';
 
 class ChatPage extends StatefulWidget {
-  final name, image;
-  ChatPage({required this.name, this.image});
+  final userId, name, image;
+  ChatPage({required this.userId, this.name, this.image});
   ChatPageState createState() => new ChatPageState();
 }
 
 class ChatPageState extends State<ChatPage> {
   late bool isShowSticker;
-  late var msgs = <String>[];
-  // late var datetime = <DateTime>[];
-  late var sender = <int>[];
-  final random = Random().nextInt(20) + 1;
-  final _chars =
-      'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890 ';
-  Random _rnd = Random();
-  String getRandomString(int length) => String.fromCharCodes(Iterable.generate(
-      length, (_) => _chars.codeUnitAt(_rnd.nextInt(_chars.length))));
+  late Stream<List<ChatMessage>> dataStream;
 
   final inputController = TextEditingController();
 
@@ -36,12 +31,9 @@ class ChatPageState extends State<ChatPage> {
   void initState() {
     super.initState();
     isShowSticker = false;
-    for (int i = 0; i < random; i++) {
-      sender.add(Random().nextInt(2));
-      // msgs.add('Hola');
-      msgs.add(getRandomString(Random().nextInt(100) + 1));
-      // datetime.add(RandomDate.withRange(2010, 2021));
-    }
+    dataStream = RepositoryProvider.of<AppDb>(context)
+        .getUserChat(otherUser: widget.userId)
+        .watch();
   }
 
   // handling backPress when emoji keyboard is implemented
@@ -57,7 +49,8 @@ class ChatPageState extends State<ChatPage> {
     return Future.value(false);
   }
 
-  _buildMessage(int index, bool isMe) {
+  _buildMessage(ChatMessage msg) {
+    final bool isMe = msg.fromUser == Provider.of<UserId>(context);
     return Container(
         padding: EdgeInsets.only(left: 14, right: 14, top: 10, bottom: 10),
         child: Align(
@@ -72,7 +65,7 @@ class ChatPageState extends State<ChatPage> {
               color: isMe ? Colors.blueAccent : Colors.blueGrey,
             ),
             child: Text(
-              msgs[index],
+              msg.content!,
               textAlign: isMe ? TextAlign.right : TextAlign.left,
               style: TextStyle(color: Colors.white),
             ),
@@ -89,7 +82,7 @@ class ChatPageState extends State<ChatPage> {
         });
   }
 
-  Widget showMessages() {
+  Widget showMessages(List<ChatMessage> msgs) {
     return Expanded(
       child: Column(
         children: [
@@ -99,8 +92,7 @@ class ChatPageState extends State<ChatPage> {
                   padding: EdgeInsets.only(top: 15.0),
                   itemCount: msgs.length,
                   itemBuilder: (BuildContext context, int index) {
-                    final bool isMe = sender[index] == 1;
-                    return _buildMessage(index, isMe);
+                    return _buildMessage(msgs[index]);
                   }))
         ],
       ),
@@ -108,7 +100,6 @@ class ChatPageState extends State<ChatPage> {
   }
 
   Widget build(BuildContext context) {
-    inputController.clear();
     return WillPopScope(
       child: Stack(children: <Widget>[
         Scaffold(
@@ -146,13 +137,26 @@ class ChatPageState extends State<ChatPage> {
                 mainAxisSize: MainAxisSize.max,
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: <Widget>[
-                  showMessages(),
+                  StreamBuilder(
+                      stream: dataStream,
+                      builder: (BuildContext context,
+                          AsyncSnapshot<List<ChatMessage>> snapshot) {
+                        if (snapshot.hasData) {
+                          return showMessages(snapshot.data!);
+                        } else if (snapshot.hasError) {
+                          print(snapshot.data);
+                          return SnackBar(
+                              content: Text(
+                                  'Error has occured while reading from DB'));
+                        }
+                        return Container();
+                      }),
                   Row(
                     children: [
                       Expanded(
                           child: RawKeyboardListener(
                               focusNode: FocusNode(),
-                              onKey: (RawKeyEvent event) {
+                              onKey: (RawKeyEvent event) async {
                                 if (kIsWeb ||
                                     Platform.isMacOS ||
                                     Platform.isLinux ||
@@ -161,9 +165,18 @@ class ChatPageState extends State<ChatPage> {
                                   if (event.isKeyPressed(
                                           LogicalKeyboardKey.enter) &&
                                       !event.isShiftPressed) {
-                                    msgs.insert(0, inputController.text);
-                                    sender.insert(0, 1);
-                                    setState(() {});
+                                    // TODO: Get msg id by sending data to server
+                                    String data = inputController.text;
+                                    inputController.clear();
+                                    await RepositoryProvider.of<AppDb>(context)
+                                        .insertTextMessage(
+                                            msgId: getMsgId(),
+                                            fromUser: Provider.of<UserId>(
+                                                context,
+                                                listen: false),
+                                            toUser: widget.userId,
+                                            time: DateTime.now(),
+                                            content: data.trim());
                                   }
                                 }
                               },
@@ -172,20 +185,36 @@ class ChatPageState extends State<ChatPage> {
                                 controller: inputController,
                                 textCapitalization:
                                     TextCapitalization.sentences,
-                                onEditingComplete: () {
-                                  msgs.insert(0, inputController.text);
-                                  sender.insert(0, 1);
-                                  setState(() {});
+                                onEditingComplete: () async {
+                                  // TODO: Get msg id by sending data to server
+                                  String data = inputController.text;
+                                  inputController.clear();
+                                  await RepositoryProvider.of<AppDb>(context)
+                                      .insertTextMessage(
+                                          msgId: getMsgId(),
+                                          fromUser: Provider.of<UserId>(context,
+                                              listen: false),
+                                          toUser: widget.userId,
+                                          time: DateTime.now(),
+                                          content: data.trim());
                                 },
                                 decoration: InputDecoration(
                                     border: OutlineInputBorder(),
                                     hintText: 'Type a message'),
                               ))),
                       IconButton(
-                          onPressed: () {
-                            msgs.insert(0, inputController.text);
-                            sender.insert(0, 1);
-                            setState(() {});
+                          onPressed: () async {
+                            // TODO: Get msg id by sending data to server
+                            String data = inputController.text;
+                            inputController.clear();
+                            await RepositoryProvider.of<AppDb>(context)
+                                .insertTextMessage(
+                                    msgId: getMsgId(),
+                                    fromUser: Provider.of<UserId>(context,
+                                        listen: false),
+                                    toUser: widget.userId,
+                                    time: DateTime.now(),
+                                    content: data.trim());
                           },
                           icon: Icon(Icons.send))
                     ],

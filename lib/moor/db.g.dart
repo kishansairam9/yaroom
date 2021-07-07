@@ -263,7 +263,7 @@ class ChatMessage extends DataClass implements Insertable<ChatMessage> {
   final int fromUser;
   final int toUser;
   final DateTime time;
-  final String? text;
+  final String? content;
   final String? media;
   final int? replyTo;
   ChatMessage(
@@ -271,7 +271,7 @@ class ChatMessage extends DataClass implements Insertable<ChatMessage> {
       required this.fromUser,
       required this.toUser,
       required this.time,
-      this.text,
+      this.content,
       this.media,
       this.replyTo});
   factory ChatMessage.fromData(Map<String, dynamic> data, GeneratedDatabase db,
@@ -286,8 +286,8 @@ class ChatMessage extends DataClass implements Insertable<ChatMessage> {
           .mapFromDatabaseResponse(data['${effectivePrefix}toUser'])!,
       time: const DateTimeType()
           .mapFromDatabaseResponse(data['${effectivePrefix}time'])!,
-      text: const StringType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}text']),
+      content: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}content']),
       media: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}media']),
       replyTo: const IntType()
@@ -301,8 +301,8 @@ class ChatMessage extends DataClass implements Insertable<ChatMessage> {
     map['fromUser'] = Variable<int>(fromUser);
     map['toUser'] = Variable<int>(toUser);
     map['time'] = Variable<DateTime>(time);
-    if (!nullToAbsent || text != null) {
-      map['text'] = Variable<String?>(text);
+    if (!nullToAbsent || content != null) {
+      map['content'] = Variable<String?>(content);
     }
     if (!nullToAbsent || media != null) {
       map['media'] = Variable<String?>(media);
@@ -319,7 +319,9 @@ class ChatMessage extends DataClass implements Insertable<ChatMessage> {
       fromUser: Value(fromUser),
       toUser: Value(toUser),
       time: Value(time),
-      text: text == null && nullToAbsent ? const Value.absent() : Value(text),
+      content: content == null && nullToAbsent
+          ? const Value.absent()
+          : Value(content),
       media:
           media == null && nullToAbsent ? const Value.absent() : Value(media),
       replyTo: replyTo == null && nullToAbsent
@@ -336,7 +338,7 @@ class ChatMessage extends DataClass implements Insertable<ChatMessage> {
       fromUser: serializer.fromJson<int>(json['fromUser']),
       toUser: serializer.fromJson<int>(json['toUser']),
       time: serializer.fromJson<DateTime>(json['time']),
-      text: serializer.fromJson<String?>(json['text']),
+      content: serializer.fromJson<String?>(json['content']),
       media: serializer.fromJson<String?>(json['media']),
       replyTo: serializer.fromJson<int?>(json['replyTo']),
     );
@@ -349,7 +351,7 @@ class ChatMessage extends DataClass implements Insertable<ChatMessage> {
       'fromUser': serializer.toJson<int>(fromUser),
       'toUser': serializer.toJson<int>(toUser),
       'time': serializer.toJson<DateTime>(time),
-      'text': serializer.toJson<String?>(text),
+      'content': serializer.toJson<String?>(content),
       'media': serializer.toJson<String?>(media),
       'replyTo': serializer.toJson<int?>(replyTo),
     };
@@ -360,7 +362,7 @@ class ChatMessage extends DataClass implements Insertable<ChatMessage> {
           int? fromUser,
           int? toUser,
           DateTime? time,
-          Value<String?> text = const Value.absent(),
+          Value<String?> content = const Value.absent(),
           Value<String?> media = const Value.absent(),
           Value<int?> replyTo = const Value.absent()}) =>
       ChatMessage(
@@ -368,7 +370,7 @@ class ChatMessage extends DataClass implements Insertable<ChatMessage> {
         fromUser: fromUser ?? this.fromUser,
         toUser: toUser ?? this.toUser,
         time: time ?? this.time,
-        text: text.present ? text.value : this.text,
+        content: content.present ? content.value : this.content,
         media: media.present ? media.value : this.media,
         replyTo: replyTo.present ? replyTo.value : this.replyTo,
       );
@@ -379,7 +381,7 @@ class ChatMessage extends DataClass implements Insertable<ChatMessage> {
           ..write('fromUser: $fromUser, ')
           ..write('toUser: $toUser, ')
           ..write('time: $time, ')
-          ..write('text: $text, ')
+          ..write('content: $content, ')
           ..write('media: $media, ')
           ..write('replyTo: $replyTo')
           ..write(')'))
@@ -395,7 +397,7 @@ class ChatMessage extends DataClass implements Insertable<ChatMessage> {
               toUser.hashCode,
               $mrjc(
                   time.hashCode,
-                  $mrjc(text.hashCode,
+                  $mrjc(content.hashCode,
                       $mrjc(media.hashCode, replyTo.hashCode)))))));
   @override
   bool operator ==(Object other) =>
@@ -405,7 +407,7 @@ class ChatMessage extends DataClass implements Insertable<ChatMessage> {
           other.fromUser == this.fromUser &&
           other.toUser == this.toUser &&
           other.time == this.time &&
-          other.text == this.text &&
+          other.content == this.content &&
           other.media == this.media &&
           other.replyTo == this.replyTo);
 }
@@ -415,7 +417,7 @@ class ChatMessagesCompanion extends UpdateCompanion<ChatMessage> {
   final Value<int> fromUser;
   final Value<int> toUser;
   final Value<DateTime> time;
-  final Value<String?> text;
+  final Value<String?> content;
   final Value<String?> media;
   final Value<int?> replyTo;
   const ChatMessagesCompanion({
@@ -423,7 +425,7 @@ class ChatMessagesCompanion extends UpdateCompanion<ChatMessage> {
     this.fromUser = const Value.absent(),
     this.toUser = const Value.absent(),
     this.time = const Value.absent(),
-    this.text = const Value.absent(),
+    this.content = const Value.absent(),
     this.media = const Value.absent(),
     this.replyTo = const Value.absent(),
   });
@@ -432,7 +434,7 @@ class ChatMessagesCompanion extends UpdateCompanion<ChatMessage> {
     required int fromUser,
     required int toUser,
     required DateTime time,
-    this.text = const Value.absent(),
+    this.content = const Value.absent(),
     this.media = const Value.absent(),
     this.replyTo = const Value.absent(),
   })  : fromUser = Value(fromUser),
@@ -443,7 +445,7 @@ class ChatMessagesCompanion extends UpdateCompanion<ChatMessage> {
     Expression<int>? fromUser,
     Expression<int>? toUser,
     Expression<DateTime>? time,
-    Expression<String?>? text,
+    Expression<String?>? content,
     Expression<String?>? media,
     Expression<int?>? replyTo,
   }) {
@@ -452,7 +454,7 @@ class ChatMessagesCompanion extends UpdateCompanion<ChatMessage> {
       if (fromUser != null) 'fromUser': fromUser,
       if (toUser != null) 'toUser': toUser,
       if (time != null) 'time': time,
-      if (text != null) 'text': text,
+      if (content != null) 'content': content,
       if (media != null) 'media': media,
       if (replyTo != null) 'replyTo': replyTo,
     });
@@ -463,7 +465,7 @@ class ChatMessagesCompanion extends UpdateCompanion<ChatMessage> {
       Value<int>? fromUser,
       Value<int>? toUser,
       Value<DateTime>? time,
-      Value<String?>? text,
+      Value<String?>? content,
       Value<String?>? media,
       Value<int?>? replyTo}) {
     return ChatMessagesCompanion(
@@ -471,7 +473,7 @@ class ChatMessagesCompanion extends UpdateCompanion<ChatMessage> {
       fromUser: fromUser ?? this.fromUser,
       toUser: toUser ?? this.toUser,
       time: time ?? this.time,
-      text: text ?? this.text,
+      content: content ?? this.content,
       media: media ?? this.media,
       replyTo: replyTo ?? this.replyTo,
     );
@@ -492,8 +494,8 @@ class ChatMessagesCompanion extends UpdateCompanion<ChatMessage> {
     if (time.present) {
       map['time'] = Variable<DateTime>(time.value);
     }
-    if (text.present) {
-      map['text'] = Variable<String?>(text.value);
+    if (content.present) {
+      map['content'] = Variable<String?>(content.value);
     }
     if (media.present) {
       map['media'] = Variable<String?>(media.value);
@@ -511,7 +513,7 @@ class ChatMessagesCompanion extends UpdateCompanion<ChatMessage> {
           ..write('fromUser: $fromUser, ')
           ..write('toUser: $toUser, ')
           ..write('time: $time, ')
-          ..write('text: $text, ')
+          ..write('content: $content, ')
           ..write('media: $media, ')
           ..write('replyTo: $replyTo')
           ..write(')'))
@@ -547,9 +549,9 @@ class ChatMessages extends Table with TableInfo<ChatMessages, ChatMessage> {
       typeName: 'INTEGER',
       requiredDuringInsert: true,
       $customConstraints: 'NOT NULL');
-  final VerificationMeta _textMeta = const VerificationMeta('text');
-  late final GeneratedColumn<String?> text = GeneratedColumn<String?>(
-      'text', aliasedName, true,
+  final VerificationMeta _contentMeta = const VerificationMeta('content');
+  late final GeneratedColumn<String?> content = GeneratedColumn<String?>(
+      'content', aliasedName, true,
       typeName: 'TEXT', requiredDuringInsert: false, $customConstraints: '');
   final VerificationMeta _mediaMeta = const VerificationMeta('media');
   late final GeneratedColumn<String?> media = GeneratedColumn<String?>(
@@ -561,7 +563,7 @@ class ChatMessages extends Table with TableInfo<ChatMessages, ChatMessage> {
       typeName: 'INTEGER', requiredDuringInsert: false, $customConstraints: '');
   @override
   List<GeneratedColumn> get $columns =>
-      [msgId, fromUser, toUser, time, text, media, replyTo];
+      [msgId, fromUser, toUser, time, content, media, replyTo];
   @override
   String get aliasedName => _alias ?? 'ChatMessages';
   @override
@@ -593,9 +595,9 @@ class ChatMessages extends Table with TableInfo<ChatMessages, ChatMessage> {
     } else if (isInserting) {
       context.missing(_timeMeta);
     }
-    if (data.containsKey('text')) {
-      context.handle(
-          _textMeta, text.isAcceptableOrUnknown(data['text']!, _textMeta));
+    if (data.containsKey('content')) {
+      context.handle(_contentMeta,
+          content.isAcceptableOrUnknown(data['content']!, _contentMeta));
     }
     if (data.containsKey('media')) {
       context.handle(
@@ -630,14 +632,14 @@ class ChatMessagesTextIndexData extends DataClass
   final String fromUser;
   final String toUser;
   final String time;
-  final String text;
+  final String content;
   final String media;
   final String replyTo;
   ChatMessagesTextIndexData(
       {required this.fromUser,
       required this.toUser,
       required this.time,
-      required this.text,
+      required this.content,
       required this.media,
       required this.replyTo});
   factory ChatMessagesTextIndexData.fromData(
@@ -651,8 +653,8 @@ class ChatMessagesTextIndexData extends DataClass
           .mapFromDatabaseResponse(data['${effectivePrefix}toUser'])!,
       time: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}time'])!,
-      text: const StringType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}text'])!,
+      content: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}content'])!,
       media: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}media'])!,
       replyTo: const StringType()
@@ -665,7 +667,7 @@ class ChatMessagesTextIndexData extends DataClass
     map['fromUser'] = Variable<String>(fromUser);
     map['toUser'] = Variable<String>(toUser);
     map['time'] = Variable<String>(time);
-    map['text'] = Variable<String>(text);
+    map['content'] = Variable<String>(content);
     map['media'] = Variable<String>(media);
     map['replyTo'] = Variable<String>(replyTo);
     return map;
@@ -676,7 +678,7 @@ class ChatMessagesTextIndexData extends DataClass
       fromUser: Value(fromUser),
       toUser: Value(toUser),
       time: Value(time),
-      text: Value(text),
+      content: Value(content),
       media: Value(media),
       replyTo: Value(replyTo),
     );
@@ -689,7 +691,7 @@ class ChatMessagesTextIndexData extends DataClass
       fromUser: serializer.fromJson<String>(json['fromUser']),
       toUser: serializer.fromJson<String>(json['toUser']),
       time: serializer.fromJson<String>(json['time']),
-      text: serializer.fromJson<String>(json['text']),
+      content: serializer.fromJson<String>(json['content']),
       media: serializer.fromJson<String>(json['media']),
       replyTo: serializer.fromJson<String>(json['replyTo']),
     );
@@ -701,7 +703,7 @@ class ChatMessagesTextIndexData extends DataClass
       'fromUser': serializer.toJson<String>(fromUser),
       'toUser': serializer.toJson<String>(toUser),
       'time': serializer.toJson<String>(time),
-      'text': serializer.toJson<String>(text),
+      'content': serializer.toJson<String>(content),
       'media': serializer.toJson<String>(media),
       'replyTo': serializer.toJson<String>(replyTo),
     };
@@ -711,14 +713,14 @@ class ChatMessagesTextIndexData extends DataClass
           {String? fromUser,
           String? toUser,
           String? time,
-          String? text,
+          String? content,
           String? media,
           String? replyTo}) =>
       ChatMessagesTextIndexData(
         fromUser: fromUser ?? this.fromUser,
         toUser: toUser ?? this.toUser,
         time: time ?? this.time,
-        text: text ?? this.text,
+        content: content ?? this.content,
         media: media ?? this.media,
         replyTo: replyTo ?? this.replyTo,
       );
@@ -728,7 +730,7 @@ class ChatMessagesTextIndexData extends DataClass
           ..write('fromUser: $fromUser, ')
           ..write('toUser: $toUser, ')
           ..write('time: $time, ')
-          ..write('text: $text, ')
+          ..write('content: $content, ')
           ..write('media: $media, ')
           ..write('replyTo: $replyTo')
           ..write(')'))
@@ -740,8 +742,10 @@ class ChatMessagesTextIndexData extends DataClass
       fromUser.hashCode,
       $mrjc(
           toUser.hashCode,
-          $mrjc(time.hashCode,
-              $mrjc(text.hashCode, $mrjc(media.hashCode, replyTo.hashCode))))));
+          $mrjc(
+              time.hashCode,
+              $mrjc(content.hashCode,
+                  $mrjc(media.hashCode, replyTo.hashCode))))));
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -749,7 +753,7 @@ class ChatMessagesTextIndexData extends DataClass
           other.fromUser == this.fromUser &&
           other.toUser == this.toUser &&
           other.time == this.time &&
-          other.text == this.text &&
+          other.content == this.content &&
           other.media == this.media &&
           other.replyTo == this.replyTo);
 }
@@ -759,14 +763,14 @@ class ChatMessagesTextIndexCompanion
   final Value<String> fromUser;
   final Value<String> toUser;
   final Value<String> time;
-  final Value<String> text;
+  final Value<String> content;
   final Value<String> media;
   final Value<String> replyTo;
   const ChatMessagesTextIndexCompanion({
     this.fromUser = const Value.absent(),
     this.toUser = const Value.absent(),
     this.time = const Value.absent(),
-    this.text = const Value.absent(),
+    this.content = const Value.absent(),
     this.media = const Value.absent(),
     this.replyTo = const Value.absent(),
   });
@@ -774,20 +778,20 @@ class ChatMessagesTextIndexCompanion
     required String fromUser,
     required String toUser,
     required String time,
-    required String text,
+    required String content,
     required String media,
     required String replyTo,
   })  : fromUser = Value(fromUser),
         toUser = Value(toUser),
         time = Value(time),
-        text = Value(text),
+        content = Value(content),
         media = Value(media),
         replyTo = Value(replyTo);
   static Insertable<ChatMessagesTextIndexData> custom({
     Expression<String>? fromUser,
     Expression<String>? toUser,
     Expression<String>? time,
-    Expression<String>? text,
+    Expression<String>? content,
     Expression<String>? media,
     Expression<String>? replyTo,
   }) {
@@ -795,7 +799,7 @@ class ChatMessagesTextIndexCompanion
       if (fromUser != null) 'fromUser': fromUser,
       if (toUser != null) 'toUser': toUser,
       if (time != null) 'time': time,
-      if (text != null) 'text': text,
+      if (content != null) 'content': content,
       if (media != null) 'media': media,
       if (replyTo != null) 'replyTo': replyTo,
     });
@@ -805,14 +809,14 @@ class ChatMessagesTextIndexCompanion
       {Value<String>? fromUser,
       Value<String>? toUser,
       Value<String>? time,
-      Value<String>? text,
+      Value<String>? content,
       Value<String>? media,
       Value<String>? replyTo}) {
     return ChatMessagesTextIndexCompanion(
       fromUser: fromUser ?? this.fromUser,
       toUser: toUser ?? this.toUser,
       time: time ?? this.time,
-      text: text ?? this.text,
+      content: content ?? this.content,
       media: media ?? this.media,
       replyTo: replyTo ?? this.replyTo,
     );
@@ -830,8 +834,8 @@ class ChatMessagesTextIndexCompanion
     if (time.present) {
       map['time'] = Variable<String>(time.value);
     }
-    if (text.present) {
-      map['text'] = Variable<String>(text.value);
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
     }
     if (media.present) {
       map['media'] = Variable<String>(media.value);
@@ -848,7 +852,7 @@ class ChatMessagesTextIndexCompanion
           ..write('fromUser: $fromUser, ')
           ..write('toUser: $toUser, ')
           ..write('time: $time, ')
-          ..write('text: $text, ')
+          ..write('content: $content, ')
           ..write('media: $media, ')
           ..write('replyTo: $replyTo')
           ..write(')'))
@@ -875,9 +879,9 @@ class ChatMessagesTextIndex extends Table
   late final GeneratedColumn<String?> time = GeneratedColumn<String?>(
       'time', aliasedName, false,
       typeName: 'TEXT', requiredDuringInsert: true, $customConstraints: '');
-  final VerificationMeta _textMeta = const VerificationMeta('text');
-  late final GeneratedColumn<String?> text = GeneratedColumn<String?>(
-      'text', aliasedName, false,
+  final VerificationMeta _contentMeta = const VerificationMeta('content');
+  late final GeneratedColumn<String?> content = GeneratedColumn<String?>(
+      'content', aliasedName, false,
       typeName: 'TEXT', requiredDuringInsert: true, $customConstraints: '');
   final VerificationMeta _mediaMeta = const VerificationMeta('media');
   late final GeneratedColumn<String?> media = GeneratedColumn<String?>(
@@ -889,7 +893,7 @@ class ChatMessagesTextIndex extends Table
       typeName: 'TEXT', requiredDuringInsert: true, $customConstraints: '');
   @override
   List<GeneratedColumn> get $columns =>
-      [fromUser, toUser, time, text, media, replyTo];
+      [fromUser, toUser, time, content, media, replyTo];
   @override
   String get aliasedName => _alias ?? 'ChatMessagesTextIndex';
   @override
@@ -918,11 +922,11 @@ class ChatMessagesTextIndex extends Table
     } else if (isInserting) {
       context.missing(_timeMeta);
     }
-    if (data.containsKey('text')) {
-      context.handle(
-          _textMeta, text.isAcceptableOrUnknown(data['text']!, _textMeta));
+    if (data.containsKey('content')) {
+      context.handle(_contentMeta,
+          content.isAcceptableOrUnknown(data['content']!, _contentMeta));
     } else if (isInserting) {
-      context.missing(_textMeta);
+      context.missing(_contentMeta);
     }
     if (data.containsKey('media')) {
       context.handle(
@@ -957,7 +961,7 @@ class ChatMessagesTextIndex extends Table
   bool get dontWriteConstraints => true;
   @override
   String get moduleAndArgs =>
-      'fts5(fromUser UNINDEXED, toUser UNINDEXED, time UNINDEXED, text, media UNINDEXED, replyTo UNINDEXED, content=\'ChatMessages\', content_rowid=\'msgId\')';
+      'fts5(fromUser UNINDEXED, toUser UNINDEXED, time UNINDEXED, content, media UNINDEXED, replyTo UNINDEXED, content=\'ChatMessages\', content_rowid=\'msgId\')';
 }
 
 abstract class _$AppDb extends GeneratedDatabase {
@@ -971,13 +975,13 @@ abstract class _$AppDb extends GeneratedDatabase {
   late final ChatMessagesTextIndex chatMessagesTextIndex =
       ChatMessagesTextIndex(this);
   late final Trigger chatMessagesTextIndexAI = Trigger(
-      'CREATE TRIGGER ChatMessagesTextIndex_AI AFTER INSERT ON ChatMessages BEGIN INSERT INTO ChatMessagesTextIndex ("rowid", fromUser, toUser, time, text, media, replyTo) VALUES (new.msgId, new.fromUser, new.toUser, new.time, new.text, new.media, new.replyTo);END',
+      'CREATE TRIGGER ChatMessagesTextIndex_AI AFTER INSERT ON ChatMessages BEGIN INSERT INTO ChatMessagesTextIndex ("rowid", fromUser, toUser, time, content, media, replyTo) VALUES (new.msgId, new.fromUser, new.toUser, new.time, new.content, new.media, new.replyTo);END',
       'ChatMessagesTextIndex_AI');
   late final Trigger chatMessagesTextIndexAD = Trigger(
-      'CREATE TRIGGER ChatMessagesTextIndex_AD AFTER DELETE ON ChatMessages BEGIN INSERT INTO ChatMessagesTextIndex (ChatMessagesTextIndex, "rowid", fromUser, toUser, time, text, media, replyTo) VALUES (\'delete\', old.msgId, old.fromUser, old.toUser, old.time, old.text, old.media, old.replyTo);END',
+      'CREATE TRIGGER ChatMessagesTextIndex_AD AFTER DELETE ON ChatMessages BEGIN INSERT INTO ChatMessagesTextIndex (ChatMessagesTextIndex, "rowid", fromUser, toUser, time, content, media, replyTo) VALUES (\'delete\', old.msgId, old.fromUser, old.toUser, old.time, old.content, old.media, old.replyTo);END',
       'ChatMessagesTextIndex_AD');
   late final Trigger chatMessagesTextIndexAU = Trigger(
-      'CREATE TRIGGER ChatMessagesTextIndex_AU AFTER UPDATE ON ChatMessages BEGIN INSERT INTO ChatMessagesTextIndex (ChatMessagesTextIndex, "rowid", fromUser, toUser, time, text, media, replyTo) VALUES (\'delete\', old.msgId, old.fromUser, old.toUser, old.time, old.text, old.media, old.replyTo);INSERT INTO ChatMessagesTextIndex ("rowid", fromUser, toUser, time, text, media, replyTo) VALUES (new.msgId, new.fromUser, new.toUser, new.time, new.text, new.media, new.replyTo);END',
+      'CREATE TRIGGER ChatMessagesTextIndex_AU AFTER UPDATE ON ChatMessages BEGIN INSERT INTO ChatMessagesTextIndex (ChatMessagesTextIndex, "rowid", fromUser, toUser, time, content, media, replyTo) VALUES (\'delete\', old.msgId, old.fromUser, old.toUser, old.time, old.content, old.media, old.replyTo);INSERT INTO ChatMessagesTextIndex ("rowid", fromUser, toUser, time, content, media, replyTo) VALUES (new.msgId, new.fromUser, new.toUser, new.time, new.content, new.media, new.replyTo);END',
       'ChatMessagesTextIndex_AU');
   Future<int> addUser(
       {required int userId,
@@ -1018,16 +1022,16 @@ abstract class _$AppDb extends GeneratedDatabase {
       required int fromUser,
       required int toUser,
       required DateTime time,
-      required String text,
+      required String content,
       int? replyTo}) {
     return customInsert(
-      'INSERT INTO ChatMessages VALUES (:msgId, :fromUser, :toUser, :time, :text, NULL, :replyTo)',
+      'INSERT INTO ChatMessages VALUES (:msgId, :fromUser, :toUser, :time, :content, NULL, :replyTo)',
       variables: [
         Variable<int>(msgId),
         Variable<int>(fromUser),
         Variable<int>(toUser),
         Variable<DateTime>(time),
-        Variable<String>(text),
+        Variable<String>(content),
         Variable<int?>(replyTo)
       ],
       updates: {chatMessages},
@@ -1039,17 +1043,17 @@ abstract class _$AppDb extends GeneratedDatabase {
       required int fromUser,
       required int toUser,
       required DateTime time,
-      String? text,
+      String? content,
       required String media,
       int? replyTo}) {
     return customInsert(
-      'INSERT INTO ChatMessages VALUES (:msgId, :fromUser, :toUser, :time, :text, :media, :replyTo)',
+      'INSERT INTO ChatMessages VALUES (:msgId, :fromUser, :toUser, :time, :content, :media, :replyTo)',
       variables: [
         Variable<int>(msgId),
         Variable<int>(fromUser),
         Variable<int>(toUser),
         Variable<DateTime>(time),
-        Variable<String?>(text),
+        Variable<String?>(content),
         Variable<String>(media),
         Variable<int?>(replyTo)
       ],
@@ -1060,7 +1064,7 @@ abstract class _$AppDb extends GeneratedDatabase {
   Selectable<ChatMessagesTextIndexData> searchChatMessages(
       {required String query, int? limit}) {
     return customSelect(
-        'SELECT * FROM ChatMessagesTextIndex WHERE text MATCH :query ORDER BY rank LIMIT :limit',
+        'SELECT * FROM ChatMessagesTextIndex WHERE content MATCH :query ORDER BY rank LIMIT :limit',
         variables: [
           Variable<String>(query),
           Variable<int?>(limit)
