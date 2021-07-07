@@ -255,6 +255,36 @@ class ChatPageState extends State<ChatPage> {
   }
 }
 
+dynamic getProfileTileComponent(BuildContext context, void Function()? onTap,
+    dynamic image, dynamic title, dynamic subtitle, dynamic _unread) {
+  return ListTile(
+    minVerticalPadding: 25.0,
+    onTap: onTap,
+    leading: CircleAvatar(
+      backgroundColor: Colors.grey[350],
+      foregroundImage: NetworkImage(image),
+      backgroundImage: AssetImage('assets/no-profile.png'),
+      radius: 28.0,
+    ),
+    title: Text(title),
+    subtitle: subtitle,
+    trailing: _unread > 0
+        ?
+        // TODO: Badges float around when puled from bottom to top agressively, should animate even slightly
+        MaterialButton(
+            onPressed: () {},
+            color: Colors.blueGrey[400],
+            child: Text(
+              '$_unread',
+              style: TextStyle(color: Theme.of(context).accentColor),
+            ),
+            // padding: EdgeInsets.all(5),
+            shape: CircleBorder(),
+          )
+        : null,
+  );
+}
+
 class ProfileViewState extends State<ProfileView> {
   int _unread = 0;
   String _lastChat = '';
@@ -273,32 +303,8 @@ class ProfileViewState extends State<ProfileView> {
   @override
   Widget build(BuildContext context) {
     // return Card(
-    return ListTile(
-      minVerticalPadding: 25.0,
-      onTap: _showChat,
-      leading: CircleAvatar(
-        backgroundColor: Colors.grey[350],
-        foregroundImage: NetworkImage('${widget.image}'),
-        backgroundImage: AssetImage('assets/no-profile.png'),
-        radius: 28.0,
-      ),
-      title: Text(widget.name),
-      subtitle: _lastChat.isEmpty ? null : Text(_lastChat),
-      trailing: _unread > 0
-          ?
-          // TODO: Badges float around when puled from bottom to top agressively, should animate even slightly
-          MaterialButton(
-              onPressed: () {},
-              color: Colors.blueGrey[400],
-              child: Text(
-                '$_unread',
-                style: TextStyle(color: Theme.of(context).accentColor),
-              ),
-              // padding: EdgeInsets.all(5),
-              shape: CircleBorder(),
-            )
-          : null,
-    );
+    return getProfileTileComponent(context, _showChat, widget.image,
+        widget.name, _lastChat.isEmpty ? null : Text(_lastChat), _unread);
     // );
   }
 }
