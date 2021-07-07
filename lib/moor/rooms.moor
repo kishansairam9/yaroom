@@ -1,0 +1,4 @@
+-- While using text full search index, if we use normal way like chats.moor
+-- With edit of non text field, while index of text will also be updated
+-- Thus we should remove the editable fields other than text into a different table and reference it in main table. EX: Pins & Reacts
+-- Also, not that if text is edited then message ID will be changed, that means, we won't have row updates for text instead row delete and a new row insert with a completely different message ID

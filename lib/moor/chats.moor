@@ -1,0 +1,45 @@
+-- DM Messages
+--------------
+CREATE TABLE ChatMessages (
+    msgId BIGINT NOT NULL PRIMARY KEY,
+    fromUser BIGINT NOT NULL,
+    toUser BIGINT NOT NULL,
+    time DATETIME NOT NULL,
+    text TEXT,
+    media TEXT,
+    replyTo BIGINT
+) AS ChatMessage;
+
+-- Indexes
+CREATE INDEX fromUserIndex ON ChatMessages(fromUser);
+CREATE INDEX toUserIndex ON ChatMessages(toUser);
+
+-- Text Content with full search
+---------------------------------
+CREATE VIRTUAL TABLE ChatMessagesTextIndex USING fts5(fromUser UNINDEXED, toUser UNINDEXED, time UNINDEXED, text, media UNINDEXED, replyTo UNINDEXED, content='ChatMessages', content_rowid='msgId');
+
+-- Triggers to keep index in sync
+CREATE TRIGGER ChatMessagesTextIndex_AI AFTER INSERT ON ChatMessages BEGIN
+    INSERT INTO ChatMessagesTextIndex(rowid, fromUser, toUser, time, text, media, replyTo) VALUES (new.msgId, new.fromUser, new.toUser, new.time, new.text, new.media, new.replyTo);
+END;
+
+CREATE TRIGGER ChatMessagesTextIndex_AD AFTER DELETE ON ChatMessages BEGIN
+    INSERT INTO ChatMessagesTextIndex(ChatMessagesTextIndex, rowid, fromUser, toUser, time, text, media, replyTo) VALUES ('delete', old.msgId, old.fromUser, old.toUser, old.time, old.text, old.media, old.replyTo);
+END;
+
+CREATE TRIGGER ChatMessagesTextIndex_AU AFTER UPDATE ON ChatMessages BEGIN
+    INSERT INTO ChatMessagesTextIndex(ChatMessagesTextIndex, rowid, fromUser, toUser, time, text, media, replyTo) VALUES ('delete', old.msgId, old.fromUser, old.toUser, old.time, old.text, old.media, old.replyTo);
+    INSERT INTO ChatMessagesTextIndex(rowid, fromUser, toUser, time, text, media, replyTo) VALUES (new.msgId, new.fromUser, new.toUser, new.time, new.text, new.media, new.replyTo);
+END;
+
+-- Queries
+getUserChat(:otherUser AS BIGINT): SELECT * FROM ChatMessages WHERE fromUser = :otherUser OR toUser = :otherUser;
+
+insertTextMessage(:msgId AS BIGINT, :fromUser AS BIGINT, :toUser AS BIGINT, :time AS DATETIME, :text AS TEXT, :replyTo AS BIGINT OR NULL): INSERT INTO ChatMessages VALUES (:msgId, :fromUser, :toUser, :time, :text, NULL, :replyTo);
+
+insertMediaMessage(:msgId AS BIGINT, :fromUser AS BIGINT, :toUser AS BIGINT, :time AS DATETIME, :text AS TEXT OR NULL, :media AS TEXT, :replyTo AS BIGINT OR NULL): INSERT INTO ChatMessages VALUES (:msgId, :fromUser, :toUser, :time, :text, :media, :replyTo);
+
+-- Search
+-- Possible BUG! -> if 'uvw AND xyz' is search string then the query we execute searchs for match of both 'uvw' and 'xyz'
+-- Remove key words from search string if this happens
+searchChatMessages(:query AS TEXT, :limit AS INT OR NULL): SELECT * FROM ChatMessagesTextIndex WHERE text MATCH :query ORDER BY rank LIMIT :limit;

@@ -1,0 +1,13 @@
+-- User Table
+-------------
+CREATE TABLE Users (
+    userId BIGINT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    about TEXT,
+    profileImg TEXT
+);
+
+-- Queries
+addUser(:userId AS BIGINT, :name AS TEXT, :about AS TEXT OR NULL, :profileImg AS TEXT OR NULL): INSERT into Users VALUES (:userId, :name, :about, :profileImg);
+
+getAllUsers: SELECT * FROM Users;

@@ -1,0 +1,14 @@
+targets:
+  $default:
+    builders:
+      moor_generator:
+        options:
+          named_parameters: true
+          scoped_dart_components: true
+          new_sql_code_generation: true
+          generate_values_in_copy_with: true
+          apply_converters_on_variables: true
+          sqlite:
+            modules:
+              - fts5
+          
