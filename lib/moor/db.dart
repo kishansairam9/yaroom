@@ -5,7 +5,7 @@ export 'platforms/shared.dart';
 part 'db.g.dart';
 
 @UseMoor(
-  include: {'chats.moor', 'data.moor'},
+  include: {'tables.moor'},
 )
 class AppDb extends _$AppDb {
   AppDb(QueryExecutor e) : super(e);

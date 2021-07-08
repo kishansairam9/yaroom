@@ -206,16 +206,6 @@ class ChatPageState extends State<ChatPage> {
                                           String data = inputController.text;
                                           inputController.clear();
                                           _sendMessage(context, data.trim());
-                                          // var k = await RepositoryProvider.of<
-                                          //         AppDb>(context)
-                                          //     .searchChatMessages(
-                                          //         query: data, limit: 5)
-                                          //     .get();
-                                          // for (var x in k) {
-                                          //   print(x.fromUser);
-                                          //   print(x.content);
-                                          // }
-                                          // print(k);
                                         },
                                         icon: Icon(Icons.send))
                                   ],
@@ -227,7 +217,7 @@ class ChatPageState extends State<ChatPage> {
                   );
                 }));
           } else if (snapshot.hasError) {
-            print(snapshot.data);
+            print(snapshot.error);
             return SnackBar(
                 content: Text('Error has occured while reading from local DB'));
           }

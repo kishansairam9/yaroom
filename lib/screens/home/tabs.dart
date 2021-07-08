@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'chatsView.dart';
+import 'chatPage.dart';
 import '../components/roomsList.dart';
 import '../../utils/inner_drawer.dart';
+import '../../utils/types.dart';
 
 class TabView extends StatefulWidget {
   static TabViewState? of(BuildContext context) =>
@@ -64,7 +67,13 @@ class TabViewState extends State<TabView> {
               ),
               IconButton(
                 icon: Icon(Icons.search),
-                onPressed: () {},
+                onPressed: () {
+                  showSearch(
+                    context: context,
+                    // TODO: Currently using only chats for ChatView, replace with contact list or something like that
+                    delegate: TabViewSearchDelegate(),
+                  );
+                },
                 tooltip: 'Search',
               ),
             ],
@@ -140,5 +149,108 @@ class TabViewState extends State<TabView> {
         );
       }),
     );
+  }
+}
+
+class TabViewSearchDelegate extends SearchDelegate {
+  late final List tiles;
+
+  TabViewSearchDelegate() : super();
+
+  @override
+  List<Widget> buildActions(BuildContext context) {
+    return <Widget>[
+      IconButton(
+          onPressed: () => {close(context, null)},
+          icon: Icon(Icons.close),
+          tooltip: 'Cancel')
+    ];
+  }
+
+  @override
+  Widget buildLeading(BuildContext context) {
+    return IconButton(
+        onPressed: () => {close(context, null)},
+        icon: Icon(Icons.arrow_back),
+        tooltip: 'Cancel');
+  }
+
+  Future<Widget> search(BuildContext context) async {
+    if (query.isEmpty) {
+      return Center(
+        child: Text("Enter query"),
+      );
+    }
+    var results = await RepositoryProvider.of<AppDb>(context)
+        .searchChatMessages(query: query.toLowerCase(), limit: 50)
+        .get();
+    print("Queried ${query.toLowerCase()}");
+    print(results);
+    if (results.isEmpty) {
+      return Center(
+        child: Text("No matches"),
+      );
+    }
+    return ListView(
+        children: results.map((SearchChatMessagesResult e) {
+      return Card(
+          child: ProfileTile(
+              userId: e.userId,
+              image: e.profileImg,
+              name: e.name,
+              unread: 0,
+              showText: e.content,
+              preShowChat: close,
+              preParams: [context, null])
+          // child: ListTile(
+          //   onTap: () {
+          //     close(context, null); // TODO: Is this casuing buggy transisiton?
+          //     Navigator.of(context)
+          //         .push(MaterialPageRoute(builder: (BuildContext context) {
+          //       // return ChatPage(name: e.name, image: e.image);
+          //       return Container();
+          //     }));
+          //   },
+          //   leading: CircleAvatar(
+          //     backgroundColor: Colors.grey[350],
+          //     foregroundImage: NetworkImage('${e.image}'),
+          //     backgroundImage: AssetImage('assets/no-profile.png'),
+          //   ),
+          //   title: Text(e.name),
+          // ),
+          );
+    }).toList());
+  }
+
+  @override
+  Widget buildResults(BuildContext context) {
+    return FutureBuilder(
+        future: search(context),
+        builder: (BuildContext context, AsyncSnapshot<Widget> snapshot) {
+          if (snapshot.hasData) {
+            return snapshot.data!;
+          } else if (snapshot.hasError) {
+            print(snapshot.error);
+            return SnackBar(
+                content: Text('Error has occured while reading from local DB'));
+          }
+          return CircularProgressIndicator();
+        });
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    return FutureBuilder(
+        future: search(context),
+        builder: (BuildContext context, AsyncSnapshot<Widget> snapshot) {
+          if (snapshot.hasData) {
+            return snapshot.data!;
+          } else if (snapshot.hasError) {
+            print(snapshot.error);
+            return SnackBar(
+                content: Text('Error has occured while reading from local DB'));
+          }
+          return CircularProgressIndicator();
+        });
   }
 }

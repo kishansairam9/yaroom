@@ -1,3 +1,17 @@
+-- Cant have multiple moor files with inter dependene on tables hence all in one files
+-- Moor requires queries to come after all the table declarations
+
+-------------
+-- User Table
+-------------
+CREATE TABLE Users (
+    userId BIGINT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    about TEXT,
+    profileImg TEXT
+);
+
+--------------
 -- DM Messages
 --------------
 CREATE TABLE ChatMessages (
@@ -14,9 +28,7 @@ CREATE TABLE ChatMessages (
 CREATE INDEX fromUserIndex ON ChatMessages(fromUser);
 CREATE INDEX toUserIndex ON ChatMessages(toUser);
 
--- Text Content with full search
----------------------------------
-CREATE VIRTUAL TABLE ChatMessagesTextIndex USING fts5(fromUser UNINDEXED, toUser UNINDEXED, time UNINDEXED, content, media UNINDEXED, replyTo UNINDEXED, content='ChatMessages', content_rowid='msgId', tokenize = 'porter ascii');
+CREATE VIRTUAL TABLE ChatMessagesTextIndex USING fts5(fromUser UNINDEXED, toUser UNINDEXED, time UNINDEXED, content, media UNINDEXED, replyTo UNINDEXED, content='ChatMessages', content_rowid='msgId', tokenize = 'porter unicode61');
 
 -- Triggers to keep index in sync
 CREATE TRIGGER ChatMessagesTextIndex_AI AFTER INSERT ON ChatMessages BEGIN
@@ -32,7 +44,23 @@ CREATE TRIGGER ChatMessagesTextIndex_AU AFTER UPDATE ON ChatMessages BEGIN
     INSERT INTO ChatMessagesTextIndex(rowid, fromUser, toUser, time, content, media, replyTo) VALUES (new.msgId, new.fromUser, new.toUser, new.time, new.content, new.media, new.replyTo);
 END;
 
+----------
+----------
 -- Queries
+----------
+----------
+
+-------------
+-- User Table
+-------------
+addUser(:userId AS BIGINT, :name AS TEXT, :about AS TEXT OR NULL, :profileImg AS TEXT OR NULL): INSERT into Users VALUES (:userId, :name, :about, :profileImg);
+
+getAllUsers: SELECT * FROM Users;
+
+--------------
+-- DM Messages
+--------------
+
 getUserChat(:otherUser AS BIGINT): SELECT * FROM ChatMessages WHERE fromUser = :otherUser OR toUser = :otherUser;
 
 insertTextMessage(:msgId AS BIGINT, :fromUser AS BIGINT, :toUser AS BIGINT, :time AS DATETIME, :content AS TEXT, :replyTo AS BIGINT OR NULL): INSERT INTO ChatMessages VALUES (:msgId, :fromUser, :toUser, :time, :content, NULL, :replyTo);
@@ -42,4 +70,14 @@ insertMediaMessage(:msgId AS BIGINT, :fromUser AS BIGINT, :toUser AS BIGINT, :ti
 -- Search
 -- Possible BUG! -> if 'uvw AND xyz' is search string then the query we execute searchs for match of both 'uvw' and 'xyz'
 -- Remove key words from search string if this happens
-searchChatMessages(:query AS TEXT, :limit AS INT OR NULL): SELECT fromUser, content FROM ChatMessagesTextIndex WHERE content MATCH :query ORDER BY rank LIMIT :limit;
+-- Using predicate is better solution
+searchChatMessages(:query AS TEXT, :limit AS INT OR NULL): SELECT c.content, u.* FROM Users u JOIN (SELECT fromUser, toUser, content FROM ChatMessagesTextIndex WHERE content MATCH :query ORDER BY rank LIMIT :limit) c ON c.fromUser = u.userId OR c.toUser = u.userId;
+
+--------
+-- Rooms
+--------
+-- NOTE
+-- While using text full search index, if we use normal way like chats.moor
+-- With edit of non text field, while index of text will also be updated
+-- Thus we should remove the editable fields other than text into a different table and reference it in main table. EX: Pins & Reacts
+-- Also, not that if text is edited then message ID will be changed, that means, we won't have row updates for text instead row delete and a new row insert with a completely different message ID

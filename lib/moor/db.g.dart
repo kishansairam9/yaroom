@@ -7,257 +7,6 @@ part of 'db.dart';
 // **************************************************************************
 
 // ignore_for_file: unnecessary_brace_in_string_interps, unnecessary_this
-class User extends DataClass implements Insertable<User> {
-  final int userId;
-  final String name;
-  final String? about;
-  final String? profileImg;
-  User({required this.userId, required this.name, this.about, this.profileImg});
-  factory User.fromData(Map<String, dynamic> data, GeneratedDatabase db,
-      {String? prefix}) {
-    final effectivePrefix = prefix ?? '';
-    return User(
-      userId: const IntType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}userId'])!,
-      name: const StringType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}name'])!,
-      about: const StringType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}about']),
-      profileImg: const StringType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}profileImg']),
-    );
-  }
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['userId'] = Variable<int>(userId);
-    map['name'] = Variable<String>(name);
-    if (!nullToAbsent || about != null) {
-      map['about'] = Variable<String?>(about);
-    }
-    if (!nullToAbsent || profileImg != null) {
-      map['profileImg'] = Variable<String?>(profileImg);
-    }
-    return map;
-  }
-
-  UsersCompanion toCompanion(bool nullToAbsent) {
-    return UsersCompanion(
-      userId: Value(userId),
-      name: Value(name),
-      about:
-          about == null && nullToAbsent ? const Value.absent() : Value(about),
-      profileImg: profileImg == null && nullToAbsent
-          ? const Value.absent()
-          : Value(profileImg),
-    );
-  }
-
-  factory User.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
-    serializer ??= moorRuntimeOptions.defaultSerializer;
-    return User(
-      userId: serializer.fromJson<int>(json['userId']),
-      name: serializer.fromJson<String>(json['name']),
-      about: serializer.fromJson<String?>(json['about']),
-      profileImg: serializer.fromJson<String?>(json['profileImg']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= moorRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'userId': serializer.toJson<int>(userId),
-      'name': serializer.toJson<String>(name),
-      'about': serializer.toJson<String?>(about),
-      'profileImg': serializer.toJson<String?>(profileImg),
-    };
-  }
-
-  User copyWith(
-          {int? userId,
-          String? name,
-          Value<String?> about = const Value.absent(),
-          Value<String?> profileImg = const Value.absent()}) =>
-      User(
-        userId: userId ?? this.userId,
-        name: name ?? this.name,
-        about: about.present ? about.value : this.about,
-        profileImg: profileImg.present ? profileImg.value : this.profileImg,
-      );
-  @override
-  String toString() {
-    return (StringBuffer('User(')
-          ..write('userId: $userId, ')
-          ..write('name: $name, ')
-          ..write('about: $about, ')
-          ..write('profileImg: $profileImg')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => $mrjf($mrjc(userId.hashCode,
-      $mrjc(name.hashCode, $mrjc(about.hashCode, profileImg.hashCode))));
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is User &&
-          other.userId == this.userId &&
-          other.name == this.name &&
-          other.about == this.about &&
-          other.profileImg == this.profileImg);
-}
-
-class UsersCompanion extends UpdateCompanion<User> {
-  final Value<int> userId;
-  final Value<String> name;
-  final Value<String?> about;
-  final Value<String?> profileImg;
-  const UsersCompanion({
-    this.userId = const Value.absent(),
-    this.name = const Value.absent(),
-    this.about = const Value.absent(),
-    this.profileImg = const Value.absent(),
-  });
-  UsersCompanion.insert({
-    this.userId = const Value.absent(),
-    required String name,
-    this.about = const Value.absent(),
-    this.profileImg = const Value.absent(),
-  }) : name = Value(name);
-  static Insertable<User> custom({
-    Expression<int>? userId,
-    Expression<String>? name,
-    Expression<String?>? about,
-    Expression<String?>? profileImg,
-  }) {
-    return RawValuesInsertable({
-      if (userId != null) 'userId': userId,
-      if (name != null) 'name': name,
-      if (about != null) 'about': about,
-      if (profileImg != null) 'profileImg': profileImg,
-    });
-  }
-
-  UsersCompanion copyWith(
-      {Value<int>? userId,
-      Value<String>? name,
-      Value<String?>? about,
-      Value<String?>? profileImg}) {
-    return UsersCompanion(
-      userId: userId ?? this.userId,
-      name: name ?? this.name,
-      about: about ?? this.about,
-      profileImg: profileImg ?? this.profileImg,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (userId.present) {
-      map['userId'] = Variable<int>(userId.value);
-    }
-    if (name.present) {
-      map['name'] = Variable<String>(name.value);
-    }
-    if (about.present) {
-      map['about'] = Variable<String?>(about.value);
-    }
-    if (profileImg.present) {
-      map['profileImg'] = Variable<String?>(profileImg.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('UsersCompanion(')
-          ..write('userId: $userId, ')
-          ..write('name: $name, ')
-          ..write('about: $about, ')
-          ..write('profileImg: $profileImg')
-          ..write(')'))
-        .toString();
-  }
-}
-
-class Users extends Table with TableInfo<Users, User> {
-  final GeneratedDatabase _db;
-  final String? _alias;
-  Users(this._db, [this._alias]);
-  final VerificationMeta _userIdMeta = const VerificationMeta('userId');
-  late final GeneratedColumn<int?> userId = GeneratedColumn<int?>(
-      'userId', aliasedName, false,
-      typeName: 'INTEGER',
-      requiredDuringInsert: false,
-      $customConstraints: 'NOT NULL PRIMARY KEY');
-  final VerificationMeta _nameMeta = const VerificationMeta('name');
-  late final GeneratedColumn<String?> name = GeneratedColumn<String?>(
-      'name', aliasedName, false,
-      typeName: 'TEXT',
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  final VerificationMeta _aboutMeta = const VerificationMeta('about');
-  late final GeneratedColumn<String?> about = GeneratedColumn<String?>(
-      'about', aliasedName, true,
-      typeName: 'TEXT', requiredDuringInsert: false, $customConstraints: '');
-  final VerificationMeta _profileImgMeta = const VerificationMeta('profileImg');
-  late final GeneratedColumn<String?> profileImg = GeneratedColumn<String?>(
-      'profileImg', aliasedName, true,
-      typeName: 'TEXT', requiredDuringInsert: false, $customConstraints: '');
-  @override
-  List<GeneratedColumn> get $columns => [userId, name, about, profileImg];
-  @override
-  String get aliasedName => _alias ?? 'Users';
-  @override
-  String get actualTableName => 'Users';
-  @override
-  VerificationContext validateIntegrity(Insertable<User> instance,
-      {bool isInserting = false}) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('userId')) {
-      context.handle(_userIdMeta,
-          userId.isAcceptableOrUnknown(data['userId']!, _userIdMeta));
-    }
-    if (data.containsKey('name')) {
-      context.handle(
-          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
-    } else if (isInserting) {
-      context.missing(_nameMeta);
-    }
-    if (data.containsKey('about')) {
-      context.handle(
-          _aboutMeta, about.isAcceptableOrUnknown(data['about']!, _aboutMeta));
-    }
-    if (data.containsKey('profileImg')) {
-      context.handle(
-          _profileImgMeta,
-          profileImg.isAcceptableOrUnknown(
-              data['profileImg']!, _profileImgMeta));
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {userId};
-  @override
-  User map(Map<String, dynamic> data, {String? tablePrefix}) {
-    return User.fromData(data, _db,
-        prefix: tablePrefix != null ? '$tablePrefix.' : null);
-  }
-
-  @override
-  Users createAlias(String alias) {
-    return Users(_db, alias);
-  }
-
-  @override
-  bool get dontWriteConstraints => true;
-}
-
 class ChatMessage extends DataClass implements Insertable<ChatMessage> {
   final int msgId;
   final int fromUser;
@@ -961,12 +710,262 @@ class ChatMessagesTextIndex extends Table
   bool get dontWriteConstraints => true;
   @override
   String get moduleAndArgs =>
-      'fts5(fromUser UNINDEXED, toUser UNINDEXED, time UNINDEXED, content, media UNINDEXED, replyTo UNINDEXED, content=\'ChatMessages\', content_rowid=\'msgId\', tokenize = \'porter ascii\')';
+      'fts5(fromUser UNINDEXED, toUser UNINDEXED, time UNINDEXED, content, media UNINDEXED, replyTo UNINDEXED, content=\'ChatMessages\', content_rowid=\'msgId\', tokenize = \'porter unicode61\')';
+}
+
+class User extends DataClass implements Insertable<User> {
+  final int userId;
+  final String name;
+  final String? about;
+  final String? profileImg;
+  User({required this.userId, required this.name, this.about, this.profileImg});
+  factory User.fromData(Map<String, dynamic> data, GeneratedDatabase db,
+      {String? prefix}) {
+    final effectivePrefix = prefix ?? '';
+    return User(
+      userId: const IntType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}userId'])!,
+      name: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}name'])!,
+      about: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}about']),
+      profileImg: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}profileImg']),
+    );
+  }
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['userId'] = Variable<int>(userId);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || about != null) {
+      map['about'] = Variable<String?>(about);
+    }
+    if (!nullToAbsent || profileImg != null) {
+      map['profileImg'] = Variable<String?>(profileImg);
+    }
+    return map;
+  }
+
+  UsersCompanion toCompanion(bool nullToAbsent) {
+    return UsersCompanion(
+      userId: Value(userId),
+      name: Value(name),
+      about:
+          about == null && nullToAbsent ? const Value.absent() : Value(about),
+      profileImg: profileImg == null && nullToAbsent
+          ? const Value.absent()
+          : Value(profileImg),
+    );
+  }
+
+  factory User.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= moorRuntimeOptions.defaultSerializer;
+    return User(
+      userId: serializer.fromJson<int>(json['userId']),
+      name: serializer.fromJson<String>(json['name']),
+      about: serializer.fromJson<String?>(json['about']),
+      profileImg: serializer.fromJson<String?>(json['profileImg']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= moorRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'userId': serializer.toJson<int>(userId),
+      'name': serializer.toJson<String>(name),
+      'about': serializer.toJson<String?>(about),
+      'profileImg': serializer.toJson<String?>(profileImg),
+    };
+  }
+
+  User copyWith(
+          {int? userId,
+          String? name,
+          Value<String?> about = const Value.absent(),
+          Value<String?> profileImg = const Value.absent()}) =>
+      User(
+        userId: userId ?? this.userId,
+        name: name ?? this.name,
+        about: about.present ? about.value : this.about,
+        profileImg: profileImg.present ? profileImg.value : this.profileImg,
+      );
+  @override
+  String toString() {
+    return (StringBuffer('User(')
+          ..write('userId: $userId, ')
+          ..write('name: $name, ')
+          ..write('about: $about, ')
+          ..write('profileImg: $profileImg')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => $mrjf($mrjc(userId.hashCode,
+      $mrjc(name.hashCode, $mrjc(about.hashCode, profileImg.hashCode))));
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is User &&
+          other.userId == this.userId &&
+          other.name == this.name &&
+          other.about == this.about &&
+          other.profileImg == this.profileImg);
+}
+
+class UsersCompanion extends UpdateCompanion<User> {
+  final Value<int> userId;
+  final Value<String> name;
+  final Value<String?> about;
+  final Value<String?> profileImg;
+  const UsersCompanion({
+    this.userId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.about = const Value.absent(),
+    this.profileImg = const Value.absent(),
+  });
+  UsersCompanion.insert({
+    this.userId = const Value.absent(),
+    required String name,
+    this.about = const Value.absent(),
+    this.profileImg = const Value.absent(),
+  }) : name = Value(name);
+  static Insertable<User> custom({
+    Expression<int>? userId,
+    Expression<String>? name,
+    Expression<String?>? about,
+    Expression<String?>? profileImg,
+  }) {
+    return RawValuesInsertable({
+      if (userId != null) 'userId': userId,
+      if (name != null) 'name': name,
+      if (about != null) 'about': about,
+      if (profileImg != null) 'profileImg': profileImg,
+    });
+  }
+
+  UsersCompanion copyWith(
+      {Value<int>? userId,
+      Value<String>? name,
+      Value<String?>? about,
+      Value<String?>? profileImg}) {
+    return UsersCompanion(
+      userId: userId ?? this.userId,
+      name: name ?? this.name,
+      about: about ?? this.about,
+      profileImg: profileImg ?? this.profileImg,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (userId.present) {
+      map['userId'] = Variable<int>(userId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (about.present) {
+      map['about'] = Variable<String?>(about.value);
+    }
+    if (profileImg.present) {
+      map['profileImg'] = Variable<String?>(profileImg.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UsersCompanion(')
+          ..write('userId: $userId, ')
+          ..write('name: $name, ')
+          ..write('about: $about, ')
+          ..write('profileImg: $profileImg')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class Users extends Table with TableInfo<Users, User> {
+  final GeneratedDatabase _db;
+  final String? _alias;
+  Users(this._db, [this._alias]);
+  final VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  late final GeneratedColumn<int?> userId = GeneratedColumn<int?>(
+      'userId', aliasedName, false,
+      typeName: 'INTEGER',
+      requiredDuringInsert: false,
+      $customConstraints: 'NOT NULL PRIMARY KEY');
+  final VerificationMeta _nameMeta = const VerificationMeta('name');
+  late final GeneratedColumn<String?> name = GeneratedColumn<String?>(
+      'name', aliasedName, false,
+      typeName: 'TEXT',
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL');
+  final VerificationMeta _aboutMeta = const VerificationMeta('about');
+  late final GeneratedColumn<String?> about = GeneratedColumn<String?>(
+      'about', aliasedName, true,
+      typeName: 'TEXT', requiredDuringInsert: false, $customConstraints: '');
+  final VerificationMeta _profileImgMeta = const VerificationMeta('profileImg');
+  late final GeneratedColumn<String?> profileImg = GeneratedColumn<String?>(
+      'profileImg', aliasedName, true,
+      typeName: 'TEXT', requiredDuringInsert: false, $customConstraints: '');
+  @override
+  List<GeneratedColumn> get $columns => [userId, name, about, profileImg];
+  @override
+  String get aliasedName => _alias ?? 'Users';
+  @override
+  String get actualTableName => 'Users';
+  @override
+  VerificationContext validateIntegrity(Insertable<User> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('userId')) {
+      context.handle(_userIdMeta,
+          userId.isAcceptableOrUnknown(data['userId']!, _userIdMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('about')) {
+      context.handle(
+          _aboutMeta, about.isAcceptableOrUnknown(data['about']!, _aboutMeta));
+    }
+    if (data.containsKey('profileImg')) {
+      context.handle(
+          _profileImgMeta,
+          profileImg.isAcceptableOrUnknown(
+              data['profileImg']!, _profileImgMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {userId};
+  @override
+  User map(Map<String, dynamic> data, {String? tablePrefix}) {
+    return User.fromData(data, _db,
+        prefix: tablePrefix != null ? '$tablePrefix.' : null);
+  }
+
+  @override
+  Users createAlias(String alias) {
+    return Users(_db, alias);
+  }
+
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 abstract class _$AppDb extends GeneratedDatabase {
   _$AppDb(QueryExecutor e) : super(SqlTypeSystem.defaultInstance, e);
-  late final Users users = Users(this);
   late final ChatMessages chatMessages = ChatMessages(this);
   late final Index fromUserIndex = Index(
       'fromUserIndex', 'CREATE INDEX fromUserIndex ON ChatMessages (fromUser)');
@@ -983,6 +982,7 @@ abstract class _$AppDb extends GeneratedDatabase {
   late final Trigger chatMessagesTextIndexAU = Trigger(
       'CREATE TRIGGER ChatMessagesTextIndex_AU AFTER UPDATE ON ChatMessages BEGIN INSERT INTO ChatMessagesTextIndex (ChatMessagesTextIndex, "rowid", fromUser, toUser, time, content, media, replyTo) VALUES (\'delete\', old.msgId, old.fromUser, old.toUser, old.time, old.content, old.media, old.replyTo);INSERT INTO ChatMessagesTextIndex ("rowid", fromUser, toUser, time, content, media, replyTo) VALUES (new.msgId, new.fromUser, new.toUser, new.time, new.content, new.media, new.replyTo);END',
       'ChatMessagesTextIndex_AU');
+  late final Users users = Users(this);
   Future<int> addUser(
       {required int userId,
       required String name,
@@ -1064,17 +1064,21 @@ abstract class _$AppDb extends GeneratedDatabase {
   Selectable<SearchChatMessagesResult> searchChatMessages(
       {required String query, int? limit}) {
     return customSelect(
-        'SELECT fromUser, content FROM ChatMessagesTextIndex WHERE content MATCH :query ORDER BY rank LIMIT :limit',
+        'SELECT c.content, u.* FROM Users AS u JOIN (SELECT fromUser, toUser, content FROM ChatMessagesTextIndex WHERE content MATCH :query ORDER BY rank LIMIT :limit) AS c ON c.fromUser = u.userId OR c.toUser = u.userId',
         variables: [
           Variable<String>(query),
           Variable<int?>(limit)
         ],
         readsFrom: {
+          users,
           chatMessagesTextIndex,
         }).map((QueryRow row) {
       return SearchChatMessagesResult(
-        fromUser: row.read<String>('fromUser'),
         content: row.read<String>('content'),
+        userId: row.read<int>('userId'),
+        name: row.read<String>('name'),
+        about: row.read<String?>('about'),
+        profileImg: row.read<String?>('profileImg'),
       );
     });
   }
@@ -1083,14 +1087,14 @@ abstract class _$AppDb extends GeneratedDatabase {
   Iterable<TableInfo> get allTables => allSchemaEntities.whereType<TableInfo>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
-        users,
         chatMessages,
         fromUserIndex,
         toUserIndex,
         chatMessagesTextIndex,
         chatMessagesTextIndexAI,
         chatMessagesTextIndexAD,
-        chatMessagesTextIndexAU
+        chatMessagesTextIndexAU,
+        users
       ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
@@ -1121,10 +1125,16 @@ abstract class _$AppDb extends GeneratedDatabase {
 }
 
 class SearchChatMessagesResult {
-  final String fromUser;
   final String content;
+  final int userId;
+  final String name;
+  final String? about;
+  final String? profileImg;
   SearchChatMessagesResult({
-    required this.fromUser,
     required this.content,
+    required this.userId,
+    required this.name,
+    this.about,
+    this.profileImg,
   });
 }

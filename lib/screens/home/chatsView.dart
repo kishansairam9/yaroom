@@ -27,7 +27,7 @@ class ChatViewState extends State<ChatView> {
                   userId: e.userId, name: e.name, image: e.profileImg)),
             ).toList());
           } else if (snapshot.hasError) {
-            print(snapshot.data);
+            print(snapshot.error);
             return SnackBar(
                 content: Text('Error has occured while reading from DB'));
           }
@@ -41,21 +41,51 @@ class ProfileTile extends StatefulWidget {
   late final image;
   late final String name;
 
-  ProfileTile({required this.userId, required this.image, required this.name});
+  late final List<dynamic> _preParams;
+  late final Function? _preShowChat;
+
+  late final int _unread;
+  late final String _showText;
+
+  ProfileTile(
+      {required this.userId,
+      required this.image,
+      required this.name,
+      int? unread,
+      String? showText,
+      Function? preShowChat,
+      List<dynamic>? preParams}) {
+    _preShowChat = preShowChat ?? null;
+    _preParams = preParams ?? [];
+    _unread = unread ?? Random().nextInt(20);
+    _showText = showText ?? '';
+  }
 
   @override
-  ProfileTileState createState() => ProfileTileState();
+  ProfileTileState createState() => ProfileTileState(
+      unread: _unread,
+      showText: _showText,
+      preParams: _preParams,
+      preShowChat: _preShowChat);
 }
 
 class ProfileTileState extends State<ProfileTile> {
   int _unread = 0;
-  String _lastChat = '';
+  String _showText = '';
 
-  ProfileTileState() {
-    _unread = Random().nextInt(20);
+  ProfileTileState(
+      {int? unread,
+      String? showText,
+      Function? preShowChat,
+      List<dynamic>? preParams}) {
+    _unread = unread ?? Random().nextInt(20);
+    _showText = showText ?? '';
   }
 
   void _showChat() {
+    if (widget._preShowChat != null) {
+      Function.apply(widget._preShowChat!, widget._preParams);
+    }
     Navigator.of(context)
         .push(MaterialPageRoute(builder: (BuildContext context) {
       return ChatPage(
@@ -76,7 +106,7 @@ class ProfileTileState extends State<ProfileTile> {
         radius: 28.0,
       ),
       title: Text(widget.name),
-      subtitle: _lastChat.isEmpty ? null : Text(_lastChat),
+      subtitle: _showText.isEmpty ? null : Text(_showText),
       trailing: _unread > 0
           ?
           // TODO: Badges float around when puled from bottom to top agressively, should animate even slightly
