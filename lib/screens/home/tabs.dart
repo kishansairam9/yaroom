@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'chatsView.dart';
-import 'chatPage.dart';
 import '../components/roomsList.dart';
 import '../../utils/inner_drawer.dart';
 import '../../utils/types.dart';
+import 'package:moor/moor.dart';
 
 class TabView extends StatefulWidget {
   static TabViewState? of(BuildContext context) =>
@@ -181,11 +181,23 @@ class TabViewSearchDelegate extends SearchDelegate {
         child: Text("Enter query"),
       );
     }
-    var results = await RepositoryProvider.of<AppDb>(context)
+    var textresults = await RepositoryProvider.of<AppDb>(context)
         .searchChatMessages(query: query.toLowerCase(), limit: 50)
         .get();
+    var usersMatching = await RepositoryProvider.of<AppDb>(context)
+        .getUsersNameMatching(match: query.toLowerCase())
+        .get();
     print("Queried ${query.toLowerCase()}");
-    print(results);
+    List<SearchChatMessagesResult> userResults = usersMatching
+        .map((e) => SearchChatMessagesResult(
+            content: '',
+            userId: e.userId,
+            name: e.name,
+            profileImg: e.profileImg))
+        .toList();
+    var results = textresults + userResults;
+    print(results.map((e) => e.name));
+    print(results.map((e) => e.content));
     if (results.isEmpty) {
       return Center(
         child: Text("No matches"),
@@ -193,6 +205,7 @@ class TabViewSearchDelegate extends SearchDelegate {
     }
     return ListView(
         children: results.map((SearchChatMessagesResult e) {
+      print(e.content);
       return Card(
           child: ProfileTile(
               userId: e.userId,
@@ -201,24 +214,7 @@ class TabViewSearchDelegate extends SearchDelegate {
               unread: 0,
               showText: e.content,
               preShowChat: close,
-              preParams: [context, null])
-          // child: ListTile(
-          //   onTap: () {
-          //     close(context, null); // TODO: Is this casuing buggy transisiton?
-          //     Navigator.of(context)
-          //         .push(MaterialPageRoute(builder: (BuildContext context) {
-          //       // return ChatPage(name: e.name, image: e.image);
-          //       return Container();
-          //     }));
-          //   },
-          //   leading: CircleAvatar(
-          //     backgroundColor: Colors.grey[350],
-          //     foregroundImage: NetworkImage('${e.image}'),
-          //     backgroundImage: AssetImage('assets/no-profile.png'),
-          //   ),
-          //   title: Text(e.name),
-          // ),
-          );
+              preParams: [context, null]));
     }).toList());
   }
 

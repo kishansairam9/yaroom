@@ -1006,6 +1006,17 @@ abstract class _$AppDb extends GeneratedDatabase {
     }).map(users.mapFromRow);
   }
 
+  Selectable<User> getUsersNameMatching({required String match}) {
+    return customSelect(
+        'SELECT * FROM Users WHERE LOWER(name) LIKE \'%\' || :match || \'%\'',
+        variables: [
+          Variable<String>(match)
+        ],
+        readsFrom: {
+          users,
+        }).map(users.mapFromRow);
+  }
+
   Selectable<ChatMessage> getUserChat({required int otherUser}) {
     return customSelect(
         'SELECT * FROM ChatMessages WHERE fromUser = :otherUser OR toUser = :otherUser',

@@ -56,6 +56,7 @@ END;
 addUser(:userId AS BIGINT, :name AS TEXT, :about AS TEXT OR NULL, :profileImg AS TEXT OR NULL): INSERT into Users VALUES (:userId, :name, :about, :profileImg);
 
 getAllUsers: SELECT * FROM Users;
+getUsersNameMatching(:match AS TEXT): SELECT * FROM Users WHERE LOWER(name) LIKE '%' || :match || '%';
 
 --------------
 -- DM Messages
@@ -70,7 +71,6 @@ insertMediaMessage(:msgId AS BIGINT, :fromUser AS BIGINT, :toUser AS BIGINT, :ti
 -- Search
 -- Possible BUG! -> if 'uvw AND xyz' is search string then the query we execute searchs for match of both 'uvw' and 'xyz'
 -- Remove key words from search string if this happens
--- Using predicate is better solution
 searchChatMessages(:query AS TEXT, :limit AS INT OR NULL): SELECT c.content, u.* FROM Users u JOIN (SELECT fromUser, toUser, content FROM ChatMessagesTextIndex WHERE content MATCH :query ORDER BY rank LIMIT :limit) c ON c.fromUser = u.userId OR c.toUser = u.userId;
 
 --------

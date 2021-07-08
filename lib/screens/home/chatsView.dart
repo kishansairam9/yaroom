@@ -38,27 +38,32 @@ class ChatViewState extends State<ChatView> {
 
 class ProfileTile extends StatefulWidget {
   late final int userId;
-  late final image;
+  late final String? image;
   late final String name;
 
   late final List<dynamic> _preParams;
   late final Function? _preShowChat;
 
-  late final int _unread;
-  late final String _showText;
+  late final int? _unread;
+  late final String? _showText;
 
   ProfileTile(
       {required this.userId,
-      required this.image,
       required this.name,
+      this.image,
       int? unread,
       String? showText,
       Function? preShowChat,
       List<dynamic>? preParams}) {
     _preShowChat = preShowChat ?? null;
+    if (preParams != null && _preShowChat == null) {
+      // Shouldn't be done, raising null exception
+      preShowChat!;
+    }
     _preParams = preParams ?? [];
-    _unread = unread ?? Random().nextInt(20);
-    _showText = showText ?? '';
+    _unread = unread;
+    _showText = showText;
+    print('Above got $_showText');
   }
 
   @override
@@ -80,6 +85,7 @@ class ProfileTileState extends State<ProfileTile> {
       List<dynamic>? preParams}) {
     _unread = unread ?? Random().nextInt(20);
     _showText = showText ?? '';
+    print('Got show text $_showText');
   }
 
   void _showChat() {
@@ -101,12 +107,13 @@ class ProfileTileState extends State<ProfileTile> {
       onTap: _showChat,
       leading: CircleAvatar(
         backgroundColor: Colors.grey[350],
-        foregroundImage: NetworkImage('${widget.image}'),
+        foregroundImage:
+            widget.image == null ? null : NetworkImage('${widget.image}'),
         backgroundImage: AssetImage('assets/no-profile.png'),
         radius: 28.0,
       ),
       title: Text(widget.name),
-      subtitle: _showText.isEmpty ? null : Text(_showText),
+      subtitle: Text(_showText),
       trailing: _unread > 0
           ?
           // TODO: Badges float around when puled from bottom to top agressively, should animate even slightly
