@@ -4,6 +4,7 @@ import 'moor/db.dart';
 import 'fakegen.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 import 'utils/types.dart';
 
 void fakeInsert(db, userId) {
@@ -62,25 +63,33 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Provider<UserId>(
-        create: (_) => userId,
-        child: RepositoryProvider<AppDb>(
-            create: (_) => db,
-            child: MaterialApp(
-              debugShowCheckedModeBanner: false,
-              title: 'yaroom',
-              theme: ThemeData(
-                brightness: Brightness.light,
-                primaryColor: Colors.blueGrey[600],
-                accentColor: Colors.grey[300],
-              ),
-              darkTheme: ThemeData(
-                brightness: Brightness.dark,
-                primaryColor: Colors.blueGrey[600],
-                accentColor: Colors.black38,
-              ),
-              themeMode: ThemeMode.system,
-              onGenerateRoute: _contentRouter.onGenerateRoute,
-            )));
+    return MultiProvider(
+        providers: [
+          Provider<UserId>(
+            create: (_) => userId,
+          ),
+          RepositoryProvider<AppDb>.value(value: db),
+          Provider<WebSocketChannel>(
+            create: (_) => WebSocketChannel.connect(
+              Uri.parse('wss://echo.websocket.org'),
+            ),
+          )
+        ],
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'yaroom',
+          theme: ThemeData(
+            brightness: Brightness.light,
+            primaryColor: Colors.blueGrey[600],
+            accentColor: Colors.grey[300],
+          ),
+          darkTheme: ThemeData(
+            brightness: Brightness.dark,
+            primaryColor: Colors.blueGrey[600],
+            accentColor: Colors.black38,
+          ),
+          themeMode: ThemeMode.system,
+          onGenerateRoute: _contentRouter.onGenerateRoute,
+        ));
   }
 }

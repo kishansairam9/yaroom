@@ -12,7 +12,7 @@ class UserChatCubit extends Cubit<List<ChatMessage>> {
       required List<ChatMessage> initialState})
       : super(initialState);
 
-  void addTextMessage(
+  void insertTextMessage(
       {required int msgId, required int fromUser, required String content}) {
     this.db.insertTextMessage(
         msgId: msgId,
@@ -31,7 +31,7 @@ class UserChatCubit extends Cubit<List<ChatMessage>> {
         ]);
   }
 
-  void addMediaMessage(
+  void insertMediaMessage(
       {required int msgId,
       required int fromUser,
       required String media,
