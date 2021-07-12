@@ -4,54 +4,31 @@ import '../utils/types.dart';
 
 class UserChatCubit extends Cubit<List<ChatMessage>> {
   late int otherUser;
-  late AppDb db;
 
   UserChatCubit(
-      {required this.otherUser,
-      required this.db,
-      required List<ChatMessage> initialState})
+      {required this.otherUser, required List<ChatMessage> initialState})
       : super(initialState);
 
-  void insertTextMessage(
-      {required int msgId, required int fromUser, required String content}) {
-    this.db.insertTextMessage(
-        msgId: msgId,
-        fromUser: fromUser,
-        toUser: otherUser,
-        time: DateTime.now(),
-        content: content);
-    emit(state +
-        [
-          ChatMessage(
-              msgId: msgId,
-              fromUser: fromUser,
-              toUser: otherUser,
-              time: DateTime.now(),
-              content: content)
-        ]);
-  }
-
-  void insertMediaMessage(
+  void addMessage(
       {required int msgId,
       required int fromUser,
-      required String media,
-      String? content}) {
-    this.db.insertMediaMessage(
-        msgId: msgId,
-        fromUser: fromUser,
-        toUser: otherUser,
-        time: DateTime.now(),
-        media: media,
-        content: content);
+      required DateTime time,
+      required int toUser,
+      String? media,
+      String? content,
+      int? replyTo}) {
+    assert(!(media == null && content == null));
+    assert(fromUser == otherUser || toUser == otherUser);
     emit(state +
         [
           ChatMessage(
               msgId: msgId,
               fromUser: fromUser,
-              toUser: otherUser,
-              time: DateTime.now(),
+              toUser: toUser,
+              time: time,
               media: media,
-              content: content)
+              content: content,
+              replyTo: replyTo)
         ]);
   }
 }

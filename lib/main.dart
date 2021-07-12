@@ -4,8 +4,9 @@ import 'moor/db.dart';
 import 'fakegen.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
 import 'utils/types.dart';
+import 'utils/websocket.dart';
+import 'dart:convert';
 
 void fakeInsert(db, userId) {
   var others = [];
@@ -69,10 +70,34 @@ class MyApp extends StatelessWidget {
             create: (_) => userId,
           ),
           RepositoryProvider<AppDb>.value(value: db),
-          Provider<WebSocketChannel>(
-            create: (_) => WebSocketChannel.connect(
-              Uri.parse('wss://echo.websocket.org'),
-            ),
+          Provider<WebSocketWrapper>(
+            create: (_) {
+              var ws = WebSocketWrapper("ws://localhost:8884");
+              ws.stream.listen((encodedData) async {
+                var data = jsonDecode(encodedData);
+                if (data['media'] == null) {
+                  await db.insertTextMessage(
+                    msgId: data['msgId'],
+                    toUser: data['toUser'],
+                    fromUser: data['fromUser'],
+                    time: DateTime.parse(data['time']),
+                    content: data['content'],
+                    replyTo: data['replyTo'],
+                  );
+                } else {
+                  await db.insertMediaMessage(
+                    msgId: data['msgId'],
+                    toUser: data['toUser'],
+                    fromUser: data['fromUser'],
+                    time: DateTime.parse(data['time']),
+                    content: data['content'],
+                    media: data['media'],
+                    replyTo: data['replyTo'],
+                  );
+                }
+              });
+              return ws;
+            },
           )
         ],
         child: MaterialApp(

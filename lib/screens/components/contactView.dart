@@ -11,7 +11,9 @@ class ViewContact extends StatelessWidget {
         children: [
           Column(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
             CircleAvatar(
-              foregroundImage: NetworkImage('${this.contactData.image}'),
+              foregroundImage: this.contactData.image == null
+                  ? null
+                  : NetworkImage('${this.contactData.image}'),
               backgroundImage: AssetImage('assets/no-profile.png'),
               radius: 80,
             ),

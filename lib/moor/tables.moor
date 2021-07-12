@@ -62,7 +62,7 @@ getUsersNameMatching(:match AS TEXT): SELECT * FROM Users WHERE LOWER(name) LIKE
 -- DM Messages
 --------------
 
-getUserChat(:otherUser AS BIGINT): SELECT * FROM ChatMessages WHERE fromUser = :otherUser OR toUser = :otherUser;
+getUserChat(:otherUser AS BIGINT): SELECT * FROM ChatMessages WHERE fromUser = :otherUser OR toUser = :otherUser ORDER BY msgId;
 
 insertTextMessage(:msgId AS BIGINT, :fromUser AS BIGINT, :toUser AS BIGINT, :time AS DATETIME, :content AS TEXT, :replyTo AS BIGINT OR NULL): INSERT INTO ChatMessages VALUES (:msgId, :fromUser, :toUser, :time, :content, NULL, :replyTo);
 

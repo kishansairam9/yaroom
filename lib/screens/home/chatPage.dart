@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'dart:io' show Platform; // OS Detection
 import 'package:flutter/foundation.dart' show kIsWeb; // Web detection
 import 'package:flutter/services.dart';
@@ -6,7 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:yaroom/fakegen.dart';
 import '../components/contactView.dart';
 import 'package:provider/provider.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
+import '../../utils/websocket.dart';
 import '../../utils/types.dart';
 import '../../blocs/chats.dart';
 
@@ -98,15 +99,21 @@ class ChatPageState extends State<ChatPage> {
     );
   }
 
-  void _sendMessage(BuildContext context, String data) {
-    // TODO: Send msg content through web socket, receive including msgId into stream of websocket
-    // The above mechanism should autobuild view of user
-    Provider.of<WebSocketChannel>(context, listen: false).sink.add(data);
-    // TODO: Get msg id by sending data to server
-    BlocProvider.of<UserChatCubit>(context, listen: false).insertTextMessage(
-        msgId: getMsgId(),
-        fromUser: Provider.of<UserId>(context, listen: false),
-        content: data);
+  void _sendMessage(
+      {required BuildContext context,
+      String? content,
+      String? media,
+      int? replyTo}) {
+    assert(!(media == null && content == null));
+    Provider.of<WebSocketWrapper>(context, listen: false).add(jsonEncode({
+      'type': 'ChatMessage',
+      'toUser': widget.userId,
+      'fromUser': Provider.of<UserId>(context, listen: false),
+      'content': content,
+      'time': DateTime.now().toIso8601String(),
+      'media': media,
+      'replyTo': replyTo,
+    }));
   }
 
   Widget build(BuildContext context) {
@@ -119,17 +126,25 @@ class ChatPageState extends State<ChatPage> {
           if (snapshot.hasData) {
             return BlocProvider(create: (context) {
               var cubit = UserChatCubit(
-                  otherUser: widget.userId,
-                  db: RepositoryProvider.of<AppDb>(context),
-                  initialState: snapshot.data!);
+                  otherUser: widget.userId, initialState: snapshot.data!);
               webSocketSubscription =
-                  Provider.of<WebSocketChannel>(context, listen: false)
+                  Provider.of<WebSocketWrapper>(context, listen: false)
                       .stream
-                      .listen((data) {
-                // TODO: Handle text and media messages
-                // TODO: Handle from and to User Id check
-                cubit.insertTextMessage(
-                    msgId: getMsgId(), fromUser: getUserId(), content: data);
+                      .where((encodedData) {
+                var data = jsonDecode(encodedData);
+                return (data['fromUser'] == widget.userId ||
+                    data['toUser'] == widget.userId);
+              }).listen((encodedData) {
+                var data = jsonDecode(encodedData);
+                cubit.addMessage(
+                  msgId: data['msgId'],
+                  toUser: data['toUser'],
+                  fromUser: data['fromUser'],
+                  time: DateTime.parse(data['time']),
+                  content: data['content'],
+                  media: data['media'],
+                  replyTo: data['replyTo'],
+                );
               }, onError: (error) {
                 print(error);
                 return SnackBar(
@@ -150,7 +165,9 @@ class ChatPageState extends State<ChatPage> {
                           tileColor: Colors.transparent,
                           leading: CircleAvatar(
                             backgroundColor: Colors.grey[350],
-                            foregroundImage: NetworkImage('${widget.image}'),
+                            foregroundImage: widget.image == null
+                                ? null
+                                : NetworkImage('${widget.image}'),
                             backgroundImage:
                                 AssetImage('assets/no-profile.png'),
                           ),
@@ -199,7 +216,8 @@ class ChatPageState extends State<ChatPage> {
                                                   inputController.text;
                                               inputController.clear();
                                               _sendMessage(
-                                                  context, data.trim());
+                                                  context: context,
+                                                  content: data.trim());
                                             }
                                           }
                                         },
@@ -211,7 +229,9 @@ class ChatPageState extends State<ChatPage> {
                                           onEditingComplete: () {
                                             String data = inputController.text;
                                             inputController.clear();
-                                            _sendMessage(context, data.trim());
+                                            _sendMessage(
+                                                context: context,
+                                                content: data.trim());
                                           },
                                           decoration: InputDecoration(
                                               border: OutlineInputBorder(),
@@ -221,7 +241,9 @@ class ChatPageState extends State<ChatPage> {
                                     onPressed: () {
                                       String data = inputController.text;
                                       inputController.clear();
-                                      _sendMessage(context, data.trim());
+                                      _sendMessage(
+                                          context: context,
+                                          content: data.trim());
                                     },
                                     icon: Icon(Icons.send))
                               ],

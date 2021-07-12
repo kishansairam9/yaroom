@@ -1019,7 +1019,7 @@ abstract class _$AppDb extends GeneratedDatabase {
 
   Selectable<ChatMessage> getUserChat({required int otherUser}) {
     return customSelect(
-        'SELECT * FROM ChatMessages WHERE fromUser = :otherUser OR toUser = :otherUser',
+        'SELECT * FROM ChatMessages WHERE fromUser = :otherUser OR toUser = :otherUser ORDER BY msgId',
         variables: [
           Variable<int>(otherUser)
         ],
