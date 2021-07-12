@@ -187,7 +187,7 @@ class TabViewSearchDelegate extends SearchDelegate {
     var usersMatching = await RepositoryProvider.of<AppDb>(context)
         .getUsersNameMatching(match: query.toLowerCase())
         .get();
-    print("Queried ${query.toLowerCase()}");
+    // print("Queried ${query.toLowerCase()}");
     List<SearchChatMessagesResult> userResults = usersMatching
         .map((e) => SearchChatMessagesResult(
             content: '',
@@ -196,8 +196,8 @@ class TabViewSearchDelegate extends SearchDelegate {
             profileImg: e.profileImg))
         .toList();
     var results = userResults + textresults;
-    print(results.map((e) => e.name));
-    print(results.map((e) => e.content));
+    // print(results.map((e) => e.name));
+    // print(results.map((e) => e.content));
     if (results.isEmpty) {
       return Center(
         child: Text("No matches"),

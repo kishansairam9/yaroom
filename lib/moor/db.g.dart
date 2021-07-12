@@ -970,6 +970,7 @@ class Users extends Table with TableInfo<Users, User> {
 
 abstract class _$AppDb extends GeneratedDatabase {
   _$AppDb(QueryExecutor e) : super(SqlTypeSystem.defaultInstance, e);
+  _$AppDb.connect(DatabaseConnection c) : super.connect(c);
   late final ChatMessages chatMessages = ChatMessages(this);
   late final Index fromUserIndex = Index(
       'fromUserIndex', 'CREATE INDEX fromUserIndex ON ChatMessages (fromUser)');

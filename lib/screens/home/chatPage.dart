@@ -214,6 +214,11 @@ class ChatPageState extends State<ChatPage> {
                                               String data =
                                                   inputController.text;
                                               inputController.clear();
+                                              // Bug fix for stray new line after Pressing Enter
+                                              Future.delayed(
+                                                  Duration(milliseconds: 100),
+                                                  () =>
+                                                      inputController.clear());
                                               _sendMessage(
                                                   context: context,
                                                   content: data.trim());

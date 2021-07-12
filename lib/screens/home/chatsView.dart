@@ -63,7 +63,6 @@ class ProfileTile extends StatefulWidget {
     _preParams = preParams ?? [];
     _unread = unread;
     _showText = showText;
-    print('Above got $_showText');
   }
 
   @override
@@ -85,7 +84,6 @@ class ProfileTileState extends State<ProfileTile> {
       List<dynamic>? preParams}) {
     _unread = unread ?? Random().nextInt(20);
     _showText = showText ?? '';
-    print('Got show text $_showText');
   }
 
   void _showChat() {

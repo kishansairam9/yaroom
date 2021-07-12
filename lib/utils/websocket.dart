@@ -1,6 +1,7 @@
-import 'dart:io';
 import 'dart:async';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
+// Modification of
 // https://stackoverflow.com/a/62095514
 class WebSocketWrapper {
   StreamController<String> streamController =
@@ -8,10 +9,10 @@ class WebSocketWrapper {
 
   late String wsUrl;
 
-  late WebSocket channel;
+  late WebSocketChannel channel;
 
   Stream get stream => streamController.stream;
-  void add(data) => channel.add(data);
+  void add(data) => channel.sink.add(data);
 
   WebSocketWrapper(this.wsUrl) {
     initWebSocketConnection();
@@ -21,12 +22,12 @@ class WebSocketWrapper {
     print("conecting...");
     this.channel = await connectWs();
     print("socket connection initializied");
-    this.channel.done.then((dynamic _) => _onDisconnected());
+    this.channel.sink.done.then((dynamic _) => _onDisconnected());
     broadcastNotifications();
   }
 
   broadcastNotifications() {
-    this.channel.listen((streamData) {
+    this.channel.stream.listen((streamData) {
       streamController.add(streamData);
     }, onDone: () {
       print("conecting aborted");
@@ -42,11 +43,11 @@ class WebSocketWrapper {
       // BUG in DART https://github.com/flutter/flutter/issues/41573 https://github.com/flutter/flutter/issues/41573#issuecomment-580370766
       // TODO FIND A WORKAROUND
       // If webserver goes down app crashes
-      return await WebSocket.connect(wsUrl);
+      return WebSocketChannel.connect(Uri.parse(wsUrl));
     } catch (e) {
       print("Error! can not connect WS connectWs " + e.toString());
       await Future.delayed(Duration(milliseconds: 10000));
-      return await connectWs();
+      return connectWs();
     }
   }
 
@@ -59,6 +60,6 @@ class WebSocketWrapper {
   }
 
   void close() {
-    channel.close();
+    channel.sink.close();
   }
 }
