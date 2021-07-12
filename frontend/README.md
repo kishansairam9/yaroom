@@ -1,6 +1,4 @@
-# yaroom - Yet Another [Chat] Room
-
-"Frontend Repository"
+# Frontend
 
 > Attempt at creating a "chat room" in Flutter.
 
