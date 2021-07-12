@@ -373,6 +373,10 @@ class ChatMessages extends Table with TableInfo<ChatMessages, ChatMessage> {
   }
 
   @override
+  List<String> get customConstraints => const [
+        'CONSTRAINT hasData CHECK (content IS NOT NULL OR media IS NOT NULL)'
+      ];
+  @override
   bool get dontWriteConstraints => true;
 }
 
@@ -1028,34 +1032,13 @@ abstract class _$AppDb extends GeneratedDatabase {
         }).map(chatMessages.mapFromRow);
   }
 
-  Future<int> insertTextMessage(
-      {required int msgId,
-      required int fromUser,
-      required int toUser,
-      required DateTime time,
-      required String content,
-      int? replyTo}) {
-    return customInsert(
-      'INSERT INTO ChatMessages VALUES (:msgId, :fromUser, :toUser, :time, :content, NULL, :replyTo)',
-      variables: [
-        Variable<int>(msgId),
-        Variable<int>(fromUser),
-        Variable<int>(toUser),
-        Variable<DateTime>(time),
-        Variable<String>(content),
-        Variable<int?>(replyTo)
-      ],
-      updates: {chatMessages},
-    );
-  }
-
-  Future<int> insertMediaMessage(
+  Future<int> insertMessage(
       {required int msgId,
       required int fromUser,
       required int toUser,
       required DateTime time,
       String? content,
-      required String media,
+      String? media,
       int? replyTo}) {
     return customInsert(
       'INSERT INTO ChatMessages VALUES (:msgId, :fromUser, :toUser, :time, :content, :media, :replyTo)',
@@ -1065,7 +1048,7 @@ abstract class _$AppDb extends GeneratedDatabase {
         Variable<int>(toUser),
         Variable<DateTime>(time),
         Variable<String?>(content),
-        Variable<String>(media),
+        Variable<String?>(media),
         Variable<int?>(replyTo)
       ],
       updates: {chatMessages},

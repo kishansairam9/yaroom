@@ -8,7 +8,7 @@ import 'utils/types.dart';
 import 'utils/websocket.dart';
 import 'dart:convert';
 
-void fakeInsert(db, userId) {
+void fakeInsert(AppDb db, UserId userId) {
   var others = [];
   // Generate fake data
   for (var i = 0; i < 30; i++) {
@@ -29,7 +29,7 @@ void fakeInsert(db, userId) {
         fromId = uid;
         toId = userId;
       }
-      db.insertTextMessage(
+      db.insertMessage(
           msgId: getMsgId(),
           fromUser: fromId,
           toUser: toId,
@@ -75,17 +75,8 @@ class MyApp extends StatelessWidget {
               var ws = WebSocketWrapper("ws://localhost:8884");
               ws.stream.listen((encodedData) async {
                 var data = jsonDecode(encodedData);
-                if (data['media'] == null) {
-                  await db.insertTextMessage(
-                    msgId: data['msgId'],
-                    toUser: data['toUser'],
-                    fromUser: data['fromUser'],
-                    time: DateTime.parse(data['time']),
-                    content: data['content'],
-                    replyTo: data['replyTo'],
-                  );
-                } else {
-                  await db.insertMediaMessage(
+                if (data['type'] == 'ChatMessage') {
+                  await db.insertMessage(
                     msgId: data['msgId'],
                     toUser: data['toUser'],
                     fromUser: data['fromUser'],

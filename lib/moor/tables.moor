@@ -21,7 +21,8 @@ CREATE TABLE ChatMessages (
     time DATETIME NOT NULL,
     content TEXT,
     media TEXT,
-    replyTo BIGINT
+    replyTo BIGINT,
+    CONSTRAINT hasData CHECK (content IS NOT NULL OR media IS NOT NULL)
 ) AS ChatMessage;
 
 -- Indexes
@@ -64,9 +65,7 @@ getUsersNameMatching(:match AS TEXT): SELECT * FROM Users WHERE LOWER(name) LIKE
 
 getUserChat(:otherUser AS BIGINT): SELECT * FROM ChatMessages WHERE fromUser = :otherUser OR toUser = :otherUser ORDER BY msgId;
 
-insertTextMessage(:msgId AS BIGINT, :fromUser AS BIGINT, :toUser AS BIGINT, :time AS DATETIME, :content AS TEXT, :replyTo AS BIGINT OR NULL): INSERT INTO ChatMessages VALUES (:msgId, :fromUser, :toUser, :time, :content, NULL, :replyTo);
-
-insertMediaMessage(:msgId AS BIGINT, :fromUser AS BIGINT, :toUser AS BIGINT, :time AS DATETIME, :content AS TEXT OR NULL, :media AS TEXT, :replyTo AS BIGINT OR NULL): INSERT INTO ChatMessages VALUES (:msgId, :fromUser, :toUser, :time, :content, :media, :replyTo);
+insertMessage(:msgId AS BIGINT, :fromUser AS BIGINT, :toUser AS BIGINT, :time AS DATETIME, :content AS TEXT OR NULL, :media AS TEXT OR NULL, :replyTo AS BIGINT OR NULL): INSERT INTO ChatMessages VALUES (:msgId, :fromUser, :toUser, :time, :content, :media, :replyTo);
 
 -- Search
 -- Possible BUG! -> if 'uvw AND xyz' is search string then the query we execute searchs for match of both 'uvw' and 'xyz'

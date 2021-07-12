@@ -4,7 +4,6 @@ import 'dart:io' show Platform; // OS Detection
 import 'package:flutter/foundation.dart' show kIsWeb; // Web detection
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:yaroom/fakegen.dart';
 import '../components/contactView.dart';
 import 'package:provider/provider.dart';
 import '../../utils/websocket.dart';

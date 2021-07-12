@@ -195,7 +195,7 @@ class TabViewSearchDelegate extends SearchDelegate {
             name: e.name,
             profileImg: e.profileImg))
         .toList();
-    var results = textresults + userResults;
+    var results = userResults + textresults;
     print(results.map((e) => e.name));
     print(results.map((e) => e.content));
     if (results.isEmpty) {
