@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'utils/router.dart';
 import 'moor/db.dart';
@@ -11,6 +13,11 @@ import 'dart:convert';
 void fakeInsert(AppDb db, UserId userId) {
   var others = [];
   // Generate fake data
+  db.addUser(
+      userId: userId,
+      name: getName(),
+      about: getAbout(),
+      profileImg: getImage());
   for (var i = 0; i < 30; i++) {
     int uid = getUserId();
     others.add(uid);
@@ -33,6 +40,32 @@ void fakeInsert(AppDb db, UserId userId) {
           msgId: getMsgId(),
           fromUser: fromId,
           toUser: toId,
+          time: DateTime.fromMillisecondsSinceEpoch(j * 1000 * 62),
+          content: exchange[0][j]);
+    }
+  }
+  for (var i = 0; i < 30; i++) {
+    int gid = getGroupId();
+    db.createGroup(
+        groupId: gid,
+        name: getCompanyName(),
+        description: getAbout(),
+        groupIcon: getGroupImage());
+    int groupSize = getRandomInt(5, 20);
+    var groupMembers = new List.generate(
+        groupSize, (_) => others[Random().nextInt(others.length)]);
+    groupMembers.add(userId);
+    groupMembers = groupMembers.toSet().toList();
+    groupSize = groupMembers.length;
+    for (var j = 0; j < groupSize; j++) {
+      db.addUserToGroup(groupId: gid, userId: groupMembers[j]);
+    }
+    var exchange = getExchange();
+    for (var j = 0; j < exchange[0].length; j++) {
+      db.insertGroupChatMessage(
+          msgId: getMsgId(),
+          groupId: gid,
+          fromUser: groupMembers[Random().nextInt(groupMembers.length)],
           time: DateTime.fromMillisecondsSinceEpoch(j * 1000 * 62),
           content: exchange[0][j]);
     }
@@ -104,7 +137,7 @@ class MyApp extends StatelessWidget {
             primaryColor: Colors.blueGrey[600],
             accentColor: Colors.black38,
           ),
-          themeMode: ThemeMode.system,
+          themeMode: ThemeMode.dark,
           onGenerateRoute: _contentRouter.onGenerateRoute,
         ));
   }

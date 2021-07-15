@@ -11,13 +11,46 @@ CREATE TABLE Users (
     profileImg TEXT
 );
 
+-------------
+-- Group Table
+-------------
+CREATE TABLE GroupDMs (
+    groupId BIGINT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    groupIcon TEXT
+);
+
+-------------
+-- User - Group Mapping Table
+-------------
+CREATE TABLE GroupUserMapping (
+    groupId BIGINT NOT NULL REFERENCES GroupDMs(groupId),
+    userId BIGINT NOT NULL REFERENCES Users(userId),
+    PRIMARY KEY(groupId, userId)
+);
+
+--------------
+-- Group Messages
+--------------
+CREATE TABLE GroupChatMessages (
+    msgId BIGINT NOT NULL PRIMARY KEY,
+    groupId BIGINT NOT NULL REFERENCES GroupDMs(groupId),
+    fromUser BIGINT NOT NULL REFERENCES Users(userId),
+    time DATETIME NOT NULL,
+    content TEXT,
+    media TEXT,
+    replyTo BIGINT,
+    CONSTRAINT hasData CHECK (content IS NOT NULL OR media IS NOT NULL)
+) AS GroupChatMessage;
+
 --------------
 -- DM Messages
 --------------
 CREATE TABLE ChatMessages (
     msgId BIGINT NOT NULL PRIMARY KEY,
-    fromUser BIGINT NOT NULL,
-    toUser BIGINT NOT NULL,
+    fromUser BIGINT NOT NULL REFERENCES Users(userId),
+    toUser BIGINT NOT NULL REFERENCES Users(userId),
     time DATETIME NOT NULL,
     content TEXT,
     media TEXT,
@@ -58,6 +91,26 @@ addUser(:userId AS BIGINT, :name AS TEXT, :about AS TEXT OR NULL, :profileImg AS
 
 getAllUsers: SELECT * FROM Users;
 getUsersNameMatching(:match AS TEXT): SELECT * FROM Users WHERE LOWER(name) LIKE '%' || :match || '%';
+
+-------------
+-- Groups Table
+-------------
+createGroup(:groupId AS BIGINT, :name AS TEXT, :description AS TEXT OR NULL, :groupIcon AS TEXT OR NULL): INSERT into GroupDMs VALUES (:groupId, :name, :description, :groupIcon);
+
+-------------
+-- Group-User Mapping Table
+-------------
+addUserToGroup(:groupId AS BIGINT, :userId AS BIGINT): INSERT into GroupUserMapping VALUES (:groupId, :userId);
+
+
+getGroupsOfUser(:userID AS BIGINT): SELECT DISTINCT G.groupId, G.name, G.description, G.groupIcon FROM GroupDMs AS G, GroupUserMapping as GM WHERE GM.userId == :userID;   
+getGroupMembers(:groupID AS BIGINT): SELECT U.* FROM Users AS U, (SELECT DISTINCT userId FROM GroupUserMapping AS GM WHERE GM.groupId == :groupID) AS UID WHERE U.userId == UID.userId; 
+
+-------------
+-- Group Chat Messages Table
+-------------
+getGroupChat(:groupId AS BIGINT): SELECT * FROM GroupChatMessages WHERE groupId = :groupId ORDER BY msgId;
+insertGroupChatMessage(:msgId AS BIGINT, :groupId AS BIGINT, :fromUser AS BIGINT, :time AS DATETIME, :content AS TEXT OR NULL, :media AS TEXT OR NULL, :replyTo AS BIGINT OR NULL): INSERT INTO GroupChatMessages VALUES (:msgId, :groupId, :fromUser, :time, :content, :media, :replyTo);
 
 --------------
 -- DM Messages
