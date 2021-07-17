@@ -19,7 +19,7 @@ void fakeInsert(AppDb db, UserId userId) {
       about: getAbout(),
       profileImg: getImage());
   for (var i = 0; i < 30; i++) {
-    int uid = getUserId();
+    String uid = getUserId();
     others.add(uid);
     db.addUser(
         userId: uid,
@@ -28,7 +28,7 @@ void fakeInsert(AppDb db, UserId userId) {
         profileImg: getImage());
     var exchange = getExchange();
     for (var j = 0; j < exchange[0].length; j++) {
-      late int fromId, toId;
+      late String fromId, toId;
       if (exchange[1][j] == 0) {
         fromId = userId;
         toId = uid;
@@ -45,7 +45,7 @@ void fakeInsert(AppDb db, UserId userId) {
     }
   }
   for (var i = 0; i < 30; i++) {
-    int gid = getGroupId();
+    String gid = getGroupId();
     db.createGroup(
         groupId: gid,
         name: getCompanyName(),
@@ -78,7 +78,7 @@ void main() {
   AppDb db = constructDb(logStatements: true, removeExisting: removeExistingDB);
   // Fake app user
   // LATER MOVE THIS TO HYDRATED BLOC FOR PERSISTENT STORAGE
-  int userId = 0;
+  String userId = "0";
   if (removeExistingDB) {
     fakeInsert(db, userId);
   }
@@ -88,9 +88,9 @@ void main() {
 class MyApp extends StatelessWidget {
   final _contentRouter = ContentRouter();
   late final AppDb db;
-  late final int userId;
+  late final String userId;
 
-  MyApp(AppDb database, int uid) {
+  MyApp(AppDb database, String uid) {
     db = database;
     userId = uid;
   }
@@ -107,18 +107,25 @@ class MyApp extends StatelessWidget {
             create: (_) {
               var ws = WebSocketWrapper("ws://localhost:8884");
               ws.stream.listen((encodedData) async {
-                var data = jsonDecode(encodedData);
+                var data = jsonDecode(encodedData) as Map;
+                data['time'] = DateTime.parse(data['time']);
                 if (data['type'] == 'ChatMessage') {
-                  await db.insertMessage(
+                  await db
+                      .insertMessage(
                     msgId: data['msgId'],
                     toUser: data['toUser'],
                     fromUser: data['fromUser'],
-                    time: DateTime.parse(data['time']),
-                    content: data['content'],
-                    media: data['media'],
-                    replyTo: data['replyTo'],
-                  );
+                    time: data['time'],
+                    content: data['content'] == '' ? null : data['content'],
+                    media: data['media'] == '' ? null : data['media'],
+                    replyTo: data['replyTo'] == '' ? null : data['replyTo'],
+                  )
+                      .catchError((e) {
+                    print("Database insert failed with error $e");
+                  });
                 }
+              }, onError: (e) {
+                print("WS stream returned error $e");
               });
               return ws;
             },

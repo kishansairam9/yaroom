@@ -106,13 +106,17 @@ class ChatPageState extends State<ChatPage> {
       String? content,
       String? media,
       int? replyTo}) {
-    assert(!(media == null && content == null));
+    if (media == '') media = null;
+    if (content == '') content = null;
+    if (media == null && content == null) {
+      return;
+    }
     Provider.of<WebSocketWrapper>(context, listen: false).add(jsonEncode({
       'type': 'ChatMessage',
       'toUser': widget.userId,
       'fromUser': Provider.of<UserId>(context, listen: false),
       'content': content,
-      'time': DateTime.now().toIso8601String(),
+      'time': DateTime.now().toUtc().toIso8601String(),
       'media': media,
       'replyTo': replyTo,
     }));
@@ -143,9 +147,9 @@ class ChatPageState extends State<ChatPage> {
                   toUser: data['toUser'],
                   fromUser: data['fromUser'],
                   time: DateTime.parse(data['time']),
-                  content: data['content'],
-                  media: data['media'],
-                  replyTo: data['replyTo'],
+                  content: data['content'] == '' ? null : data['content'],
+                  media: data['media'] == '' ? null : data['media'],
+                  replyTo: data['replyTo'] == '' ? null : data['replyTo'],
                 );
               }, onError: (error) {
                 print(error);

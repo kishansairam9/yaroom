@@ -37,7 +37,7 @@ class ChatViewState extends State<ChatView> {
 }
 
 class ProfileTile extends StatefulWidget {
-  late final int userId;
+  late final String userId;
   late final String? image;
   late final String name;
 

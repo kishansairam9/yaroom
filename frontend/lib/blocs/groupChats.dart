@@ -3,20 +3,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../utils/types.dart';
 
 class GroupChatCubit extends Cubit<List<GroupChatMessage>> {
-  late int groupId;
+  late String groupId;
 
   GroupChatCubit(
       {required this.groupId, required List<GroupChatMessage> initialState})
       : super(initialState);
 
   void addMessage(
-      {required int msgId,
-      required int fromUser,
-      required int groupId,
+      {required String msgId,
+      required String fromUser,
+      required String groupId,
       required DateTime time,
       String? media,
       String? content,
-      int? replyTo}) {
+      String? replyTo}) {
     assert(!(media == null && content == null));
     assert(groupId == this.groupId);
     emit(state +
