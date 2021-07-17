@@ -25,5 +25,9 @@ func main() {
 		g.JSON(200, gin.H{"text": "Hello from private"})
 	})
 
-	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
+	r.GET("/ws", func(c *gin.Context) {
+		wsHandler(c.Writer, c.Request)
+	})
+
+	r.Run()
 }
