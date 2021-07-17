@@ -5,15 +5,16 @@ class ViewContact extends StatelessWidget {
   ViewContact(this.contactData);
   @override
   Widget build(BuildContext context) {
+    print(this.contactData);
     return Container(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           Column(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
             CircleAvatar(
-              foregroundImage: this.contactData.image == null
+              foregroundImage: this.contactData.profileImg == null
                   ? null
-                  : NetworkImage('${this.contactData.image}'),
+                  : NetworkImage('${this.contactData.profileImg}'),
               backgroundImage: AssetImage('assets/no-profile.png'),
               radius: 80,
             ),

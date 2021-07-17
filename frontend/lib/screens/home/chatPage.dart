@@ -77,7 +77,10 @@ class ChatPageState extends State<ChatPage> {
     showModalBottomSheet(
         context: context,
         builder: (BuildContext c) {
-          return ViewContact(widget);
+          return ViewContact(User(
+              userId: widget.userId,
+              name: widget.name,
+              profileImg: widget.image));
         });
   }
 

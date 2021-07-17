@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'chatsView.dart';
+import 'groupsView.dart';
 import '../components/roomsList.dart';
 import '../../utils/inner_drawer.dart';
 import '../../utils/types.dart';
@@ -140,7 +141,7 @@ class TabViewState extends State<TabView> {
                             },
                           )),
                   Center(
-                    child: Text("Groups here"),
+                    child: GroupChatView(),
                   ),
                 ],
               ),
@@ -204,18 +205,16 @@ class TabViewSearchDelegate extends SearchDelegate {
       );
     }
     return ListView(
-        children: results.map((SearchChatMessagesResult e) {
-      print(e.content);
-      return Card(
-          child: ProfileTile(
-              userId: e.userId,
-              image: e.profileImg,
-              name: e.name,
-              unread: 0,
-              showText: e.content,
-              preShowChat: close,
-              preParams: [context, null]));
-    }).toList());
+        children: ListTile.divideTiles(
+            context: context,
+            tiles: results.map((SearchChatMessagesResult e) => ProfileTile(
+                userId: e.userId,
+                image: e.profileImg,
+                name: e.name,
+                unread: 0,
+                showText: e.content,
+                preShowChat: close,
+                preParams: [context, null]))).toList());
   }
 
   @override
