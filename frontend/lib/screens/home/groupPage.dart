@@ -59,18 +59,21 @@ class GroupChatPageState extends State<GroupChatPage> {
               mainAxisAlignment: MainAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                !isMe?
-                     Flexible(
+                !isMe
+                    ? Flexible(
                         flex: 1,
-                        child: Padding(padding: EdgeInsets.only(right: 5.0),child:CircleAvatar(
-                        backgroundColor: Colors.grey[350],
-                        foregroundImage: widget.image == null
-                            ? null
-                            : NetworkImage('${widget.image}'),
-                        backgroundImage: AssetImage('assets/no-profile.png'),
-                        radius: 20.0,
-                      )))
-                    : Flexible(flex:1, child:Container()),
+                        child: Padding(
+                            padding: EdgeInsets.only(right: 5.0),
+                            child: CircleAvatar(
+                              backgroundColor: Colors.grey[350],
+                              foregroundImage: widget.image == null
+                                  ? null
+                                  : NetworkImage('${widget.image}'),
+                              backgroundImage:
+                                  AssetImage('assets/no-profile.png'),
+                              radius: 20.0,
+                            )))
+                    : Flexible(flex: 1, child: Container()),
                 Flexible(
                   flex: 10,
                   child: Container(
@@ -89,12 +92,20 @@ class GroupChatPageState extends State<GroupChatPage> {
                           !isMe
                               ? Align(
                                   alignment: Alignment.topLeft,
-                                  child: Text(Provider.of<List<User>>(context,
-                                          listen: false)
-                                      .where((element) =>
-                                          element.userId == msg.fromUser)
-                                      .toList()[0]
-                                      .name, style: TextStyle(color: Colors.grey, fontSize: Theme.of(context).textTheme.overline!.fontSize),))
+                                  child: Text(
+                                    Provider.of<List<User>>(context,
+                                            listen: false)
+                                        .where((element) =>
+                                            element.userId == msg.fromUser)
+                                        .toList()[0]
+                                        .name,
+                                    style: TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: Theme.of(context)
+                                            .textTheme
+                                            .overline!
+                                            .fontSize),
+                                  ))
                               : Container(),
                           SizedBox(
                             height: 10,
@@ -148,16 +159,76 @@ class GroupChatPageState extends State<GroupChatPage> {
       String? content,
       String? media,
       int? replyTo}) {
-    assert(!(media == null && content == null));
+    if (media == '') media = null;
+    if (content == '') content = null;
+    if (media == null && content == null) {
+      return;
+    }
     Provider.of<WebSocketWrapper>(context, listen: false).add(jsonEncode({
       'type': 'GroupChatMessage',
       'groupId': widget.groupId,
       'fromUser': Provider.of<UserId>(context, listen: false),
       'content': content,
-      'time': DateTime.now().toIso8601String(),
+      'time': DateTime.now().toUtc().toIso8601String(),
       'media': media,
       'replyTo': replyTo,
     }));
+  }
+
+  DrawerHeader _getDrawerHeader() {
+    return DrawerHeader(
+        child:
+            Column(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+      ListTile(
+        leading: CircleAvatar(
+          backgroundColor: Colors.grey[350],
+          foregroundImage: NetworkImage('${widget.image}'),
+          backgroundImage: AssetImage('assets/no-profile.png'),
+        ),
+        tileColor: Colors.transparent,
+        trailing: IconButton(
+          onPressed: () => {},
+          icon: Icon(Icons.more_vert),
+          tooltip: "More",
+        ),
+        title: Text(
+          widget.name,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontSize: 20),
+        ),
+        // subtitle: Text(widget.name),
+      ),
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          Column(
+            children: [
+              IconButton(
+                  onPressed: () => {}, tooltip: "Call", icon: Icon(Icons.call)),
+              Text("Call")
+            ],
+          ),
+          Column(
+            children: [
+              IconButton(
+                  onPressed: () => {},
+                  tooltip: "Video Call",
+                  icon: Icon(Icons.video_call_sharp)),
+              Text("Video")
+            ],
+          ),
+          Column(
+            children: [
+              IconButton(
+                  onPressed: () => {},
+                  tooltip: "Pinned Messages",
+                  icon: Icon(Icons.push_pin)),
+              Text("Pins")
+            ],
+          ),
+        ],
+      ),
+    ]));
   }
 
   Widget build(BuildContext context) {
@@ -197,9 +268,13 @@ class GroupChatPageState extends State<GroupChatPage> {
                               groupId: data['groupId'],
                               fromUser: data['fromUser'],
                               time: DateTime.parse(data['time']),
-                              content: data['content'],
-                              media: data['media'],
-                              replyTo: data['replyTo'],
+                              content: data['content'] == ''
+                                  ? null
+                                  : data['content'],
+                              media: data['media'] == '' ? null : data['media'],
+                              replyTo: data['replyTo'] == ''
+                                  ? null
+                                  : data['replyTo'],
                             );
                           }, onError: (error) {
                             print(error);
@@ -218,69 +293,7 @@ class GroupChatPageState extends State<GroupChatPage> {
                                     child: ListView(
                                   padding: EdgeInsets.zero,
                                   children: [
-                                    DrawerHeader(
-                                        child: Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceEvenly,
-                                            children: [
-                                          ListTile(
-                                            leading: CircleAvatar(
-                                              backgroundColor: Colors.grey[350],
-                                              foregroundImage: NetworkImage(
-                                                  '${widget.image}'),
-                                              backgroundImage: AssetImage(
-                                                  'assets/no-profile.png'),
-                                            ),
-                                            tileColor: Colors.transparent,
-                                            trailing: IconButton(
-                                              onPressed: () => {},
-                                              icon: Icon(Icons.more_vert),
-                                              tooltip: "More",
-                                            ),
-                                            title: Text(
-                                              widget.name,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: TextStyle(fontSize: 20),
-                                            ),
-                                            // subtitle: Text(widget.name),
-                                          ),
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceAround,
-                                            children: [
-                                              Column(
-                                                children: [
-                                                  IconButton(
-                                                      onPressed: () => {},
-                                                      tooltip: "Call",
-                                                      icon: Icon(Icons.call)),
-                                                  Text("Call")
-                                                ],
-                                              ),
-                                              Column(
-                                                children: [
-                                                  IconButton(
-                                                      onPressed: () => {},
-                                                      tooltip: "Video Call",
-                                                      icon: Icon(Icons
-                                                          .video_call_sharp)),
-                                                  Text("Video")
-                                                ],
-                                              ),
-                                              Column(
-                                                children: [
-                                                  IconButton(
-                                                      onPressed: () => {},
-                                                      tooltip:
-                                                          "Pinned Messages",
-                                                      icon:
-                                                          Icon(Icons.push_pin)),
-                                                  Text("Pins")
-                                                ],
-                                              ),
-                                            ],
-                                          ),
-                                        ])),
+                                    _getDrawerHeader(),
                                     ...groupMembersSnapshot.data!.map((User
                                             e) =>
                                         // for (var i = 0; i < widget.memberCount; i++)

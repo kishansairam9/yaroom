@@ -5,17 +5,51 @@
 -- User Table
 -------------
 CREATE TABLE Users (
-    userId BIGINT NOT NULL PRIMARY KEY,
+    userId TEXT NOT NULL PRIMARY KEY,
     name TEXT NOT NULL,
     about TEXT,
     profileImg TEXT
 );
 
+--------------
+-- DM Messages
+--------------
+CREATE TABLE ChatMessages (
+    msgId TEXT NOT NULL,
+    fromUser TEXT NOT NULL REFERENCES Users(userId),
+    toUser TEXT NOT NULL REFERENCES Users(userId),
+    time DATETIME NOT NULL,
+    content TEXT,
+    media TEXT,
+    replyTo TEXT,
+    CONSTRAINT hasData CHECK (content IS NOT NULL OR media IS NOT NULL)
+) AS ChatMessage;
+
+-- Indexes
+CREATE INDEX fromUserIndex ON ChatMessages(fromUser);
+CREATE INDEX toUserIndex ON ChatMessages(toUser);
+
+CREATE VIRTUAL TABLE ChatMessagesTextIndex USING fts5(msgId UNINDEXED, fromUser UNINDEXED, toUser UNINDEXED, time UNINDEXED, content, media UNINDEXED, replyTo UNINDEXED, content='ChatMessages', content_rowid='rowid', tokenize = 'porter unicode61');
+
+-- Triggers to keep index in sync
+CREATE TRIGGER ChatMessagesTextIndex_AI AFTER INSERT ON ChatMessages BEGIN
+    INSERT INTO ChatMessagesTextIndex(rowid, msgId, fromUser, toUser, time, content, media, replyTo) VALUES (new.rowid, new.msgId, new.fromUser, new.toUser, new.time, new.content, new.media, new.replyTo);
+END;
+
+CREATE TRIGGER ChatMessagesTextIndex_AD AFTER DELETE ON ChatMessages BEGIN
+    INSERT INTO ChatMessagesTextIndex(ChatMessagesTextIndex, rowid, msgId, fromUser, toUser, time, content, media, replyTo) VALUES ('delete', old.rowid, old.msgId, old.fromUser, old.toUser, old.time, old.content, old.media, old.replyTo);
+END;
+
+CREATE TRIGGER ChatMessagesTextIndex_AU AFTER UPDATE ON ChatMessages BEGIN
+    INSERT INTO ChatMessagesTextIndex(ChatMessagesTextIndex, rowid, msgId, fromUser, toUser, time, content, media, replyTo) VALUES ('delete', old.rowid, old.msgId, old.fromUser, old.toUser, old.time, old.content, old.media, old.replyTo);
+    INSERT INTO ChatMessagesTextIndex(rowid, msgId, fromUser, toUser, time, content, media, replyTo) VALUES (new.rowid, new.msgId, new.fromUser, new.toUser, new.time, new.content, new.media, new.replyTo);
+END;
+
 -------------
 -- Group Table
 -------------
 CREATE TABLE GroupDMs (
-    groupId BIGINT NOT NULL PRIMARY KEY,
+    groupId TEXT NOT NULL PRIMARY KEY,
     name TEXT NOT NULL,
     description TEXT,
     groupIcon TEXT
@@ -25,8 +59,8 @@ CREATE TABLE GroupDMs (
 -- User - Group Mapping Table
 -------------
 CREATE TABLE GroupUserMapping (
-    groupId BIGINT NOT NULL REFERENCES GroupDMs(groupId),
-    userId BIGINT NOT NULL REFERENCES Users(userId),
+    groupId TEXT NOT NULL REFERENCES GroupDMs(groupId),
+    userId TEXT NOT NULL REFERENCES Users(userId),
     PRIMARY KEY(groupId, userId)
 );
 
@@ -34,49 +68,15 @@ CREATE TABLE GroupUserMapping (
 -- Group Messages
 --------------
 CREATE TABLE GroupChatMessages (
-    msgId BIGINT NOT NULL PRIMARY KEY,
-    groupId BIGINT NOT NULL REFERENCES GroupDMs(groupId),
-    fromUser BIGINT NOT NULL REFERENCES Users(userId),
+    msgId TEXT NOT NULL PRIMARY KEY,
+    groupId TEXT NOT NULL REFERENCES GroupDMs(groupId),
+    fromUser TEXT NOT NULL REFERENCES Users(userId),
     time DATETIME NOT NULL,
     content TEXT,
     media TEXT,
-    replyTo BIGINT,
+    replyTo TEXT,
     CONSTRAINT hasData CHECK (content IS NOT NULL OR media IS NOT NULL)
 ) AS GroupChatMessage;
-
---------------
--- DM Messages
---------------
-CREATE TABLE ChatMessages (
-    msgId BIGINT NOT NULL PRIMARY KEY,
-    fromUser BIGINT NOT NULL REFERENCES Users(userId),
-    toUser BIGINT NOT NULL REFERENCES Users(userId),
-    time DATETIME NOT NULL,
-    content TEXT,
-    media TEXT,
-    replyTo BIGINT,
-    CONSTRAINT hasData CHECK (content IS NOT NULL OR media IS NOT NULL)
-) AS ChatMessage;
-
--- Indexes
-CREATE INDEX fromUserIndex ON ChatMessages(fromUser);
-CREATE INDEX toUserIndex ON ChatMessages(toUser);
-
-CREATE VIRTUAL TABLE ChatMessagesTextIndex USING fts5(fromUser UNINDEXED, toUser UNINDEXED, time UNINDEXED, content, media UNINDEXED, replyTo UNINDEXED, content='ChatMessages', content_rowid='msgId', tokenize = 'porter unicode61');
-
--- Triggers to keep index in sync
-CREATE TRIGGER ChatMessagesTextIndex_AI AFTER INSERT ON ChatMessages BEGIN
-    INSERT INTO ChatMessagesTextIndex(rowid, fromUser, toUser, time, content, media, replyTo) VALUES (new.msgId, new.fromUser, new.toUser, new.time, new.content, new.media, new.replyTo);
-END;
-
-CREATE TRIGGER ChatMessagesTextIndex_AD AFTER DELETE ON ChatMessages BEGIN
-    INSERT INTO ChatMessagesTextIndex(ChatMessagesTextIndex, rowid, fromUser, toUser, time, content, media, replyTo) VALUES ('delete', old.msgId, old.fromUser, old.toUser, old.time, old.content, old.media, old.replyTo);
-END;
-
-CREATE TRIGGER ChatMessagesTextIndex_AU AFTER UPDATE ON ChatMessages BEGIN
-    INSERT INTO ChatMessagesTextIndex(ChatMessagesTextIndex, rowid, fromUser, toUser, time, content, media, replyTo) VALUES ('delete', old.msgId, old.fromUser, old.toUser, old.time, old.content, old.media, old.replyTo);
-    INSERT INTO ChatMessagesTextIndex(rowid, fromUser, toUser, time, content, media, replyTo) VALUES (new.msgId, new.fromUser, new.toUser, new.time, new.content, new.media, new.replyTo);
-END;
 
 ----------
 ----------
@@ -87,7 +87,7 @@ END;
 -------------
 -- User Table
 -------------
-addUser(:userId AS BIGINT, :name AS TEXT, :about AS TEXT OR NULL, :profileImg AS TEXT OR NULL): INSERT into Users VALUES (:userId, :name, :about, :profileImg);
+addUser(:userId AS TEXT, :name AS TEXT, :about AS TEXT OR NULL, :profileImg AS TEXT OR NULL): INSERT into Users VALUES (:userId, :name, :about, :profileImg);
 
 getAllUsers: SELECT * FROM Users;
 getUsersNameMatching(:match AS TEXT): SELECT * FROM Users WHERE LOWER(name) LIKE '%' || :match || '%';
@@ -95,30 +95,30 @@ getUsersNameMatching(:match AS TEXT): SELECT * FROM Users WHERE LOWER(name) LIKE
 -------------
 -- Groups Table
 -------------
-createGroup(:groupId AS BIGINT, :name AS TEXT, :description AS TEXT OR NULL, :groupIcon AS TEXT OR NULL): INSERT into GroupDMs VALUES (:groupId, :name, :description, :groupIcon);
+createGroup(:groupId AS TEXT, :name AS TEXT, :description AS TEXT OR NULL, :groupIcon AS TEXT OR NULL): INSERT into GroupDMs VALUES (:groupId, :name, :description, :groupIcon);
 
 -------------
 -- Group-User Mapping Table
 -------------
-addUserToGroup(:groupId AS BIGINT, :userId AS BIGINT): INSERT into GroupUserMapping VALUES (:groupId, :userId);
+addUserToGroup(:groupId AS TEXT, :userId AS TEXT): INSERT into GroupUserMapping VALUES (:groupId, :userId);
 
 
-getGroupsOfUser(:userID AS BIGINT): SELECT DISTINCT G.groupId, G.name, G.description, G.groupIcon FROM GroupDMs AS G, GroupUserMapping as GM WHERE GM.userId == :userID;   
-getGroupMembers(:groupID AS BIGINT): SELECT U.* FROM Users AS U, (SELECT DISTINCT userId FROM GroupUserMapping AS GM WHERE GM.groupId == :groupID) AS UID WHERE U.userId == UID.userId; 
+getGroupsOfUser(:userID AS TEXT): SELECT DISTINCT G.groupId, G.name, G.description, G.groupIcon FROM GroupDMs AS G, GroupUserMapping as GM WHERE GM.userId == :userID;   
+getGroupMembers(:groupID AS TEXT): SELECT U.* FROM Users AS U, (SELECT DISTINCT userId FROM GroupUserMapping AS GM WHERE GM.groupId == :groupID) AS UID WHERE U.userId == UID.userId; 
 
 -------------
 -- Group Chat Messages Table
 -------------
-getGroupChat(:groupId AS BIGINT): SELECT * FROM GroupChatMessages WHERE groupId = :groupId ORDER BY msgId;
-insertGroupChatMessage(:msgId AS BIGINT, :groupId AS BIGINT, :fromUser AS BIGINT, :time AS DATETIME, :content AS TEXT OR NULL, :media AS TEXT OR NULL, :replyTo AS BIGINT OR NULL): INSERT INTO GroupChatMessages VALUES (:msgId, :groupId, :fromUser, :time, :content, :media, :replyTo);
+getGroupChat(:groupId AS TEXT): SELECT * FROM GroupChatMessages WHERE groupId = :groupId ORDER BY msgId;
+insertGroupChatMessage(:msgId AS TEXT, :groupId AS TEXT, :fromUser AS TEXT, :time AS DATETIME, :content AS TEXT OR NULL, :media AS TEXT OR NULL, :replyTo AS TEXT OR NULL): INSERT INTO GroupChatMessages VALUES (:msgId, :groupId, :fromUser, :time, :content, :media, :replyTo);
 
 --------------
 -- DM Messages
 --------------
 
-getUserChat(:otherUser AS BIGINT): SELECT * FROM ChatMessages WHERE fromUser = :otherUser OR toUser = :otherUser ORDER BY msgId;
+getUserChat(:otherUser AS TEXT): SELECT * FROM ChatMessages WHERE fromUser = :otherUser OR toUser = :otherUser ORDER BY msgId;
 
-insertMessage(:msgId AS BIGINT, :fromUser AS BIGINT, :toUser AS BIGINT, :time AS DATETIME, :content AS TEXT OR NULL, :media AS TEXT OR NULL, :replyTo AS BIGINT OR NULL): INSERT INTO ChatMessages VALUES (:msgId, :fromUser, :toUser, :time, :content, :media, :replyTo);
+insertMessage(:msgId AS TEXT, :fromUser AS TEXT, :toUser AS TEXT, :time AS DATETIME, :content AS TEXT OR NULL, :media AS TEXT OR NULL, :replyTo AS TEXT OR NULL): INSERT INTO ChatMessages VALUES (:msgId, :fromUser, :toUser, :time, :content, :media, :replyTo);
 
 -- Search
 -- Possible BUG! -> if 'uvw AND xyz' is search string then the query we execute searchs for match of both 'uvw' and 'xyz'

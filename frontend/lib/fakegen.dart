@@ -4,7 +4,7 @@ import 'dart:math';
 Function counterClosure(int start) {
   return () {
     start += 1;
-    return start;
+    return start.toString();
   };
 }
 

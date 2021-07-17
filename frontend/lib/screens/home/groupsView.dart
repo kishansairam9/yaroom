@@ -17,7 +17,9 @@ class GroupChatViewState extends State<GroupChatView> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder(
-        stream: RepositoryProvider.of<AppDb>(context).getGroupsOfUser(userID: RepositoryProvider.of<UserId>(context)).watch(),
+        stream: RepositoryProvider.of<AppDb>(context)
+            .getGroupsOfUser(userID: RepositoryProvider.of<UserId>(context))
+            .watch(),
         builder: (BuildContext context, AsyncSnapshot<List<GroupDM>> snapshot) {
           if (snapshot.hasData) {
             return ListView(
@@ -37,7 +39,7 @@ class GroupChatViewState extends State<GroupChatView> {
 }
 
 class GroupProfileTile extends StatefulWidget {
-  late final int groupId;
+  late final String groupId;
   late final String? image;
   late final String name;
 

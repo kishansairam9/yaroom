@@ -8,7 +8,7 @@ part of 'db.dart';
 
 // ignore_for_file: unnecessary_brace_in_string_interps, unnecessary_this
 class User extends DataClass implements Insertable<User> {
-  final int userId;
+  final String userId;
   final String name;
   final String? about;
   final String? profileImg;
@@ -17,7 +17,7 @@ class User extends DataClass implements Insertable<User> {
       {String? prefix}) {
     final effectivePrefix = prefix ?? '';
     return User(
-      userId: const IntType()
+      userId: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}userId'])!,
       name: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}name'])!,
@@ -30,7 +30,7 @@ class User extends DataClass implements Insertable<User> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['userId'] = Variable<int>(userId);
+    map['userId'] = Variable<String>(userId);
     map['name'] = Variable<String>(name);
     if (!nullToAbsent || about != null) {
       map['about'] = Variable<String?>(about);
@@ -57,7 +57,7 @@ class User extends DataClass implements Insertable<User> {
       {ValueSerializer? serializer}) {
     serializer ??= moorRuntimeOptions.defaultSerializer;
     return User(
-      userId: serializer.fromJson<int>(json['userId']),
+      userId: serializer.fromJson<String>(json['userId']),
       name: serializer.fromJson<String>(json['name']),
       about: serializer.fromJson<String?>(json['about']),
       profileImg: serializer.fromJson<String?>(json['profileImg']),
@@ -67,7 +67,7 @@ class User extends DataClass implements Insertable<User> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= moorRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'userId': serializer.toJson<int>(userId),
+      'userId': serializer.toJson<String>(userId),
       'name': serializer.toJson<String>(name),
       'about': serializer.toJson<String?>(about),
       'profileImg': serializer.toJson<String?>(profileImg),
@@ -75,7 +75,7 @@ class User extends DataClass implements Insertable<User> {
   }
 
   User copyWith(
-          {int? userId,
+          {String? userId,
           String? name,
           Value<String?> about = const Value.absent(),
           Value<String?> profileImg = const Value.absent()}) =>
@@ -110,7 +110,7 @@ class User extends DataClass implements Insertable<User> {
 }
 
 class UsersCompanion extends UpdateCompanion<User> {
-  final Value<int> userId;
+  final Value<String> userId;
   final Value<String> name;
   final Value<String?> about;
   final Value<String?> profileImg;
@@ -121,13 +121,14 @@ class UsersCompanion extends UpdateCompanion<User> {
     this.profileImg = const Value.absent(),
   });
   UsersCompanion.insert({
-    this.userId = const Value.absent(),
+    required String userId,
     required String name,
     this.about = const Value.absent(),
     this.profileImg = const Value.absent(),
-  }) : name = Value(name);
+  })  : userId = Value(userId),
+        name = Value(name);
   static Insertable<User> custom({
-    Expression<int>? userId,
+    Expression<String>? userId,
     Expression<String>? name,
     Expression<String?>? about,
     Expression<String?>? profileImg,
@@ -141,7 +142,7 @@ class UsersCompanion extends UpdateCompanion<User> {
   }
 
   UsersCompanion copyWith(
-      {Value<int>? userId,
+      {Value<String>? userId,
       Value<String>? name,
       Value<String?>? about,
       Value<String?>? profileImg}) {
@@ -157,7 +158,7 @@ class UsersCompanion extends UpdateCompanion<User> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (userId.present) {
-      map['userId'] = Variable<int>(userId.value);
+      map['userId'] = Variable<String>(userId.value);
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
@@ -188,10 +189,10 @@ class Users extends Table with TableInfo<Users, User> {
   final String? _alias;
   Users(this._db, [this._alias]);
   final VerificationMeta _userIdMeta = const VerificationMeta('userId');
-  late final GeneratedColumn<int?> userId = GeneratedColumn<int?>(
+  late final GeneratedColumn<String?> userId = GeneratedColumn<String?>(
       'userId', aliasedName, false,
-      typeName: 'INTEGER',
-      requiredDuringInsert: false,
+      typeName: 'TEXT',
+      requiredDuringInsert: true,
       $customConstraints: 'NOT NULL PRIMARY KEY');
   final VerificationMeta _nameMeta = const VerificationMeta('name');
   late final GeneratedColumn<String?> name = GeneratedColumn<String?>(
@@ -221,6 +222,8 @@ class Users extends Table with TableInfo<Users, User> {
     if (data.containsKey('userId')) {
       context.handle(_userIdMeta,
           userId.isAcceptableOrUnknown(data['userId']!, _userIdMeta));
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
     }
     if (data.containsKey('name')) {
       context.handle(
@@ -259,13 +262,13 @@ class Users extends Table with TableInfo<Users, User> {
 }
 
 class ChatMessage extends DataClass implements Insertable<ChatMessage> {
-  final int msgId;
-  final int fromUser;
-  final int toUser;
+  final String msgId;
+  final String fromUser;
+  final String toUser;
   final DateTime time;
   final String? content;
   final String? media;
-  final int? replyTo;
+  final String? replyTo;
   ChatMessage(
       {required this.msgId,
       required this.fromUser,
@@ -278,11 +281,11 @@ class ChatMessage extends DataClass implements Insertable<ChatMessage> {
       {String? prefix}) {
     final effectivePrefix = prefix ?? '';
     return ChatMessage(
-      msgId: const IntType()
+      msgId: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}msgId'])!,
-      fromUser: const IntType()
+      fromUser: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}fromUser'])!,
-      toUser: const IntType()
+      toUser: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}toUser'])!,
       time: const DateTimeType()
           .mapFromDatabaseResponse(data['${effectivePrefix}time'])!,
@@ -290,16 +293,16 @@ class ChatMessage extends DataClass implements Insertable<ChatMessage> {
           .mapFromDatabaseResponse(data['${effectivePrefix}content']),
       media: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}media']),
-      replyTo: const IntType()
+      replyTo: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}replyTo']),
     );
   }
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['msgId'] = Variable<int>(msgId);
-    map['fromUser'] = Variable<int>(fromUser);
-    map['toUser'] = Variable<int>(toUser);
+    map['msgId'] = Variable<String>(msgId);
+    map['fromUser'] = Variable<String>(fromUser);
+    map['toUser'] = Variable<String>(toUser);
     map['time'] = Variable<DateTime>(time);
     if (!nullToAbsent || content != null) {
       map['content'] = Variable<String?>(content);
@@ -308,7 +311,7 @@ class ChatMessage extends DataClass implements Insertable<ChatMessage> {
       map['media'] = Variable<String?>(media);
     }
     if (!nullToAbsent || replyTo != null) {
-      map['replyTo'] = Variable<int?>(replyTo);
+      map['replyTo'] = Variable<String?>(replyTo);
     }
     return map;
   }
@@ -334,37 +337,37 @@ class ChatMessage extends DataClass implements Insertable<ChatMessage> {
       {ValueSerializer? serializer}) {
     serializer ??= moorRuntimeOptions.defaultSerializer;
     return ChatMessage(
-      msgId: serializer.fromJson<int>(json['msgId']),
-      fromUser: serializer.fromJson<int>(json['fromUser']),
-      toUser: serializer.fromJson<int>(json['toUser']),
+      msgId: serializer.fromJson<String>(json['msgId']),
+      fromUser: serializer.fromJson<String>(json['fromUser']),
+      toUser: serializer.fromJson<String>(json['toUser']),
       time: serializer.fromJson<DateTime>(json['time']),
       content: serializer.fromJson<String?>(json['content']),
       media: serializer.fromJson<String?>(json['media']),
-      replyTo: serializer.fromJson<int?>(json['replyTo']),
+      replyTo: serializer.fromJson<String?>(json['replyTo']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= moorRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'msgId': serializer.toJson<int>(msgId),
-      'fromUser': serializer.toJson<int>(fromUser),
-      'toUser': serializer.toJson<int>(toUser),
+      'msgId': serializer.toJson<String>(msgId),
+      'fromUser': serializer.toJson<String>(fromUser),
+      'toUser': serializer.toJson<String>(toUser),
       'time': serializer.toJson<DateTime>(time),
       'content': serializer.toJson<String?>(content),
       'media': serializer.toJson<String?>(media),
-      'replyTo': serializer.toJson<int?>(replyTo),
+      'replyTo': serializer.toJson<String?>(replyTo),
     };
   }
 
   ChatMessage copyWith(
-          {int? msgId,
-          int? fromUser,
-          int? toUser,
+          {String? msgId,
+          String? fromUser,
+          String? toUser,
           DateTime? time,
           Value<String?> content = const Value.absent(),
           Value<String?> media = const Value.absent(),
-          Value<int?> replyTo = const Value.absent()}) =>
+          Value<String?> replyTo = const Value.absent()}) =>
       ChatMessage(
         msgId: msgId ?? this.msgId,
         fromUser: fromUser ?? this.fromUser,
@@ -413,13 +416,13 @@ class ChatMessage extends DataClass implements Insertable<ChatMessage> {
 }
 
 class ChatMessagesCompanion extends UpdateCompanion<ChatMessage> {
-  final Value<int> msgId;
-  final Value<int> fromUser;
-  final Value<int> toUser;
+  final Value<String> msgId;
+  final Value<String> fromUser;
+  final Value<String> toUser;
   final Value<DateTime> time;
   final Value<String?> content;
   final Value<String?> media;
-  final Value<int?> replyTo;
+  final Value<String?> replyTo;
   const ChatMessagesCompanion({
     this.msgId = const Value.absent(),
     this.fromUser = const Value.absent(),
@@ -430,24 +433,25 @@ class ChatMessagesCompanion extends UpdateCompanion<ChatMessage> {
     this.replyTo = const Value.absent(),
   });
   ChatMessagesCompanion.insert({
-    this.msgId = const Value.absent(),
-    required int fromUser,
-    required int toUser,
+    required String msgId,
+    required String fromUser,
+    required String toUser,
     required DateTime time,
     this.content = const Value.absent(),
     this.media = const Value.absent(),
     this.replyTo = const Value.absent(),
-  })  : fromUser = Value(fromUser),
+  })  : msgId = Value(msgId),
+        fromUser = Value(fromUser),
         toUser = Value(toUser),
         time = Value(time);
   static Insertable<ChatMessage> custom({
-    Expression<int>? msgId,
-    Expression<int>? fromUser,
-    Expression<int>? toUser,
+    Expression<String>? msgId,
+    Expression<String>? fromUser,
+    Expression<String>? toUser,
     Expression<DateTime>? time,
     Expression<String?>? content,
     Expression<String?>? media,
-    Expression<int?>? replyTo,
+    Expression<String?>? replyTo,
   }) {
     return RawValuesInsertable({
       if (msgId != null) 'msgId': msgId,
@@ -461,13 +465,13 @@ class ChatMessagesCompanion extends UpdateCompanion<ChatMessage> {
   }
 
   ChatMessagesCompanion copyWith(
-      {Value<int>? msgId,
-      Value<int>? fromUser,
-      Value<int>? toUser,
+      {Value<String>? msgId,
+      Value<String>? fromUser,
+      Value<String>? toUser,
       Value<DateTime>? time,
       Value<String?>? content,
       Value<String?>? media,
-      Value<int?>? replyTo}) {
+      Value<String?>? replyTo}) {
     return ChatMessagesCompanion(
       msgId: msgId ?? this.msgId,
       fromUser: fromUser ?? this.fromUser,
@@ -483,13 +487,13 @@ class ChatMessagesCompanion extends UpdateCompanion<ChatMessage> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (msgId.present) {
-      map['msgId'] = Variable<int>(msgId.value);
+      map['msgId'] = Variable<String>(msgId.value);
     }
     if (fromUser.present) {
-      map['fromUser'] = Variable<int>(fromUser.value);
+      map['fromUser'] = Variable<String>(fromUser.value);
     }
     if (toUser.present) {
-      map['toUser'] = Variable<int>(toUser.value);
+      map['toUser'] = Variable<String>(toUser.value);
     }
     if (time.present) {
       map['time'] = Variable<DateTime>(time.value);
@@ -501,7 +505,7 @@ class ChatMessagesCompanion extends UpdateCompanion<ChatMessage> {
       map['media'] = Variable<String?>(media.value);
     }
     if (replyTo.present) {
-      map['replyTo'] = Variable<int?>(replyTo.value);
+      map['replyTo'] = Variable<String?>(replyTo.value);
     }
     return map;
   }
@@ -526,21 +530,21 @@ class ChatMessages extends Table with TableInfo<ChatMessages, ChatMessage> {
   final String? _alias;
   ChatMessages(this._db, [this._alias]);
   final VerificationMeta _msgIdMeta = const VerificationMeta('msgId');
-  late final GeneratedColumn<int?> msgId = GeneratedColumn<int?>(
+  late final GeneratedColumn<String?> msgId = GeneratedColumn<String?>(
       'msgId', aliasedName, false,
-      typeName: 'INTEGER',
-      requiredDuringInsert: false,
-      $customConstraints: 'NOT NULL PRIMARY KEY');
+      typeName: 'TEXT',
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL');
   final VerificationMeta _fromUserMeta = const VerificationMeta('fromUser');
-  late final GeneratedColumn<int?> fromUser = GeneratedColumn<int?>(
+  late final GeneratedColumn<String?> fromUser = GeneratedColumn<String?>(
       'fromUser', aliasedName, false,
-      typeName: 'INTEGER',
+      typeName: 'TEXT',
       requiredDuringInsert: true,
       $customConstraints: 'NOT NULL REFERENCES Users(userId)');
   final VerificationMeta _toUserMeta = const VerificationMeta('toUser');
-  late final GeneratedColumn<int?> toUser = GeneratedColumn<int?>(
+  late final GeneratedColumn<String?> toUser = GeneratedColumn<String?>(
       'toUser', aliasedName, false,
-      typeName: 'INTEGER',
+      typeName: 'TEXT',
       requiredDuringInsert: true,
       $customConstraints: 'NOT NULL REFERENCES Users(userId)');
   final VerificationMeta _timeMeta = const VerificationMeta('time');
@@ -558,9 +562,9 @@ class ChatMessages extends Table with TableInfo<ChatMessages, ChatMessage> {
       'media', aliasedName, true,
       typeName: 'TEXT', requiredDuringInsert: false, $customConstraints: '');
   final VerificationMeta _replyToMeta = const VerificationMeta('replyTo');
-  late final GeneratedColumn<int?> replyTo = GeneratedColumn<int?>(
+  late final GeneratedColumn<String?> replyTo = GeneratedColumn<String?>(
       'replyTo', aliasedName, true,
-      typeName: 'INTEGER', requiredDuringInsert: false, $customConstraints: '');
+      typeName: 'TEXT', requiredDuringInsert: false, $customConstraints: '');
   @override
   List<GeneratedColumn> get $columns =>
       [msgId, fromUser, toUser, time, content, media, replyTo];
@@ -576,6 +580,8 @@ class ChatMessages extends Table with TableInfo<ChatMessages, ChatMessage> {
     if (data.containsKey('msgId')) {
       context.handle(
           _msgIdMeta, msgId.isAcceptableOrUnknown(data['msgId']!, _msgIdMeta));
+    } else if (isInserting) {
+      context.missing(_msgIdMeta);
     }
     if (data.containsKey('fromUser')) {
       context.handle(_fromUserMeta,
@@ -611,7 +617,7 @@ class ChatMessages extends Table with TableInfo<ChatMessages, ChatMessage> {
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {msgId};
+  Set<GeneratedColumn> get $primaryKey => <GeneratedColumn>{};
   @override
   ChatMessage map(Map<String, dynamic> data, {String? tablePrefix}) {
     return ChatMessage.fromData(data, _db,
@@ -633,6 +639,7 @@ class ChatMessages extends Table with TableInfo<ChatMessages, ChatMessage> {
 
 class ChatMessagesTextIndexData extends DataClass
     implements Insertable<ChatMessagesTextIndexData> {
+  final String msgId;
   final String fromUser;
   final String toUser;
   final String time;
@@ -640,7 +647,8 @@ class ChatMessagesTextIndexData extends DataClass
   final String media;
   final String replyTo;
   ChatMessagesTextIndexData(
-      {required this.fromUser,
+      {required this.msgId,
+      required this.fromUser,
       required this.toUser,
       required this.time,
       required this.content,
@@ -651,6 +659,8 @@ class ChatMessagesTextIndexData extends DataClass
       {String? prefix}) {
     final effectivePrefix = prefix ?? '';
     return ChatMessagesTextIndexData(
+      msgId: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}msgId'])!,
       fromUser: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}fromUser'])!,
       toUser: const StringType()
@@ -668,6 +678,7 @@ class ChatMessagesTextIndexData extends DataClass
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    map['msgId'] = Variable<String>(msgId);
     map['fromUser'] = Variable<String>(fromUser);
     map['toUser'] = Variable<String>(toUser);
     map['time'] = Variable<String>(time);
@@ -679,6 +690,7 @@ class ChatMessagesTextIndexData extends DataClass
 
   ChatMessagesTextIndexCompanion toCompanion(bool nullToAbsent) {
     return ChatMessagesTextIndexCompanion(
+      msgId: Value(msgId),
       fromUser: Value(fromUser),
       toUser: Value(toUser),
       time: Value(time),
@@ -692,6 +704,7 @@ class ChatMessagesTextIndexData extends DataClass
       {ValueSerializer? serializer}) {
     serializer ??= moorRuntimeOptions.defaultSerializer;
     return ChatMessagesTextIndexData(
+      msgId: serializer.fromJson<String>(json['msgId']),
       fromUser: serializer.fromJson<String>(json['fromUser']),
       toUser: serializer.fromJson<String>(json['toUser']),
       time: serializer.fromJson<String>(json['time']),
@@ -704,6 +717,7 @@ class ChatMessagesTextIndexData extends DataClass
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= moorRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
+      'msgId': serializer.toJson<String>(msgId),
       'fromUser': serializer.toJson<String>(fromUser),
       'toUser': serializer.toJson<String>(toUser),
       'time': serializer.toJson<String>(time),
@@ -714,13 +728,15 @@ class ChatMessagesTextIndexData extends DataClass
   }
 
   ChatMessagesTextIndexData copyWith(
-          {String? fromUser,
+          {String? msgId,
+          String? fromUser,
           String? toUser,
           String? time,
           String? content,
           String? media,
           String? replyTo}) =>
       ChatMessagesTextIndexData(
+        msgId: msgId ?? this.msgId,
         fromUser: fromUser ?? this.fromUser,
         toUser: toUser ?? this.toUser,
         time: time ?? this.time,
@@ -731,6 +747,7 @@ class ChatMessagesTextIndexData extends DataClass
   @override
   String toString() {
     return (StringBuffer('ChatMessagesTextIndexData(')
+          ..write('msgId: $msgId, ')
           ..write('fromUser: $fromUser, ')
           ..write('toUser: $toUser, ')
           ..write('time: $time, ')
@@ -743,17 +760,20 @@ class ChatMessagesTextIndexData extends DataClass
 
   @override
   int get hashCode => $mrjf($mrjc(
-      fromUser.hashCode,
+      msgId.hashCode,
       $mrjc(
-          toUser.hashCode,
+          fromUser.hashCode,
           $mrjc(
-              time.hashCode,
-              $mrjc(content.hashCode,
-                  $mrjc(media.hashCode, replyTo.hashCode))))));
+              toUser.hashCode,
+              $mrjc(
+                  time.hashCode,
+                  $mrjc(content.hashCode,
+                      $mrjc(media.hashCode, replyTo.hashCode)))))));
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is ChatMessagesTextIndexData &&
+          other.msgId == this.msgId &&
           other.fromUser == this.fromUser &&
           other.toUser == this.toUser &&
           other.time == this.time &&
@@ -764,6 +784,7 @@ class ChatMessagesTextIndexData extends DataClass
 
 class ChatMessagesTextIndexCompanion
     extends UpdateCompanion<ChatMessagesTextIndexData> {
+  final Value<String> msgId;
   final Value<String> fromUser;
   final Value<String> toUser;
   final Value<String> time;
@@ -771,6 +792,7 @@ class ChatMessagesTextIndexCompanion
   final Value<String> media;
   final Value<String> replyTo;
   const ChatMessagesTextIndexCompanion({
+    this.msgId = const Value.absent(),
     this.fromUser = const Value.absent(),
     this.toUser = const Value.absent(),
     this.time = const Value.absent(),
@@ -779,19 +801,22 @@ class ChatMessagesTextIndexCompanion
     this.replyTo = const Value.absent(),
   });
   ChatMessagesTextIndexCompanion.insert({
+    required String msgId,
     required String fromUser,
     required String toUser,
     required String time,
     required String content,
     required String media,
     required String replyTo,
-  })  : fromUser = Value(fromUser),
+  })  : msgId = Value(msgId),
+        fromUser = Value(fromUser),
         toUser = Value(toUser),
         time = Value(time),
         content = Value(content),
         media = Value(media),
         replyTo = Value(replyTo);
   static Insertable<ChatMessagesTextIndexData> custom({
+    Expression<String>? msgId,
     Expression<String>? fromUser,
     Expression<String>? toUser,
     Expression<String>? time,
@@ -800,6 +825,7 @@ class ChatMessagesTextIndexCompanion
     Expression<String>? replyTo,
   }) {
     return RawValuesInsertable({
+      if (msgId != null) 'msgId': msgId,
       if (fromUser != null) 'fromUser': fromUser,
       if (toUser != null) 'toUser': toUser,
       if (time != null) 'time': time,
@@ -810,13 +836,15 @@ class ChatMessagesTextIndexCompanion
   }
 
   ChatMessagesTextIndexCompanion copyWith(
-      {Value<String>? fromUser,
+      {Value<String>? msgId,
+      Value<String>? fromUser,
       Value<String>? toUser,
       Value<String>? time,
       Value<String>? content,
       Value<String>? media,
       Value<String>? replyTo}) {
     return ChatMessagesTextIndexCompanion(
+      msgId: msgId ?? this.msgId,
       fromUser: fromUser ?? this.fromUser,
       toUser: toUser ?? this.toUser,
       time: time ?? this.time,
@@ -829,6 +857,9 @@ class ChatMessagesTextIndexCompanion
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    if (msgId.present) {
+      map['msgId'] = Variable<String>(msgId.value);
+    }
     if (fromUser.present) {
       map['fromUser'] = Variable<String>(fromUser.value);
     }
@@ -853,6 +884,7 @@ class ChatMessagesTextIndexCompanion
   @override
   String toString() {
     return (StringBuffer('ChatMessagesTextIndexCompanion(')
+          ..write('msgId: $msgId, ')
           ..write('fromUser: $fromUser, ')
           ..write('toUser: $toUser, ')
           ..write('time: $time, ')
@@ -871,6 +903,10 @@ class ChatMessagesTextIndex extends Table
   final GeneratedDatabase _db;
   final String? _alias;
   ChatMessagesTextIndex(this._db, [this._alias]);
+  final VerificationMeta _msgIdMeta = const VerificationMeta('msgId');
+  late final GeneratedColumn<String?> msgId = GeneratedColumn<String?>(
+      'msgId', aliasedName, false,
+      typeName: 'TEXT', requiredDuringInsert: true, $customConstraints: '');
   final VerificationMeta _fromUserMeta = const VerificationMeta('fromUser');
   late final GeneratedColumn<String?> fromUser = GeneratedColumn<String?>(
       'fromUser', aliasedName, false,
@@ -897,7 +933,7 @@ class ChatMessagesTextIndex extends Table
       typeName: 'TEXT', requiredDuringInsert: true, $customConstraints: '');
   @override
   List<GeneratedColumn> get $columns =>
-      [fromUser, toUser, time, content, media, replyTo];
+      [msgId, fromUser, toUser, time, content, media, replyTo];
   @override
   String get aliasedName => _alias ?? 'ChatMessagesTextIndex';
   @override
@@ -908,6 +944,12 @@ class ChatMessagesTextIndex extends Table
       {bool isInserting = false}) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
+    if (data.containsKey('msgId')) {
+      context.handle(
+          _msgIdMeta, msgId.isAcceptableOrUnknown(data['msgId']!, _msgIdMeta));
+    } else if (isInserting) {
+      context.missing(_msgIdMeta);
+    }
     if (data.containsKey('fromUser')) {
       context.handle(_fromUserMeta,
           fromUser.isAcceptableOrUnknown(data['fromUser']!, _fromUserMeta));
@@ -965,11 +1007,11 @@ class ChatMessagesTextIndex extends Table
   bool get dontWriteConstraints => true;
   @override
   String get moduleAndArgs =>
-      'fts5(fromUser UNINDEXED, toUser UNINDEXED, time UNINDEXED, content, media UNINDEXED, replyTo UNINDEXED, content=\'ChatMessages\', content_rowid=\'msgId\', tokenize = \'porter unicode61\')';
+      'fts5(msgId UNINDEXED, fromUser UNINDEXED, toUser UNINDEXED, time UNINDEXED, content, media UNINDEXED, replyTo UNINDEXED, content=\'ChatMessages\', content_rowid=\'rowid\', tokenize = \'porter unicode61\')';
 }
 
 class GroupDM extends DataClass implements Insertable<GroupDM> {
-  final int groupId;
+  final String groupId;
   final String name;
   final String? description;
   final String? groupIcon;
@@ -982,7 +1024,7 @@ class GroupDM extends DataClass implements Insertable<GroupDM> {
       {String? prefix}) {
     final effectivePrefix = prefix ?? '';
     return GroupDM(
-      groupId: const IntType()
+      groupId: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}groupId'])!,
       name: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}name'])!,
@@ -995,7 +1037,7 @@ class GroupDM extends DataClass implements Insertable<GroupDM> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['groupId'] = Variable<int>(groupId);
+    map['groupId'] = Variable<String>(groupId);
     map['name'] = Variable<String>(name);
     if (!nullToAbsent || description != null) {
       map['description'] = Variable<String?>(description);
@@ -1023,7 +1065,7 @@ class GroupDM extends DataClass implements Insertable<GroupDM> {
       {ValueSerializer? serializer}) {
     serializer ??= moorRuntimeOptions.defaultSerializer;
     return GroupDM(
-      groupId: serializer.fromJson<int>(json['groupId']),
+      groupId: serializer.fromJson<String>(json['groupId']),
       name: serializer.fromJson<String>(json['name']),
       description: serializer.fromJson<String?>(json['description']),
       groupIcon: serializer.fromJson<String?>(json['groupIcon']),
@@ -1033,7 +1075,7 @@ class GroupDM extends DataClass implements Insertable<GroupDM> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= moorRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'groupId': serializer.toJson<int>(groupId),
+      'groupId': serializer.toJson<String>(groupId),
       'name': serializer.toJson<String>(name),
       'description': serializer.toJson<String?>(description),
       'groupIcon': serializer.toJson<String?>(groupIcon),
@@ -1041,7 +1083,7 @@ class GroupDM extends DataClass implements Insertable<GroupDM> {
   }
 
   GroupDM copyWith(
-          {int? groupId,
+          {String? groupId,
           String? name,
           Value<String?> description = const Value.absent(),
           Value<String?> groupIcon = const Value.absent()}) =>
@@ -1076,7 +1118,7 @@ class GroupDM extends DataClass implements Insertable<GroupDM> {
 }
 
 class GroupDMsCompanion extends UpdateCompanion<GroupDM> {
-  final Value<int> groupId;
+  final Value<String> groupId;
   final Value<String> name;
   final Value<String?> description;
   final Value<String?> groupIcon;
@@ -1087,13 +1129,14 @@ class GroupDMsCompanion extends UpdateCompanion<GroupDM> {
     this.groupIcon = const Value.absent(),
   });
   GroupDMsCompanion.insert({
-    this.groupId = const Value.absent(),
+    required String groupId,
     required String name,
     this.description = const Value.absent(),
     this.groupIcon = const Value.absent(),
-  }) : name = Value(name);
+  })  : groupId = Value(groupId),
+        name = Value(name);
   static Insertable<GroupDM> custom({
-    Expression<int>? groupId,
+    Expression<String>? groupId,
     Expression<String>? name,
     Expression<String?>? description,
     Expression<String?>? groupIcon,
@@ -1107,7 +1150,7 @@ class GroupDMsCompanion extends UpdateCompanion<GroupDM> {
   }
 
   GroupDMsCompanion copyWith(
-      {Value<int>? groupId,
+      {Value<String>? groupId,
       Value<String>? name,
       Value<String?>? description,
       Value<String?>? groupIcon}) {
@@ -1123,7 +1166,7 @@ class GroupDMsCompanion extends UpdateCompanion<GroupDM> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (groupId.present) {
-      map['groupId'] = Variable<int>(groupId.value);
+      map['groupId'] = Variable<String>(groupId.value);
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
@@ -1154,10 +1197,10 @@ class GroupDMs extends Table with TableInfo<GroupDMs, GroupDM> {
   final String? _alias;
   GroupDMs(this._db, [this._alias]);
   final VerificationMeta _groupIdMeta = const VerificationMeta('groupId');
-  late final GeneratedColumn<int?> groupId = GeneratedColumn<int?>(
+  late final GeneratedColumn<String?> groupId = GeneratedColumn<String?>(
       'groupId', aliasedName, false,
-      typeName: 'INTEGER',
-      requiredDuringInsert: false,
+      typeName: 'TEXT',
+      requiredDuringInsert: true,
       $customConstraints: 'NOT NULL PRIMARY KEY');
   final VerificationMeta _nameMeta = const VerificationMeta('name');
   late final GeneratedColumn<String?> name = GeneratedColumn<String?>(
@@ -1188,6 +1231,8 @@ class GroupDMs extends Table with TableInfo<GroupDMs, GroupDM> {
     if (data.containsKey('groupId')) {
       context.handle(_groupIdMeta,
           groupId.isAcceptableOrUnknown(data['groupId']!, _groupIdMeta));
+    } else if (isInserting) {
+      context.missing(_groupIdMeta);
     }
     if (data.containsKey('name')) {
       context.handle(
@@ -1227,25 +1272,25 @@ class GroupDMs extends Table with TableInfo<GroupDMs, GroupDM> {
 
 class GroupUserMappingData extends DataClass
     implements Insertable<GroupUserMappingData> {
-  final int groupId;
-  final int userId;
+  final String groupId;
+  final String userId;
   GroupUserMappingData({required this.groupId, required this.userId});
   factory GroupUserMappingData.fromData(
       Map<String, dynamic> data, GeneratedDatabase db,
       {String? prefix}) {
     final effectivePrefix = prefix ?? '';
     return GroupUserMappingData(
-      groupId: const IntType()
+      groupId: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}groupId'])!,
-      userId: const IntType()
+      userId: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}userId'])!,
     );
   }
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['groupId'] = Variable<int>(groupId);
-    map['userId'] = Variable<int>(userId);
+    map['groupId'] = Variable<String>(groupId);
+    map['userId'] = Variable<String>(userId);
     return map;
   }
 
@@ -1260,20 +1305,20 @@ class GroupUserMappingData extends DataClass
       {ValueSerializer? serializer}) {
     serializer ??= moorRuntimeOptions.defaultSerializer;
     return GroupUserMappingData(
-      groupId: serializer.fromJson<int>(json['groupId']),
-      userId: serializer.fromJson<int>(json['userId']),
+      groupId: serializer.fromJson<String>(json['groupId']),
+      userId: serializer.fromJson<String>(json['userId']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= moorRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'groupId': serializer.toJson<int>(groupId),
-      'userId': serializer.toJson<int>(userId),
+      'groupId': serializer.toJson<String>(groupId),
+      'userId': serializer.toJson<String>(userId),
     };
   }
 
-  GroupUserMappingData copyWith({int? groupId, int? userId}) =>
+  GroupUserMappingData copyWith({String? groupId, String? userId}) =>
       GroupUserMappingData(
         groupId: groupId ?? this.groupId,
         userId: userId ?? this.userId,
@@ -1298,20 +1343,20 @@ class GroupUserMappingData extends DataClass
 }
 
 class GroupUserMappingCompanion extends UpdateCompanion<GroupUserMappingData> {
-  final Value<int> groupId;
-  final Value<int> userId;
+  final Value<String> groupId;
+  final Value<String> userId;
   const GroupUserMappingCompanion({
     this.groupId = const Value.absent(),
     this.userId = const Value.absent(),
   });
   GroupUserMappingCompanion.insert({
-    required int groupId,
-    required int userId,
+    required String groupId,
+    required String userId,
   })  : groupId = Value(groupId),
         userId = Value(userId);
   static Insertable<GroupUserMappingData> custom({
-    Expression<int>? groupId,
-    Expression<int>? userId,
+    Expression<String>? groupId,
+    Expression<String>? userId,
   }) {
     return RawValuesInsertable({
       if (groupId != null) 'groupId': groupId,
@@ -1320,7 +1365,7 @@ class GroupUserMappingCompanion extends UpdateCompanion<GroupUserMappingData> {
   }
 
   GroupUserMappingCompanion copyWith(
-      {Value<int>? groupId, Value<int>? userId}) {
+      {Value<String>? groupId, Value<String>? userId}) {
     return GroupUserMappingCompanion(
       groupId: groupId ?? this.groupId,
       userId: userId ?? this.userId,
@@ -1331,10 +1376,10 @@ class GroupUserMappingCompanion extends UpdateCompanion<GroupUserMappingData> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (groupId.present) {
-      map['groupId'] = Variable<int>(groupId.value);
+      map['groupId'] = Variable<String>(groupId.value);
     }
     if (userId.present) {
-      map['userId'] = Variable<int>(userId.value);
+      map['userId'] = Variable<String>(userId.value);
     }
     return map;
   }
@@ -1355,15 +1400,15 @@ class GroupUserMapping extends Table
   final String? _alias;
   GroupUserMapping(this._db, [this._alias]);
   final VerificationMeta _groupIdMeta = const VerificationMeta('groupId');
-  late final GeneratedColumn<int?> groupId = GeneratedColumn<int?>(
+  late final GeneratedColumn<String?> groupId = GeneratedColumn<String?>(
       'groupId', aliasedName, false,
-      typeName: 'INTEGER',
+      typeName: 'TEXT',
       requiredDuringInsert: true,
       $customConstraints: 'NOT NULL REFERENCES GroupDMs(groupId)');
   final VerificationMeta _userIdMeta = const VerificationMeta('userId');
-  late final GeneratedColumn<int?> userId = GeneratedColumn<int?>(
+  late final GeneratedColumn<String?> userId = GeneratedColumn<String?>(
       'userId', aliasedName, false,
-      typeName: 'INTEGER',
+      typeName: 'TEXT',
       requiredDuringInsert: true,
       $customConstraints: 'NOT NULL REFERENCES Users(userId)');
   @override
@@ -1414,13 +1459,13 @@ class GroupUserMapping extends Table
 
 class GroupChatMessage extends DataClass
     implements Insertable<GroupChatMessage> {
-  final int msgId;
-  final int groupId;
-  final int fromUser;
+  final String msgId;
+  final String groupId;
+  final String fromUser;
   final DateTime time;
   final String? content;
   final String? media;
-  final int? replyTo;
+  final String? replyTo;
   GroupChatMessage(
       {required this.msgId,
       required this.groupId,
@@ -1434,11 +1479,11 @@ class GroupChatMessage extends DataClass
       {String? prefix}) {
     final effectivePrefix = prefix ?? '';
     return GroupChatMessage(
-      msgId: const IntType()
+      msgId: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}msgId'])!,
-      groupId: const IntType()
+      groupId: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}groupId'])!,
-      fromUser: const IntType()
+      fromUser: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}fromUser'])!,
       time: const DateTimeType()
           .mapFromDatabaseResponse(data['${effectivePrefix}time'])!,
@@ -1446,16 +1491,16 @@ class GroupChatMessage extends DataClass
           .mapFromDatabaseResponse(data['${effectivePrefix}content']),
       media: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}media']),
-      replyTo: const IntType()
+      replyTo: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}replyTo']),
     );
   }
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['msgId'] = Variable<int>(msgId);
-    map['groupId'] = Variable<int>(groupId);
-    map['fromUser'] = Variable<int>(fromUser);
+    map['msgId'] = Variable<String>(msgId);
+    map['groupId'] = Variable<String>(groupId);
+    map['fromUser'] = Variable<String>(fromUser);
     map['time'] = Variable<DateTime>(time);
     if (!nullToAbsent || content != null) {
       map['content'] = Variable<String?>(content);
@@ -1464,7 +1509,7 @@ class GroupChatMessage extends DataClass
       map['media'] = Variable<String?>(media);
     }
     if (!nullToAbsent || replyTo != null) {
-      map['replyTo'] = Variable<int?>(replyTo);
+      map['replyTo'] = Variable<String?>(replyTo);
     }
     return map;
   }
@@ -1490,37 +1535,37 @@ class GroupChatMessage extends DataClass
       {ValueSerializer? serializer}) {
     serializer ??= moorRuntimeOptions.defaultSerializer;
     return GroupChatMessage(
-      msgId: serializer.fromJson<int>(json['msgId']),
-      groupId: serializer.fromJson<int>(json['groupId']),
-      fromUser: serializer.fromJson<int>(json['fromUser']),
+      msgId: serializer.fromJson<String>(json['msgId']),
+      groupId: serializer.fromJson<String>(json['groupId']),
+      fromUser: serializer.fromJson<String>(json['fromUser']),
       time: serializer.fromJson<DateTime>(json['time']),
       content: serializer.fromJson<String?>(json['content']),
       media: serializer.fromJson<String?>(json['media']),
-      replyTo: serializer.fromJson<int?>(json['replyTo']),
+      replyTo: serializer.fromJson<String?>(json['replyTo']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= moorRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'msgId': serializer.toJson<int>(msgId),
-      'groupId': serializer.toJson<int>(groupId),
-      'fromUser': serializer.toJson<int>(fromUser),
+      'msgId': serializer.toJson<String>(msgId),
+      'groupId': serializer.toJson<String>(groupId),
+      'fromUser': serializer.toJson<String>(fromUser),
       'time': serializer.toJson<DateTime>(time),
       'content': serializer.toJson<String?>(content),
       'media': serializer.toJson<String?>(media),
-      'replyTo': serializer.toJson<int?>(replyTo),
+      'replyTo': serializer.toJson<String?>(replyTo),
     };
   }
 
   GroupChatMessage copyWith(
-          {int? msgId,
-          int? groupId,
-          int? fromUser,
+          {String? msgId,
+          String? groupId,
+          String? fromUser,
           DateTime? time,
           Value<String?> content = const Value.absent(),
           Value<String?> media = const Value.absent(),
-          Value<int?> replyTo = const Value.absent()}) =>
+          Value<String?> replyTo = const Value.absent()}) =>
       GroupChatMessage(
         msgId: msgId ?? this.msgId,
         groupId: groupId ?? this.groupId,
@@ -1569,13 +1614,13 @@ class GroupChatMessage extends DataClass
 }
 
 class GroupChatMessagesCompanion extends UpdateCompanion<GroupChatMessage> {
-  final Value<int> msgId;
-  final Value<int> groupId;
-  final Value<int> fromUser;
+  final Value<String> msgId;
+  final Value<String> groupId;
+  final Value<String> fromUser;
   final Value<DateTime> time;
   final Value<String?> content;
   final Value<String?> media;
-  final Value<int?> replyTo;
+  final Value<String?> replyTo;
   const GroupChatMessagesCompanion({
     this.msgId = const Value.absent(),
     this.groupId = const Value.absent(),
@@ -1586,24 +1631,25 @@ class GroupChatMessagesCompanion extends UpdateCompanion<GroupChatMessage> {
     this.replyTo = const Value.absent(),
   });
   GroupChatMessagesCompanion.insert({
-    this.msgId = const Value.absent(),
-    required int groupId,
-    required int fromUser,
+    required String msgId,
+    required String groupId,
+    required String fromUser,
     required DateTime time,
     this.content = const Value.absent(),
     this.media = const Value.absent(),
     this.replyTo = const Value.absent(),
-  })  : groupId = Value(groupId),
+  })  : msgId = Value(msgId),
+        groupId = Value(groupId),
         fromUser = Value(fromUser),
         time = Value(time);
   static Insertable<GroupChatMessage> custom({
-    Expression<int>? msgId,
-    Expression<int>? groupId,
-    Expression<int>? fromUser,
+    Expression<String>? msgId,
+    Expression<String>? groupId,
+    Expression<String>? fromUser,
     Expression<DateTime>? time,
     Expression<String?>? content,
     Expression<String?>? media,
-    Expression<int?>? replyTo,
+    Expression<String?>? replyTo,
   }) {
     return RawValuesInsertable({
       if (msgId != null) 'msgId': msgId,
@@ -1617,13 +1663,13 @@ class GroupChatMessagesCompanion extends UpdateCompanion<GroupChatMessage> {
   }
 
   GroupChatMessagesCompanion copyWith(
-      {Value<int>? msgId,
-      Value<int>? groupId,
-      Value<int>? fromUser,
+      {Value<String>? msgId,
+      Value<String>? groupId,
+      Value<String>? fromUser,
       Value<DateTime>? time,
       Value<String?>? content,
       Value<String?>? media,
-      Value<int?>? replyTo}) {
+      Value<String?>? replyTo}) {
     return GroupChatMessagesCompanion(
       msgId: msgId ?? this.msgId,
       groupId: groupId ?? this.groupId,
@@ -1639,13 +1685,13 @@ class GroupChatMessagesCompanion extends UpdateCompanion<GroupChatMessage> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (msgId.present) {
-      map['msgId'] = Variable<int>(msgId.value);
+      map['msgId'] = Variable<String>(msgId.value);
     }
     if (groupId.present) {
-      map['groupId'] = Variable<int>(groupId.value);
+      map['groupId'] = Variable<String>(groupId.value);
     }
     if (fromUser.present) {
-      map['fromUser'] = Variable<int>(fromUser.value);
+      map['fromUser'] = Variable<String>(fromUser.value);
     }
     if (time.present) {
       map['time'] = Variable<DateTime>(time.value);
@@ -1657,7 +1703,7 @@ class GroupChatMessagesCompanion extends UpdateCompanion<GroupChatMessage> {
       map['media'] = Variable<String?>(media.value);
     }
     if (replyTo.present) {
-      map['replyTo'] = Variable<int?>(replyTo.value);
+      map['replyTo'] = Variable<String?>(replyTo.value);
     }
     return map;
   }
@@ -1683,21 +1729,21 @@ class GroupChatMessages extends Table
   final String? _alias;
   GroupChatMessages(this._db, [this._alias]);
   final VerificationMeta _msgIdMeta = const VerificationMeta('msgId');
-  late final GeneratedColumn<int?> msgId = GeneratedColumn<int?>(
+  late final GeneratedColumn<String?> msgId = GeneratedColumn<String?>(
       'msgId', aliasedName, false,
-      typeName: 'INTEGER',
-      requiredDuringInsert: false,
+      typeName: 'TEXT',
+      requiredDuringInsert: true,
       $customConstraints: 'NOT NULL PRIMARY KEY');
   final VerificationMeta _groupIdMeta = const VerificationMeta('groupId');
-  late final GeneratedColumn<int?> groupId = GeneratedColumn<int?>(
+  late final GeneratedColumn<String?> groupId = GeneratedColumn<String?>(
       'groupId', aliasedName, false,
-      typeName: 'INTEGER',
+      typeName: 'TEXT',
       requiredDuringInsert: true,
       $customConstraints: 'NOT NULL REFERENCES GroupDMs(groupId)');
   final VerificationMeta _fromUserMeta = const VerificationMeta('fromUser');
-  late final GeneratedColumn<int?> fromUser = GeneratedColumn<int?>(
+  late final GeneratedColumn<String?> fromUser = GeneratedColumn<String?>(
       'fromUser', aliasedName, false,
-      typeName: 'INTEGER',
+      typeName: 'TEXT',
       requiredDuringInsert: true,
       $customConstraints: 'NOT NULL REFERENCES Users(userId)');
   final VerificationMeta _timeMeta = const VerificationMeta('time');
@@ -1715,9 +1761,9 @@ class GroupChatMessages extends Table
       'media', aliasedName, true,
       typeName: 'TEXT', requiredDuringInsert: false, $customConstraints: '');
   final VerificationMeta _replyToMeta = const VerificationMeta('replyTo');
-  late final GeneratedColumn<int?> replyTo = GeneratedColumn<int?>(
+  late final GeneratedColumn<String?> replyTo = GeneratedColumn<String?>(
       'replyTo', aliasedName, true,
-      typeName: 'INTEGER', requiredDuringInsert: false, $customConstraints: '');
+      typeName: 'TEXT', requiredDuringInsert: false, $customConstraints: '');
   @override
   List<GeneratedColumn> get $columns =>
       [msgId, groupId, fromUser, time, content, media, replyTo];
@@ -1733,6 +1779,8 @@ class GroupChatMessages extends Table
     if (data.containsKey('msgId')) {
       context.handle(
           _msgIdMeta, msgId.isAcceptableOrUnknown(data['msgId']!, _msgIdMeta));
+    } else if (isInserting) {
+      context.missing(_msgIdMeta);
     }
     if (data.containsKey('groupId')) {
       context.handle(_groupIdMeta,
@@ -1800,26 +1848,26 @@ abstract class _$AppDb extends GeneratedDatabase {
   late final ChatMessagesTextIndex chatMessagesTextIndex =
       ChatMessagesTextIndex(this);
   late final Trigger chatMessagesTextIndexAI = Trigger(
-      'CREATE TRIGGER ChatMessagesTextIndex_AI AFTER INSERT ON ChatMessages BEGIN INSERT INTO ChatMessagesTextIndex ("rowid", fromUser, toUser, time, content, media, replyTo) VALUES (new.msgId, new.fromUser, new.toUser, new.time, new.content, new.media, new.replyTo);END',
+      'CREATE TRIGGER ChatMessagesTextIndex_AI AFTER INSERT ON ChatMessages BEGIN INSERT INTO ChatMessagesTextIndex ("rowid", msgId, fromUser, toUser, time, content, media, replyTo) VALUES (new."rowid", new.msgId, new.fromUser, new.toUser, new.time, new.content, new.media, new.replyTo);END',
       'ChatMessagesTextIndex_AI');
   late final Trigger chatMessagesTextIndexAD = Trigger(
-      'CREATE TRIGGER ChatMessagesTextIndex_AD AFTER DELETE ON ChatMessages BEGIN INSERT INTO ChatMessagesTextIndex (ChatMessagesTextIndex, "rowid", fromUser, toUser, time, content, media, replyTo) VALUES (\'delete\', old.msgId, old.fromUser, old.toUser, old.time, old.content, old.media, old.replyTo);END',
+      'CREATE TRIGGER ChatMessagesTextIndex_AD AFTER DELETE ON ChatMessages BEGIN INSERT INTO ChatMessagesTextIndex (ChatMessagesTextIndex, "rowid", msgId, fromUser, toUser, time, content, media, replyTo) VALUES (\'delete\', old."rowid", old.msgId, old.fromUser, old.toUser, old.time, old.content, old.media, old.replyTo);END',
       'ChatMessagesTextIndex_AD');
   late final Trigger chatMessagesTextIndexAU = Trigger(
-      'CREATE TRIGGER ChatMessagesTextIndex_AU AFTER UPDATE ON ChatMessages BEGIN INSERT INTO ChatMessagesTextIndex (ChatMessagesTextIndex, "rowid", fromUser, toUser, time, content, media, replyTo) VALUES (\'delete\', old.msgId, old.fromUser, old.toUser, old.time, old.content, old.media, old.replyTo);INSERT INTO ChatMessagesTextIndex ("rowid", fromUser, toUser, time, content, media, replyTo) VALUES (new.msgId, new.fromUser, new.toUser, new.time, new.content, new.media, new.replyTo);END',
+      'CREATE TRIGGER ChatMessagesTextIndex_AU AFTER UPDATE ON ChatMessages BEGIN INSERT INTO ChatMessagesTextIndex (ChatMessagesTextIndex, "rowid", msgId, fromUser, toUser, time, content, media, replyTo) VALUES (\'delete\', old."rowid", old.msgId, old.fromUser, old.toUser, old.time, old.content, old.media, old.replyTo);INSERT INTO ChatMessagesTextIndex ("rowid", msgId, fromUser, toUser, time, content, media, replyTo) VALUES (new."rowid", new.msgId, new.fromUser, new.toUser, new.time, new.content, new.media, new.replyTo);END',
       'ChatMessagesTextIndex_AU');
   late final GroupDMs groupDMs = GroupDMs(this);
   late final GroupUserMapping groupUserMapping = GroupUserMapping(this);
   late final GroupChatMessages groupChatMessages = GroupChatMessages(this);
   Future<int> addUser(
-      {required int userId,
+      {required String userId,
       required String name,
       String? about,
       String? profileImg}) {
     return customInsert(
       'INSERT INTO Users VALUES (:userId, :name, :about, :profileImg)',
       variables: [
-        Variable<int>(userId),
+        Variable<String>(userId),
         Variable<String>(name),
         Variable<String?>(about),
         Variable<String?>(profileImg)
@@ -1846,14 +1894,14 @@ abstract class _$AppDb extends GeneratedDatabase {
   }
 
   Future<int> createGroup(
-      {required int groupId,
+      {required String groupId,
       required String name,
       String? description,
       String? groupIcon}) {
     return customInsert(
       'INSERT INTO GroupDMs VALUES (:groupId, :name, :description, :groupIcon)',
       variables: [
-        Variable<int>(groupId),
+        Variable<String>(groupId),
         Variable<String>(name),
         Variable<String?>(description),
         Variable<String?>(groupIcon)
@@ -1862,19 +1910,20 @@ abstract class _$AppDb extends GeneratedDatabase {
     );
   }
 
-  Future<int> addUserToGroup({required int groupId, required int userId}) {
+  Future<int> addUserToGroup(
+      {required String groupId, required String userId}) {
     return customInsert(
       'INSERT INTO GroupUserMapping VALUES (:groupId, :userId)',
-      variables: [Variable<int>(groupId), Variable<int>(userId)],
+      variables: [Variable<String>(groupId), Variable<String>(userId)],
       updates: {groupUserMapping},
     );
   }
 
-  Selectable<GroupDM> getGroupsOfUser({required int userID}) {
+  Selectable<GroupDM> getGroupsOfUser({required String userID}) {
     return customSelect(
         'SELECT DISTINCT G.groupId, G.name, G.description, G.groupIcon FROM GroupDMs AS G,GroupUserMapping AS GM WHERE GM.userId == :userID',
         variables: [
-          Variable<int>(userID)
+          Variable<String>(userID)
         ],
         readsFrom: {
           groupDMs,
@@ -1882,11 +1931,11 @@ abstract class _$AppDb extends GeneratedDatabase {
         }).map(groupDMs.mapFromRow);
   }
 
-  Selectable<User> getGroupMembers({required int groupID}) {
+  Selectable<User> getGroupMembers({required String groupID}) {
     return customSelect(
         'SELECT U.* FROM Users AS U,(SELECT DISTINCT userId FROM GroupUserMapping AS GM WHERE GM.groupId == :groupID) AS UID WHERE U.userId == UID.userId',
         variables: [
-          Variable<int>(groupID)
+          Variable<String>(groupID)
         ],
         readsFrom: {
           users,
@@ -1894,11 +1943,11 @@ abstract class _$AppDb extends GeneratedDatabase {
         }).map(users.mapFromRow);
   }
 
-  Selectable<GroupChatMessage> getGroupChat({required int groupId}) {
+  Selectable<GroupChatMessage> getGroupChat({required String groupId}) {
     return customSelect(
         'SELECT * FROM GroupChatMessages WHERE groupId = :groupId ORDER BY msgId',
         variables: [
-          Variable<int>(groupId)
+          Variable<String>(groupId)
         ],
         readsFrom: {
           groupChatMessages,
@@ -1906,33 +1955,33 @@ abstract class _$AppDb extends GeneratedDatabase {
   }
 
   Future<int> insertGroupChatMessage(
-      {required int msgId,
-      required int groupId,
-      required int fromUser,
+      {required String msgId,
+      required String groupId,
+      required String fromUser,
       required DateTime time,
       String? content,
       String? media,
-      int? replyTo}) {
+      String? replyTo}) {
     return customInsert(
       'INSERT INTO GroupChatMessages VALUES (:msgId, :groupId, :fromUser, :time, :content, :media, :replyTo)',
       variables: [
-        Variable<int>(msgId),
-        Variable<int>(groupId),
-        Variable<int>(fromUser),
+        Variable<String>(msgId),
+        Variable<String>(groupId),
+        Variable<String>(fromUser),
         Variable<DateTime>(time),
         Variable<String?>(content),
         Variable<String?>(media),
-        Variable<int?>(replyTo)
+        Variable<String?>(replyTo)
       ],
       updates: {groupChatMessages},
     );
   }
 
-  Selectable<ChatMessage> getUserChat({required int otherUser}) {
+  Selectable<ChatMessage> getUserChat({required String otherUser}) {
     return customSelect(
         'SELECT * FROM ChatMessages WHERE fromUser = :otherUser OR toUser = :otherUser ORDER BY msgId',
         variables: [
-          Variable<int>(otherUser)
+          Variable<String>(otherUser)
         ],
         readsFrom: {
           chatMessages,
@@ -1940,23 +1989,23 @@ abstract class _$AppDb extends GeneratedDatabase {
   }
 
   Future<int> insertMessage(
-      {required int msgId,
-      required int fromUser,
-      required int toUser,
+      {required String msgId,
+      required String fromUser,
+      required String toUser,
       required DateTime time,
       String? content,
       String? media,
-      int? replyTo}) {
+      String? replyTo}) {
     return customInsert(
       'INSERT INTO ChatMessages VALUES (:msgId, :fromUser, :toUser, :time, :content, :media, :replyTo)',
       variables: [
-        Variable<int>(msgId),
-        Variable<int>(fromUser),
-        Variable<int>(toUser),
+        Variable<String>(msgId),
+        Variable<String>(fromUser),
+        Variable<String>(toUser),
         Variable<DateTime>(time),
         Variable<String?>(content),
         Variable<String?>(media),
-        Variable<int?>(replyTo)
+        Variable<String?>(replyTo)
       ],
       updates: {chatMessages},
     );
@@ -1976,7 +2025,7 @@ abstract class _$AppDb extends GeneratedDatabase {
         }).map((QueryRow row) {
       return SearchChatMessagesResult(
         content: row.read<String>('content'),
-        userId: row.read<int>('userId'),
+        userId: row.read<String>('userId'),
         name: row.read<String>('name'),
         about: row.read<String?>('about'),
         profileImg: row.read<String?>('profileImg'),
@@ -2030,7 +2079,7 @@ abstract class _$AppDb extends GeneratedDatabase {
 
 class SearchChatMessagesResult {
   final String content;
-  final int userId;
+  final String userId;
   final String name;
   final String? about;
   final String? profileImg;

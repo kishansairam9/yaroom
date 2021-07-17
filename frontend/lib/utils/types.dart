@@ -1,3 +1,3 @@
 export '../moor/db.dart';
 
-typedef UserId = int;
+typedef UserId = String;
