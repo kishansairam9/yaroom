@@ -12,5 +12,5 @@ require (
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/rs/xid v1.2.1
 	github.com/rs/zerolog v1.23.0
-	github.com/stretchr/testify v1.5.1 // indirect
+	go.mongodb.org/mongo-driver v1.6.0 // indirect
 )

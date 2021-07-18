@@ -1,12 +1,21 @@
 package main
 
 import (
+	"context"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/form3tech-oss/jwt-go"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
+
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 func checkJWT() gin.HandlerFunc {
@@ -18,6 +27,28 @@ func checkJWT() gin.HandlerFunc {
 }
 
 func main() {
+	// Database
+	// Replace the uri string with your MongoDB deployment's connection string.
+	uri := "mongodb://root:password@127.0.0.1:27017/"
+	dbctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	client, err := mongo.Connect(dbctx, options.Client().ApplyURI(uri))
+	if err != nil {
+		log.Fatal().Str("where", "mongo connect").Str("error", "failed to connect to db").Msg(err.Error())
+	}
+	defer func() {
+		if err = client.Disconnect(dbctx); err != nil {
+			log.Fatal().Str("where", "mongo disconnect").Str("error", "failed to disconnect db").Msg(err.Error())
+		}
+	}()
+	// Ping the primary
+	if err := client.Ping(dbctx, readpref.Primary()); err != nil {
+		panic(err)
+	}
+	log.Info().Msg("Database succesfully connected and pinged.")
+
+	// Server
 	r := gin.Default()
 	r.Use(cors.Default())
 	wsUpgrader.CheckOrigin = func(r *http.Request) bool { return true }
@@ -42,5 +73,34 @@ func main() {
 		wsHandler(c.Writer, c.Request)
 	})
 
-	r.Run()
+	srv := &http.Server{
+		Addr:    ":" + string(os.Getenv("PORT")),
+		Handler: r,
+	}
+
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal().Str("where", "listen and serve").Str("error", "failed to start server").Msg("Listen: " + err.Error())
+		}
+	}()
+
+	// Wait for interrupt signal to gracefully shutdown the server with
+	// a timeout of 5 seconds.
+	quit := make(chan os.Signal, 1)
+	// kill (no param) default send syscall.SIGTERM
+	// kill -2 is syscall.SIGINT
+	// kill -9 is syscall.SIGKILL but can't be catch, so don't need add it
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	log.Info().Msg("Shutting down server...")
+
+	// The context is used to inform the server it has 5 seconds to finish
+	// the request it is currently handling
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Warn().Msg("Server forced to shutdown: " + err.Error())
+	}
+
+	log.Info().Msg("Server exiting")
 }
