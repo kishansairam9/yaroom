@@ -35,7 +35,7 @@ type ChatMessage struct {
 	Time     time.Time `bson:"time"`
 	Content  string    `bson:"content,omitempty"`
 	Media    string    `bson:"media,omitempty"`
-	ReplyTo  string    `bson:"replyTo,omitempty"` // TODO: NOTE here should we
+	ReplyTo  string    `bson:"replyTo,omitempty"`
 }
 
 var chatMsgIndexModels = []mongo.IndexModel{
@@ -47,10 +47,10 @@ var chatMsgCol *mongo.Collection
 
 func createIndexes(ctx context.Context) {
 	opts := options.CreateIndexes().SetMaxTime(10 * time.Second)
-	_, err := chatMsgCol.Indexes().CreateMany(ctx, chatMsgIndexModels, opts)
 
+	_, err := chatMsgCol.Indexes().CreateMany(ctx, chatMsgIndexModels, opts)
 	if err != nil {
-		log.Fatal().Str("where", "create indexes").Str("error", "Indexes Create Many chatMsgCol").Msg(err.Error())
+		log.Fatal().Str("where", "create indexes").Str("type", "Indexes Create Many chatMsgCol").Msg(err.Error())
 	}
 
 	// TODO: Similarly for Group and Rooms messages

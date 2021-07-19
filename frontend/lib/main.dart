@@ -141,6 +141,7 @@ class MyApp extends StatelessWidget {
               });
               return ws;
             },
+            lazy: false,
           )
         ],
         child: MaterialApp(

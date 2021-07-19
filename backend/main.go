@@ -8,7 +8,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/form3tech-oss/jwt-go"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
@@ -29,11 +28,11 @@ func main() {
 
 		client, err := mongo.Connect(dbctx, options.Client().ApplyURI(uri))
 		if err != nil {
-			log.Fatal().Str("where", "mongo connect").Str("error", "failed to connect to db").Msg(err.Error())
+			log.Fatal().Str("where", "mongo connect").Str("type", "failed to connect to db").Msg(err.Error())
 		}
 		defer func() {
 			if err = client.Disconnect(dbctx); err != nil {
-				log.Fatal().Str("where", "mongo disconnect").Str("error", "failed to disconnect db").Msg(err.Error())
+				log.Fatal().Str("where", "mongo disconnect").Str("type", "failed to disconnect db").Msg(err.Error())
 			}
 		}()
 		// Ping the primary
@@ -61,36 +60,28 @@ func main() {
 
 	// Websocket mock
 	r.GET("/", func(c *gin.Context) {
-		wsHandler(c.Writer, c.Request)
+		wsHandler(c)
 	})
 
 	// Protected routes // TODO: Protect all at later stage, currently only testing
-	secured := r.Group("/secured", checkJWT())
+	secured := r.Group("/secured", jwtHandler)
 	{
 		secured.GET("/ping", func(g *gin.Context) {
-			tokContext := g.Request.Context().Value("user")
-			claims := tokContext.(*jwt.Token).Claims.(jwt.MapClaims)
-			userId, ok := claims["userId"].(string)
-			if !ok {
-				log.Info().Str("where", "post JWT verify, userID extraction").Str("error", "token missing fields").Msg("Field userID not found in recieved JWT")
-				g.AbortWithStatusJSON(400, gin.H{"error": "Invalid token format, missing fields"})
-				return
-			}
+			rawUserId, _ := g.Get("userId")
+			userId := rawUserId.(string)
 			g.JSON(200, gin.H{"text": "Hello from private " + userId})
 		})
 	}
 
 	// Testing routes. Take user id from url (instead of jwt)
-	getUserIdFromTestRoute := func() gin.HandlerFunc {
-		return func(g *gin.Context) {
-			var user testingUser
-			if err := g.BindUri(&user); err != nil {
-				return
-			}
-			g.Set("userId", user.UserId)
+	getUserIdFromTestRoute := func(g *gin.Context) {
+		var user testingUser
+		if err := g.BindUri(&user); err != nil {
+			return
 		}
+		g.Set("userId", user.UserId)
 	}
-	testing := r.Group("/testing/:userId", getUserIdFromTestRoute())
+	testing := r.Group("/testing/:userId", getUserIdFromTestRoute)
 	{
 		testing.POST("/", func(g *gin.Context) {
 			rawUserId, _ := g.Get("userId")
@@ -101,7 +92,13 @@ func main() {
 		testing.POST("/addMessage", func(g *gin.Context) {
 			var msg WSMessage
 			if err := g.BindJSON(&msg); err != nil {
-				log.Info().Str("where", "bind json").Str("error", "failed to parse body to json").Msg(err.Error())
+				log.Info().Str("where", "bind json").Str("type", "failed to parse body to json").Msg(err.Error())
+				return
+			}
+			rawUserId, _ := g.Get("userId")
+			userId := rawUserId.(string)
+			if userId != msg.FromUser {
+				g.AbortWithStatusJSON(400, gin.H{"error": "Request sender and msg fromUser don't match"})
 				return
 			}
 			msg, err := addMessage(msg)
@@ -110,7 +107,7 @@ func main() {
 					g.AbortWithStatusJSON(400, gin.H{"error": "Unknown message type"})
 					return
 				}
-				log.Error().Str("where", "add message").Str("error", "failed to add message to db").Msg(err.Error())
+				log.Error().Str("where", "add message").Str("type", "failed to add message to db").Msg(err.Error())
 				g.AbortWithStatus(500)
 				return
 			}
@@ -127,7 +124,7 @@ func main() {
 
 		go func() {
 			if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-				log.Fatal().Str("where", "listen and serve").Str("error", "failed to start server").Msg("Listen: " + err.Error())
+				log.Fatal().Str("where", "listen and serve").Str("type", "failed to start server").Msg("Listen: " + err.Error())
 			}
 		}()
 
