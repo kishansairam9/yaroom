@@ -12,14 +12,26 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 
+	"github.com/streadway/amqp"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 var db *mongo.Database
+var rmqConn *amqp.Connection
 
 func main() {
+	// Rabbit mq
+	{
+		var err error
+		rmqConn, err = amqp.Dial("amqp://guest:guest@localhost:5672/")
+		if err != nil {
+			log.Fatal().Str("where", "amqp dial").Str("type", "failed to connect to rabbit mq").Msg(err.Error())
+		}
+		defer rmqConn.Close()
+	}
+
 	// Database
 	{
 		uri := "mongodb://root:password@127.0.0.1:27017/"
@@ -110,6 +122,9 @@ func main() {
 				log.Error().Str("where", "add message").Str("type", "failed to add message to db").Msg(err.Error())
 				g.AbortWithStatus(500)
 				return
+			}
+			if err = msgQueueSendToUser(msg.ToUser, msg); err != nil {
+				log.Error().Str("where", "msgQueue send to user").Str("type", "failed to write to user queue").Msg(err.Error())
 			}
 			g.JSON(200, msg)
 		})

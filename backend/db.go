@@ -83,3 +83,27 @@ func addMessage(msg WSMessage) (WSMessage, error) {
 	msg.MsgId = msgId
 	return msg, nil
 }
+
+func dbInsertRoutine(inChannel <-chan interface{}, outChannel chan<- interface{}, quit <-chan bool) {
+	var err error
+	for {
+		select {
+		case msg := <-inChannel:
+			msg, err = addMessage(msg.(WSMessage))
+			if err != nil {
+				var emsg string
+				if err.Error() == "unknown message type" {
+					emsg = "Unknown message type"
+				} else {
+					emsg = "Server error, contact support"
+					log.Error().Str("where", "add message").Str("type", "failed to add messsage to db").Msg(err.Error())
+				}
+				outChannel <- WSError{Error: emsg}
+			} else {
+				outChannel <- msg
+			}
+		case <-quit:
+			return
+		}
+	}
+}
