@@ -7,6 +7,7 @@ import (
 
 	jwtmiddleware "github.com/auth0/go-jwt-middleware"
 	"github.com/form3tech-oss/jwt-go"
+	"github.com/gin-gonic/gin"
 )
 
 type Response struct {
@@ -81,3 +82,11 @@ var jwtMiddleware = jwtmiddleware.New(jwtmiddleware.Options{
 	},
 	SigningMethod: jwt.SigningMethodRS256,
 })
+
+func checkJWT() gin.HandlerFunc {
+	return func(g *gin.Context) {
+		if err := jwtMiddleware.CheckJWT(g.Writer, g.Request); err != nil {
+			g.AbortWithStatus(401)
+		}
+	}
+}

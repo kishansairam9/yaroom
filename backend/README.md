@@ -1,5 +1,11 @@
 ## Dev notes
 
+### Docker compose
+- Create required directories for binding
+  - `mkdir -p ~/containerVolumes && cd ~/containerVolumes && mkdir mongodb rabbitmq && cd -`
+- docker-compose up to start conatiners
+
+### Gin Server
 - For running server with hot reload use `gin` https://github.com/codegangsta/gin
   - Note don't get `gin` from this folder. It will add to modules unnecessarily
   - Use `cd ~ && go get github.com/codegangsta/gin` to install gin
