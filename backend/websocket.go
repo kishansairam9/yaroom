@@ -38,36 +38,15 @@ func wsHandler(g *gin.Context) {
 	// rawUserId, _ := g.Get("userId")
 	// userId := rawUserId.(string)
 
-	dbChannel := make(chan interface{})
-	dbQuit := make(chan bool)
-	readChannel := make(chan interface{})
-	readQuit := make(chan bool)
-
 	// Database insert routine
-	go func(ch chan interface{}, quit <-chan bool) {
-		for {
-			select {
-			case msg := <-ch:
-				msg, err = addMessage(msg.(WSMessage))
-				if err != nil {
-					var emsg string
-					if err.Error() == "unknown message type" {
-						emsg = "Unknown message type"
-					} else {
-						emsg = "Server error, contact support"
-						log.Error().Str("where", "add message").Str("type", "failed to add messsage to db").Msg(err.Error())
-					}
-					ch <- WSError{Error: emsg}
-				} else {
-					ch <- msg
-				}
-			case <-quit:
-				return
-			}
-		}
-	}(dbChannel, dbQuit)
+	dbInChannel := make(chan interface{}, 50)
+	dbOutChannel := make(chan interface{}, 50)
+	dbQuit := make(chan bool)
+	go dbInsertRoutine(dbInChannel, dbOutChannel, dbQuit)
 
 	// WS Read routine
+	readChannel := make(chan interface{}, 10)
+	readQuit := make(chan bool)
 	go func(ch chan<- interface{}, quit chan bool) {
 		for {
 			_, rawMsg, err := conn.ReadMessage()
@@ -96,7 +75,12 @@ func wsHandler(g *gin.Context) {
 		}
 	}(readChannel, readQuit)
 
-	gotQuitFromRead := false
+	// Message queue read routine
+	msgQueueReadQuit := make(chan bool)
+	// TODO: Replace userID with jwt user ID
+	go msgQueueReadRoutine("userId", dbOutChannel, msgQueueReadQuit)
+
+	gotQuitFromRead, gotQuitFromMsgReadQueue := false, false
 
 	for {
 		var msg interface{}
@@ -106,7 +90,7 @@ func wsHandler(g *gin.Context) {
 		case msg = <-readChannel:
 			switch msg.(type) {
 			case WSMessage:
-				dbChannel <- msg
+				dbInChannel <- msg
 			case WSError:
 				err := conn.WriteJSON(msg)
 				if err != nil {
@@ -114,22 +98,42 @@ func wsHandler(g *gin.Context) {
 					connFailed = true
 				}
 			}
+
+		case out := <-dbOutChannel:
+			err = conn.WriteJSON(out)
+			if err != nil {
+				log.Info().Str("where", "wsHandler").Str("type", "writing message").Msg(err.Error())
+				connFailed = true
+			}
+			// TODO: Replace userID with jwt user ID
+			if out.(WSMessage).FromUser == "userId" {
+				if err = msgQueueSendToUser(out.(WSMessage).ToUser, out.(WSMessage)); err != nil {
+					log.Error().Str("where", "msgQueue send to user").Str("type", "failed to write to user queue").Msg(err.Error())
+				}
+			}
+
 		case <-readQuit:
 			gotQuitFromRead = true
+
+		case <-msgQueueReadQuit:
+			gotQuitFromMsgReadQueue = true
+			err = conn.WriteJSON(WSError{Error: "Server Error, report to support"})
+			if err != nil {
+				log.Info().Str("where", "wsHandler").Str("type", "writing message").Msg(err.Error())
+				connFailed = true
+			}
 		}
 
-		if gotQuitFromRead || connFailed {
+		if gotQuitFromRead || gotQuitFromMsgReadQueue || connFailed {
 			break
 		}
 
-		err = conn.WriteJSON(<-dbChannel)
-		if err != nil {
-			log.Info().Str("where", "wsHandler").Str("type", "writing message").Msg(err.Error())
-			break
-		}
 	}
 	dbQuit <- true
 	if !gotQuitFromRead {
 		readQuit <- true
+	}
+	if !gotQuitFromMsgReadQueue {
+		msgQueueReadQuit <- true
 	}
 }

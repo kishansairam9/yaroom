@@ -3,7 +3,7 @@
 ### Docker compose
 - Create required directories for binding
   - `mkdir -p ~/containerVolumes && cd ~/containerVolumes && mkdir mongodb rabbitmq && cd -`
-- docker-compose up to start conatiners
+- `docker-compose up` to start conatiners
 
 ### Gin Server
 - For running server with hot reload use `gin` https://github.com/codegangsta/gin
@@ -11,4 +11,4 @@
   - Use `cd ~ && go get github.com/codegangsta/gin` to install gin
 - To run server on port x use --port flag
   - Current frontend uses websocket on port 8884
-  - `gin --port 8884` from backend directory
+  - `gin -i --port 8884` from backend directory
