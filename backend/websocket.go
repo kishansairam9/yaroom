@@ -2,10 +2,9 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
-	"net/http"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/rs/zerolog/log"
 )
@@ -28,37 +27,62 @@ type WSError struct {
 	Error string `json:"error"`
 }
 
-func wsHandler(w http.ResponseWriter, r *http.Request) {
-	conn, err := wsUpgrader.Upgrade(w, r, nil)
+func wsHandler(g *gin.Context) {
+	conn, err := wsUpgrader.Upgrade(g.Writer, g.Request, nil)
 	if err != nil {
-		log.Warn().Str("where", "wsHandler").Str("error", "ws upgrade").Msg(err.Error())
+		log.Warn().Str("where", "wsHandler").Str("type", "ws upgrade").Msg(err.Error())
 		return
 	}
 
+	// TODO uncomment after securing ws route
+	// rawUserId, _ := g.Get("userId")
+	// userId := rawUserId.(string)
+
 	for {
-		t, rawMsg, err := conn.ReadMessage()
-		var enc []byte = nil
+		_, rawMsg, err := conn.ReadMessage()
 		if err != nil {
-			log.Info().Str("where", "wsHandler").Str("error", "conn read msg").Msg(err.Error())
+			log.Info().Str("where", "wsHandler").Str("type", "conn read msg").Msg(err.Error())
 			break
 		}
 		var msg WSMessage
 		if err := json.Unmarshal(rawMsg, &msg); err != nil {
-			enc, _ = json.Marshal(WSError{Error: "Error parsing message contents"})
+			err = conn.WriteJSON(WSError{Error: "Error parsing message contents"})
+			if err != nil {
+				log.Info().Str("where", "wsHandler").Str("type", "writing message").Msg(err.Error())
+				break
+			}
+			continue
 		}
+		// TODO uncomment after securing ws route
+		// // Validate fromUser with userId in JWT to prevent
+		// if msg.FromUser != userId {
+		// 	err := conn.WriteJSON(WSError{Error: "Invalid fromUser! Identifications spoofing"})
+		// 	if err != nil {
+		// 		log.Info().Str("where", "wsHandler").Str("type", "writing message").Msg(err.Error())
+		// 		break
+		// 	}
+		// 	continue
+		// }
 		msg, err = addMessage(msg)
 		if err != nil {
+			var emsg string
 			if err.Error() == "unknown message type" {
-				enc, _ = json.Marshal(WSError{Error: "Unknown message type"})
+				emsg = "Unknown message type"
 			} else {
-				log.Error().Str("where", "add message").Str("error", "failed to add messsage to db").Msg(err.Error())
+				emsg = "Server error, contact support"
+				log.Error().Str("where", "add message").Str("type", "failed to add messsage to db").Msg(err.Error())
 			}
+			err = conn.WriteJSON(WSError{Error: emsg})
+			if err != nil {
+				log.Info().Str("where", "wsHandler").Str("type", "writing message").Msg(err.Error())
+				break
+			}
+			continue
 		}
-		msg.Media = ""
-		if enc == nil {
-			enc, _ = json.Marshal(msg)
+		err = conn.WriteJSON(msg)
+		if err != nil {
+			log.Info().Str("where", "wsHandler").Str("type", "writing message").Msg(err.Error())
+			break
 		}
-		fmt.Print("returning ", string(enc))
-		conn.WriteMessage(t, enc)
 	}
 }
