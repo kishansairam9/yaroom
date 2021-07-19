@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:math';
 import 'chatPage.dart';
 import '../../utils/types.dart';
+import 'package:provider/provider.dart';
 
 class ChatView extends StatefulWidget {
   final _chats = <ProfileTile>[];
@@ -23,8 +24,11 @@ class ChatViewState extends State<ChatView> {
             return ListView(
                 children: ListTile.divideTiles(
               context: context,
-              tiles: snapshot.data!.map((e) => ProfileTile(
-                  userId: e.userId, name: e.name, image: e.profileImg)),
+              tiles: snapshot.data!
+                  .where((e) =>
+                      e.userId != Provider.of<UserId>(context, listen: false))
+                  .map((e) => ProfileTile(
+                      userId: e.userId, name: e.name, image: e.profileImg)),
             ).toList());
           } else if (snapshot.hasError) {
             print(snapshot.error);
