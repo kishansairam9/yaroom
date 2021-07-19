@@ -26,11 +26,13 @@ func checkJWT() gin.HandlerFunc {
 	}
 }
 
+var db *mongo.Database
+
 func main() {
 	// Database
 	// Replace the uri string with your MongoDB deployment's connection string.
 	uri := "mongodb://root:password@127.0.0.1:27017/"
-	dbctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	dbctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
 	client, err := mongo.Connect(dbctx, options.Client().ApplyURI(uri))
@@ -46,7 +48,13 @@ func main() {
 	if err := client.Ping(dbctx, readpref.Primary()); err != nil {
 		panic(err)
 	}
-	log.Info().Msg("Database succesfully connected and pinged.")
+	log.Info().Msg("Database succesfully connected and pinged")
+
+	db = client.Database("testing")
+
+	chatMsgCol = db.Collection("ChatMessages")
+
+	createIndexes(dbctx)
 
 	// Server
 	r := gin.Default()
@@ -63,10 +71,21 @@ func main() {
 		userId, ok := claims["userId"].(string)
 		if !ok {
 			log.Info().Str("where", "post JWT verify, userID extraction").Str("error", "token missing fields").Msg("Field userID not found in recieved JWT")
-			g.AbortWithStatus(400)
+			g.AbortWithStatusJSON(400, gin.H{"error": "Invalid token format, missing fields"})
 			return
 		}
 		g.JSON(200, gin.H{"text": "Hello from private " + userId})
+	})
+
+	type testingUser struct {
+		UserId string
+	}
+	r.POST("/:userId", func(g *gin.Context) {
+		var user testingUser
+		if err := g.ShouldBindUri(&user); err != nil {
+			g.AbortWithStatusJSON(400, gin.H{"msg": err.Error()})
+		}
+		g.JSON(200, gin.H{"userId": user.UserId})
 	})
 
 	r.GET("/", func(c *gin.Context) {
@@ -96,9 +115,9 @@ func main() {
 
 	// The context is used to inform the server it has 5 seconds to finish
 	// the request it is currently handling
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	shutdownctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	if err := srv.Shutdown(ctx); err != nil {
+	if err := srv.Shutdown(shutdownctx); err != nil {
 		log.Warn().Msg("Server forced to shutdown: " + err.Error())
 	}
 

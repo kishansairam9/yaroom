@@ -16,7 +16,7 @@ type WSMessage struct {
 	Type string `json:"type"`
 }
 
-type ChatMessage struct {
+type WSChatMessage struct {
 	Type     string    `json:"type"`
 	MsgId    string    `json:"msgId"`
 	FromUser string    `json:"fromUser"`
@@ -49,11 +49,13 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 		var enc []byte
 		switch wsm.Type {
 		case "ChatMessage":
-			var msg ChatMessage
+			var msg WSChatMessage
 			if err := json.Unmarshal(rawMsg, &msg); err != nil {
 				log.Warn().Str("where", "wsHandler").Str("error", "msg type and contents didn't match").Msg(err.Error())
 				continue
 			}
+			// TODO: Don't use xid to generate unique msg ID
+			// Insert into mongo db, and fetch that id. Both use same algorithm
 			msg.MsgId = xid.New().String()
 			// TODO: Send to RabbitMQ & Data Store
 			enc, _ = json.Marshal(msg)
