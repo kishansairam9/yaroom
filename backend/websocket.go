@@ -38,51 +38,98 @@ func wsHandler(g *gin.Context) {
 	// rawUserId, _ := g.Get("userId")
 	// userId := rawUserId.(string)
 
+	dbChannel := make(chan interface{})
+	dbQuit := make(chan bool)
+	readChannel := make(chan interface{})
+	readQuit := make(chan bool)
+
+	// Database insert routine
+	go func(ch chan interface{}, quit <-chan bool) {
+		for {
+			select {
+			case msg := <-ch:
+				msg, err = addMessage(msg.(WSMessage))
+				if err != nil {
+					var emsg string
+					if err.Error() == "unknown message type" {
+						emsg = "Unknown message type"
+					} else {
+						emsg = "Server error, contact support"
+						log.Error().Str("where", "add message").Str("type", "failed to add messsage to db").Msg(err.Error())
+					}
+					ch <- WSError{Error: emsg}
+				} else {
+					ch <- msg
+				}
+			case <-quit:
+				return
+			}
+		}
+	}(dbChannel, dbQuit)
+
+	// WS Read routine
+	go func(ch chan<- interface{}, quit chan bool) {
+		for {
+			_, rawMsg, err := conn.ReadMessage()
+			if err != nil {
+				log.Info().Str("where", "wsHandler").Str("type", "conn read msg").Msg(err.Error())
+				quit <- true
+				return
+			}
+			var msg WSMessage
+			if err := json.Unmarshal(rawMsg, &msg); err != nil {
+				ch <- WSError{Error: "Error parsing message contents"}
+				continue
+			}
+			// TODO uncomment after securing ws route
+			// // Validate fromUser with userId in JWT to prevent
+			// if msg.FromUser != userId {
+			// 	ch <- WSError{Error: "Invalid fromUser! Identifications spoofing"}
+			// 	continue
+			// }
+			ch <- msg
+			select {
+			case <-quit:
+				return
+			default:
+			}
+		}
+	}(readChannel, readQuit)
+
+	gotQuitFromRead := false
+
 	for {
-		_, rawMsg, err := conn.ReadMessage()
-		if err != nil {
-			log.Info().Str("where", "wsHandler").Str("type", "conn read msg").Msg(err.Error())
+		var msg interface{}
+		connFailed := false
+
+		select {
+		case msg = <-readChannel:
+			switch msg.(type) {
+			case WSMessage:
+				dbChannel <- msg
+			case WSError:
+				err := conn.WriteJSON(msg)
+				if err != nil {
+					log.Info().Str("where", "wsHandler").Str("type", "writing message").Msg(err.Error())
+					connFailed = true
+				}
+			}
+		case <-readQuit:
+			gotQuitFromRead = true
+		}
+
+		if gotQuitFromRead || connFailed {
 			break
 		}
-		var msg WSMessage
-		if err := json.Unmarshal(rawMsg, &msg); err != nil {
-			err = conn.WriteJSON(WSError{Error: "Error parsing message contents"})
-			if err != nil {
-				log.Info().Str("where", "wsHandler").Str("type", "writing message").Msg(err.Error())
-				break
-			}
-			continue
-		}
-		// TODO uncomment after securing ws route
-		// // Validate fromUser with userId in JWT to prevent
-		// if msg.FromUser != userId {
-		// 	err := conn.WriteJSON(WSError{Error: "Invalid fromUser! Identifications spoofing"})
-		// 	if err != nil {
-		// 		log.Info().Str("where", "wsHandler").Str("type", "writing message").Msg(err.Error())
-		// 		break
-		// 	}
-		// 	continue
-		// }
-		msg, err = addMessage(msg)
-		if err != nil {
-			var emsg string
-			if err.Error() == "unknown message type" {
-				emsg = "Unknown message type"
-			} else {
-				emsg = "Server error, contact support"
-				log.Error().Str("where", "add message").Str("type", "failed to add messsage to db").Msg(err.Error())
-			}
-			err = conn.WriteJSON(WSError{Error: emsg})
-			if err != nil {
-				log.Info().Str("where", "wsHandler").Str("type", "writing message").Msg(err.Error())
-				break
-			}
-			continue
-		}
-		err = conn.WriteJSON(msg)
+
+		err = conn.WriteJSON(<-dbChannel)
 		if err != nil {
 			log.Info().Str("where", "wsHandler").Str("type", "writing message").Msg(err.Error())
 			break
 		}
+	}
+	dbQuit <- true
+	if !gotQuitFromRead {
+		readQuit <- true
 	}
 }
