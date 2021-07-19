@@ -1,55 +1,31 @@
 version: '3'
 services:
-#   my-ui:
-#     container_name: my-ui
-#     build: ./my-ui
-#     ports:
-#       - "80:80"
-#     depends_on:
-#       - my-api
-#     networks:
-#       - test-network
 
-#   my-api:
-#     container_name: my-api
-#     restart: always
-#     build:
-#       context: my-api
-#       dockerfile: Dockerfile
-#     ports:
-#       - "8080:8080"
-#     #command: mvn clean spring-boot:run -Dspring-boot.run.profiles=docker
-#     depends_on:
-#       - rabbitmq
-#       - mp-redis
-#     networks:
-#       - test-network
-
-  mp-rabbitmq:
-    container_name: mp-rabbitmq
+  yaroom-rabbitmq:
+    container_name: yaroom-rabbitmq
     image: rabbitmq:3.8.19-management
     ports:
       - "5672:5672"
       - "15672:15672"
-    restart: always
-    networks:
-      - test-network
-
-  mp-redis:
-    container_name: mp-redis
-    image: redis:6.2.4
-    ports:
-      - "6379:6379"
     restart: always
     volumes:
       - type: bind
         source: ~/containerVolumes/rabbitmq
         target: /var/lib/rabbitmq/mnesia/
     networks:
-      - test-network
+      - yaroom-testing
 
-  mp-mongodb:
-    container_name: mp-mongodb
+  yaroom-redis:
+    container_name: yaroom-redis
+    image: redis:6.2.4
+    ports:
+      - "6379:6379"
+    restart: always
+    networks:
+      - yaroom-testing
+
+  yaroom-mongodb:
+    container_name: yaroom-mongodb
     image: mongo:5.0.0
     restart: always
     environment:
@@ -64,7 +40,7 @@ services:
     ports:
       - "27017:27017"
     networks:
-      - test-network
+      - yaroom-testing
 
 networks:
-  test-network:
+  yaroom-testing:
