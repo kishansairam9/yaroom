@@ -106,7 +106,8 @@ func wsHandler(g *gin.Context) {
 				connFailed = true
 			}
 			// TODO: Replace userID with jwt user ID
-			if out.(WSMessage).FromUser == "userId" {
+			data, isMsg := out.(WSMessage)
+			if isMsg && data.FromUser == "userId" {
 				if err = msgQueueSendToUser(out.(WSMessage).ToUser, out.(WSMessage)); err != nil {
 					log.Error().Str("where", "msgQueue send to user").Str("type", "failed to write to user queue").Msg(err.Error())
 				}
