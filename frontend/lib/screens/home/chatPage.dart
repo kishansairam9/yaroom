@@ -67,12 +67,13 @@ class ChatPageState extends State<ChatPage> {
         children: [
           Padding(
             padding: EdgeInsets.only(bottom: 18),
-            child: Text(
-              msg.content!.padLeft(time.length,
-                  '\u2007'), // Using unicode space is imp as flutter engine trims otherwise
-              textAlign: isMe ? TextAlign.right : TextAlign.left,
-              style: TextStyle(color: Colors.white),
-            ),
+            child: ConstrainedBox(
+                constraints: BoxConstraints(minWidth: 60),
+                child: Text(
+                  msg.content!, // Using unicode space is imp as flutter engine trims otherwise
+                  textAlign: isMe ? TextAlign.right : TextAlign.left,
+                  style: TextStyle(color: Colors.white),
+                )),
           ),
           Positioned(
               bottom: 0,
@@ -143,8 +144,8 @@ class ChatPageState extends State<ChatPage> {
                     DateTime? prependDay = prependDayCond
                         ? msgs[msgs.length - 1 - index].time
                         : null;
-                    return _buildMessage(
-                        msgs[msgs.length - 1 - index], prevIsSame, prependDay);
+                    return _buildMessage(msgs[msgs.length - 1 - index],
+                        prevIsSame && !prependDayCond, prependDay);
                   }))
         ],
       ),
