@@ -1,3 +1,4 @@
+import 'package:bubble/bubble.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'dart:io' show Platform; // OS Detection
@@ -48,28 +49,42 @@ class ChatPageState extends State<ChatPage> {
     return Future.value(false);
   }
 
-  _buildMessage(ChatMessage msg) {
+  _buildMessage(ChatMessage msg, bool prevIsSame) {
     final bool isMe = msg.fromUser == Provider.of<UserId>(context);
-    return Container(
-        padding: EdgeInsets.only(left: 14, right: 14, top: 10, bottom: 10),
-        child: Align(
-          alignment: isMe ? Alignment.bottomRight : Alignment.topLeft,
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 25.0, vertical: 15.0),
-            margin: isMe
-                ? EdgeInsets.only(top: 7.0, bottom: 7.0, left: 70.0)
-                : EdgeInsets.only(top: 7.0, bottom: 7.0, right: 70.0),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.all(Radius.circular(15.0)),
-              color: isMe ? Colors.blueAccent : Colors.blueGrey,
-            ),
+    final time = TimeOfDay.fromDateTime(msg.time.toLocal()).format(context);
+    final double msgSpacing = prevIsSame ? 5 : 11;
+    final double sideMargin = 60;
+    final String pad = msg.content!.length < time.length
+        ? '  ' * (time.length - msg.content!.length)
+        : '';
+    return Bubble(
+      margin: isMe
+          ? BubbleEdges.only(top: msgSpacing, left: sideMargin)
+          : BubbleEdges.only(top: msgSpacing, right: sideMargin),
+      nip: isMe ? BubbleNip.rightTop : BubbleNip.leftTop,
+      showNip: !prevIsSame,
+      alignment: isMe ? Alignment.topRight : Alignment.topLeft,
+      color: isMe ? Colors.blueAccent : Colors.blueGrey,
+      padding: BubbleEdges.all(10),
+      child: Stack(
+        children: [
+          Padding(
+            padding: EdgeInsets.only(bottom: 18),
             child: Text(
-              msg.content!,
+              pad + msg.content!,
               textAlign: isMe ? TextAlign.right : TextAlign.left,
               style: TextStyle(color: Colors.white),
             ),
           ),
-        ));
+          Positioned(
+              bottom: 0,
+              right: 0,
+              child: Text(time,
+                  textAlign: TextAlign.end,
+                  style: TextStyle(color: Colors.grey)))
+        ],
+      ),
+    );
   }
 
   // To display profile
@@ -91,10 +106,15 @@ class ChatPageState extends State<ChatPage> {
           Expanded(
               child: ListView.builder(
                   reverse: true,
-                  padding: EdgeInsets.only(top: 15.0),
+                  padding: EdgeInsets.only(bottom: 15.0),
                   itemCount: msgs.length,
                   itemBuilder: (BuildContext context, int index) {
-                    return _buildMessage(msgs[msgs.length - 1 - index]);
+                    final bool prevIsSame = msgs.length - 2 - index >= 0
+                        ? (msgs[msgs.length - 2 - index].fromUser ==
+                            msgs[msgs.length - 1 - index].fromUser)
+                        : false;
+                    return _buildMessage(
+                        msgs[msgs.length - 1 - index], prevIsSame);
                   }))
         ],
       ),
