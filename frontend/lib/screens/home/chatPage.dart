@@ -49,15 +49,12 @@ class ChatPageState extends State<ChatPage> {
     return Future.value(false);
   }
 
-  _buildMessage(ChatMessage msg, bool prevIsSame) {
+  _buildMessage(ChatMessage msg, bool prevIsSame, DateTime? prependDay) {
     final bool isMe = msg.fromUser == Provider.of<UserId>(context);
     final time = TimeOfDay.fromDateTime(msg.time.toLocal()).format(context);
     final double msgSpacing = prevIsSame ? 5 : 11;
     final double sideMargin = 60;
-    final String pad = msg.content!.length < time.length
-        ? '  ' * (time.length - msg.content!.length)
-        : '';
-    return Bubble(
+    final msgContent = Bubble(
       margin: isMe
           ? BubbleEdges.only(top: msgSpacing, left: sideMargin)
           : BubbleEdges.only(top: msgSpacing, right: sideMargin),
@@ -71,7 +68,8 @@ class ChatPageState extends State<ChatPage> {
           Padding(
             padding: EdgeInsets.only(bottom: 18),
             child: Text(
-              pad + msg.content!,
+              msg.content!.padLeft(time.length,
+                  '\u2007'), // Using unicode space is imp as flutter engine trims otherwise
               textAlign: isMe ? TextAlign.right : TextAlign.left,
               style: TextStyle(color: Colors.white),
             ),
@@ -84,6 +82,31 @@ class ChatPageState extends State<ChatPage> {
                   style: TextStyle(color: Colors.grey)))
         ],
       ),
+    );
+    if (prependDay == null) {
+      return msgContent;
+    }
+    late final dateString;
+    if (DateTime.now().day == prependDay.day) {
+      dateString = "TODAY";
+    } else if (DateTime.now().difference(prependDay).inDays == -1) {
+      dateString = "YESTERDAY";
+    } else {
+      dateString =
+          "${prependDay.day.toString()}/${prependDay.month.toString()}/${prependDay.year.toString().substring(2)}";
+    }
+    return Column(
+      children: [
+        Bubble(
+          alignment: Alignment.center,
+          color: Colors.amber[200],
+          child: Text(dateString,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  fontSize: Theme.of(context).textTheme.subtitle2!.fontSize)),
+        ),
+        msgContent
+      ],
     );
   }
 
@@ -113,8 +136,15 @@ class ChatPageState extends State<ChatPage> {
                         ? (msgs[msgs.length - 2 - index].fromUser ==
                             msgs[msgs.length - 1 - index].fromUser)
                         : false;
+                    final bool prependDayCond = msgs.length - 2 - index >= 0
+                        ? (msgs[msgs.length - 2 - index].time.day !=
+                            msgs[msgs.length - 1 - index].time.day)
+                        : true;
+                    DateTime? prependDay = prependDayCond
+                        ? msgs[msgs.length - 1 - index].time
+                        : null;
                     return _buildMessage(
-                        msgs[msgs.length - 1 - index], prevIsSame);
+                        msgs[msgs.length - 1 - index], prevIsSame, prependDay);
                   }))
         ],
       ),
