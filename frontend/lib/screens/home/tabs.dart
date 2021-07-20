@@ -5,7 +5,6 @@ import 'groupsView.dart';
 import '../components/roomsList.dart';
 import '../../utils/inner_drawer.dart';
 import '../../utils/types.dart';
-import 'package:moor/moor.dart';
 
 class TabView extends StatefulWidget {
   static TabViewState? of(BuildContext context) =>
@@ -57,7 +56,7 @@ class TabViewState extends State<TabView> {
             bottomOpacity: 0.0,
             elevation: 0.0,
             leading: IconButton(
-              icon: Icon(Icons.radar),
+              icon: Image.asset("assets/yaroom.png"),
               onPressed: () => {TabView.of(context)?.toggle()},
             ),
             actions: <Widget>[

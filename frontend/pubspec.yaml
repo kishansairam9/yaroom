@@ -3,7 +3,7 @@ description: A new Flutter project.
 
 # The following line prevents the package from being accidentally published to
 # pub.dev using `pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
 version: 1.0.0+1
 
@@ -15,6 +15,7 @@ dependencies:
     sdk: flutter
   badges: ^2.0.1
   bloc: ^7.0.0
+  bubble: ^1.2.1
   cupertino_icons: ^1.0.2
   faker: ^2.0.0
   flutter_bloc: ^7.0.1
@@ -29,9 +30,13 @@ dev_dependencies:
     sdk: flutter
   build_runner: ^2.0.5
   moor_generator: ^4.4.0
+  flutter_launcher_icons: "^0.9.0"
+
+flutter_icons:
+  image_path: "assets/yaroom_only_logo_200x200.png" 
+  android: true
 
 flutter:
-
   uses-material-design: true
 
   assets:
