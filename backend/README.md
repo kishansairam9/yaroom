@@ -2,7 +2,7 @@
 
 ### Docker compose
 - Create required directories for binding
-  - `mkdir -p ~/containerVolumes && cd ~/containerVolumes && mkdir mongodb rabbitmq && cd -`
+  - `mkdir -p ~/containerVolumes && cd ~/containerVolumes && mkdir mongodb rabbitmq minio && cd -`
 - `docker-compose up` to start conatiners
 
 ### Gin Server
