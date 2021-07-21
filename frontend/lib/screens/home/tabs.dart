@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:yaroom/groups.dart';
-import 'chat.dart';
-import 'rooms.dart';
-import 'inner_drawer.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'chatsView.dart';
+import 'groupsView.dart';
+import '../components/roomsList.dart';
+import '../../utils/inner_drawer.dart';
+import '../../utils/types.dart';
+import 'package:moor/moor.dart';
 
 class TabView extends StatefulWidget {
   static TabViewState? of(BuildContext context) =>
@@ -65,7 +68,13 @@ class TabViewState extends State<TabView> {
               ),
               IconButton(
                 icon: Icon(Icons.search),
-                onPressed: () {},
+                onPressed: () {
+                  showSearch(
+                    context: context,
+                    // TODO: Currently using only chats for ChatView, replace with contact list or something like that
+                    delegate: TabViewSearchDelegate(),
+                  );
+                },
                 tooltip: 'Search',
               ),
             ],
@@ -141,5 +150,102 @@ class TabViewState extends State<TabView> {
         );
       }),
     );
+  }
+}
+
+class TabViewSearchDelegate extends SearchDelegate {
+  late final List tiles;
+
+  TabViewSearchDelegate() : super();
+
+  @override
+  List<Widget> buildActions(BuildContext context) {
+    return <Widget>[
+      IconButton(
+          onPressed: () => {close(context, null)},
+          icon: Icon(Icons.close),
+          tooltip: 'Cancel')
+    ];
+  }
+
+  @override
+  Widget buildLeading(BuildContext context) {
+    return IconButton(
+        onPressed: () => {close(context, null)},
+        icon: Icon(Icons.arrow_back),
+        tooltip: 'Cancel');
+  }
+
+  Future<Widget> search(BuildContext context) async {
+    if (query.isEmpty) {
+      return Center(
+        child: Text("Enter query"),
+      );
+    }
+    var textresults = await RepositoryProvider.of<AppDb>(context)
+        .searchChatMessages(query: query.toLowerCase(), limit: 50)
+        .get();
+    var usersMatching = await RepositoryProvider.of<AppDb>(context)
+        .getUsersNameMatching(match: query.toLowerCase())
+        .get();
+    // print("Queried ${query.toLowerCase()}");
+    List<SearchChatMessagesResult> userResults = usersMatching
+        .map((e) => SearchChatMessagesResult(
+            content: '',
+            userId: e.userId,
+            name: e.name,
+            profileImg: e.profileImg))
+        .toList();
+    var results = userResults + textresults;
+    // print(results.map((e) => e.name));
+    // print(results.map((e) => e.content));
+    if (results.isEmpty) {
+      return Center(
+        child: Text("No matches"),
+      );
+    }
+    return ListView(
+        children: ListTile.divideTiles(
+            context: context,
+            tiles: results.map((SearchChatMessagesResult e) => ProfileTile(
+                userId: e.userId,
+                image: e.profileImg,
+                name: e.name,
+                unread: 0,
+                showText: e.content,
+                preShowChat: close,
+                preParams: [context, null]))).toList());
+  }
+
+  @override
+  Widget buildResults(BuildContext context) {
+    return FutureBuilder(
+        future: search(context),
+        builder: (BuildContext context, AsyncSnapshot<Widget> snapshot) {
+          if (snapshot.hasData) {
+            return snapshot.data!;
+          } else if (snapshot.hasError) {
+            print(snapshot.error);
+            return SnackBar(
+                content: Text('Error has occured while reading from local DB'));
+          }
+          return CircularProgressIndicator();
+        });
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    return FutureBuilder(
+        future: search(context),
+        builder: (BuildContext context, AsyncSnapshot<Widget> snapshot) {
+          if (snapshot.hasData) {
+            return snapshot.data!;
+          } else if (snapshot.hasError) {
+            print(snapshot.error);
+            return SnackBar(
+                content: Text('Error has occured while reading from local DB'));
+          }
+          return CircularProgressIndicator();
+        });
   }
 }

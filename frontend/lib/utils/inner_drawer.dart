@@ -66,7 +66,6 @@ class InnerDrawer extends StatefulWidget {
       this.innerDrawerCallback,
       this.onDragUpdate})
       : assert(leftChild != null || rightChild != null),
-        assert(scaffold != null),
         super(key: key);
 
   /// Left child
@@ -260,10 +259,7 @@ class InnerDrawerState extends State<InnerDrawer>
       final RenderBox? box =
           _drawerKey.currentContext!.findRenderObject() as RenderBox?;
       //final RenderBox box = context.findRenderObject();
-      if (box != null &&
-          box.hasSize &&
-          box.size != null &&
-          box.size.width > 300)
+      if (box != null && box.hasSize && box.size.width > 300)
         setState(() {
           _initWidth = box.size.width;
         });
@@ -301,6 +297,8 @@ class InnerDrawerState extends State<InnerDrawer>
       case InnerDrawerDirection.start:
         delta = -delta;
         break;
+      default:
+        break;
     }
     switch (Directionality.of(context)) {
       case TextDirection.rtl:
@@ -328,6 +326,8 @@ class InnerDrawerState extends State<InnerDrawer>
           break;
         case InnerDrawerDirection.start:
           visualVelocity = -visualVelocity;
+          break;
+        default:
           break;
       }
       switch (Directionality.of(context)) {
@@ -380,8 +380,9 @@ class InnerDrawerState extends State<InnerDrawer>
         return AlignmentDirectional.centerEnd;
       case InnerDrawerDirection.end:
         return AlignmentDirectional.centerStart;
+      default:
+        return null;
     }
-    return null;
   }
 
   /// Inner Alignment
@@ -391,8 +392,9 @@ class InnerDrawerState extends State<InnerDrawer>
         return AlignmentDirectional.centerStart;
       case InnerDrawerDirection.end:
         return AlignmentDirectional.centerEnd;
+      default:
+        return null;
     }
-    return null;
   }
 
   /// returns the left or right animation type based on InnerDrawerDirection
@@ -477,8 +479,7 @@ class InnerDrawerState extends State<InnerDrawer>
       );
 
     // Vertical translate
-    if (widget.offset != null &&
-        (widget.offset.top > 0 || widget.offset.bottom > 0)) {
+    if (widget.offset.top > 0 || widget.offset.bottom > 0) {
       final double translateY = MediaQuery.of(context).size.height *
           (widget.offset.top > 0 ? -widget.offset.top : widget.offset.bottom);
       container = Transform.translate(
@@ -555,7 +556,6 @@ class InnerDrawerState extends State<InnerDrawer>
 
   /// Trigger Area
   Widget? _trigger(AlignmentDirectional alignment, Widget? child) {
-    assert(alignment != null);
     final bool drawerIsStart = _position == InnerDrawerDirection.start;
     final EdgeInsets padding = MediaQuery.of(context).padding;
     double dragAreaWidth = drawerIsStart ? padding.left : padding.right;

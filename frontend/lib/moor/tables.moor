@@ -1,0 +1,135 @@
+-- Cant have multiple moor files with inter dependene on tables hence all in one files
+-- Moor requires queries to come after all the table declarations
+
+-------------
+-- User Table
+-------------
+CREATE TABLE Users (
+    userId TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    about TEXT,
+    profileImg TEXT
+);
+
+--------------
+-- DM Messages
+--------------
+CREATE TABLE ChatMessages (
+    msgId TEXT NOT NULL,
+    fromUser TEXT NOT NULL REFERENCES Users(userId),
+    toUser TEXT NOT NULL REFERENCES Users(userId),
+    time DATETIME NOT NULL,
+    content TEXT,
+    media TEXT,
+    replyTo TEXT,
+    CONSTRAINT hasData CHECK (content IS NOT NULL OR media IS NOT NULL)
+) AS ChatMessage;
+
+-- Indexes
+CREATE INDEX fromUserIndex ON ChatMessages(fromUser);
+CREATE INDEX toUserIndex ON ChatMessages(toUser);
+
+CREATE VIRTUAL TABLE ChatMessagesTextIndex USING fts5(msgId UNINDEXED, fromUser UNINDEXED, toUser UNINDEXED, time UNINDEXED, content, media UNINDEXED, replyTo UNINDEXED, content='ChatMessages', content_rowid='rowid', tokenize = 'porter unicode61');
+
+-- Triggers to keep index in sync
+CREATE TRIGGER ChatMessagesTextIndex_AI AFTER INSERT ON ChatMessages BEGIN
+    INSERT INTO ChatMessagesTextIndex(rowid, msgId, fromUser, toUser, time, content, media, replyTo) VALUES (new.rowid, new.msgId, new.fromUser, new.toUser, new.time, new.content, new.media, new.replyTo);
+END;
+
+CREATE TRIGGER ChatMessagesTextIndex_AD AFTER DELETE ON ChatMessages BEGIN
+    INSERT INTO ChatMessagesTextIndex(ChatMessagesTextIndex, rowid, msgId, fromUser, toUser, time, content, media, replyTo) VALUES ('delete', old.rowid, old.msgId, old.fromUser, old.toUser, old.time, old.content, old.media, old.replyTo);
+END;
+
+CREATE TRIGGER ChatMessagesTextIndex_AU AFTER UPDATE ON ChatMessages BEGIN
+    INSERT INTO ChatMessagesTextIndex(ChatMessagesTextIndex, rowid, msgId, fromUser, toUser, time, content, media, replyTo) VALUES ('delete', old.rowid, old.msgId, old.fromUser, old.toUser, old.time, old.content, old.media, old.replyTo);
+    INSERT INTO ChatMessagesTextIndex(rowid, msgId, fromUser, toUser, time, content, media, replyTo) VALUES (new.rowid, new.msgId, new.fromUser, new.toUser, new.time, new.content, new.media, new.replyTo);
+END;
+
+-------------
+-- Group Table
+-------------
+CREATE TABLE GroupDMs (
+    groupId TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    groupIcon TEXT
+);
+
+-------------
+-- User - Group Mapping Table
+-------------
+CREATE TABLE GroupUserMapping (
+    groupId TEXT NOT NULL REFERENCES GroupDMs(groupId),
+    userId TEXT NOT NULL REFERENCES Users(userId),
+    PRIMARY KEY(groupId, userId)
+);
+
+--------------
+-- Group Messages
+--------------
+CREATE TABLE GroupChatMessages (
+    msgId TEXT NOT NULL PRIMARY KEY,
+    groupId TEXT NOT NULL REFERENCES GroupDMs(groupId),
+    fromUser TEXT NOT NULL REFERENCES Users(userId),
+    time DATETIME NOT NULL,
+    content TEXT,
+    media TEXT,
+    replyTo TEXT,
+    CONSTRAINT hasData CHECK (content IS NOT NULL OR media IS NOT NULL)
+) AS GroupChatMessage;
+
+----------
+----------
+-- Queries
+----------
+----------
+
+-------------
+-- User Table
+-------------
+addUser(:userId AS TEXT, :name AS TEXT, :about AS TEXT OR NULL, :profileImg AS TEXT OR NULL): INSERT into Users VALUES (:userId, :name, :about, :profileImg);
+
+getAllUsers: SELECT * FROM Users;
+getUsersNameMatching(:match AS TEXT): SELECT * FROM Users WHERE LOWER(name) LIKE '%' || :match || '%';
+
+-------------
+-- Groups Table
+-------------
+createGroup(:groupId AS TEXT, :name AS TEXT, :description AS TEXT OR NULL, :groupIcon AS TEXT OR NULL): INSERT into GroupDMs VALUES (:groupId, :name, :description, :groupIcon);
+
+-------------
+-- Group-User Mapping Table
+-------------
+addUserToGroup(:groupId AS TEXT, :userId AS TEXT): INSERT into GroupUserMapping VALUES (:groupId, :userId);
+
+
+getGroupsOfUser(:userID AS TEXT): SELECT DISTINCT G.groupId, G.name, G.description, G.groupIcon FROM GroupDMs AS G, GroupUserMapping as GM WHERE GM.userId == :userID;   
+getGroupMembers(:groupID AS TEXT): SELECT U.* FROM Users AS U, (SELECT DISTINCT userId FROM GroupUserMapping AS GM WHERE GM.groupId == :groupID) AS UID WHERE U.userId == UID.userId; 
+
+-------------
+-- Group Chat Messages Table
+-------------
+getGroupChat(:groupId AS TEXT): SELECT * FROM GroupChatMessages WHERE groupId = :groupId ORDER BY msgId;
+insertGroupChatMessage(:msgId AS TEXT, :groupId AS TEXT, :fromUser AS TEXT, :time AS DATETIME, :content AS TEXT OR NULL, :media AS TEXT OR NULL, :replyTo AS TEXT OR NULL): INSERT INTO GroupChatMessages VALUES (:msgId, :groupId, :fromUser, :time, :content, :media, :replyTo);
+
+--------------
+-- DM Messages
+--------------
+
+getUserChat(:otherUser AS TEXT): SELECT * FROM ChatMessages WHERE fromUser = :otherUser OR toUser = :otherUser ORDER BY msgId;
+
+insertMessage(:msgId AS TEXT, :fromUser AS TEXT, :toUser AS TEXT, :time AS DATETIME, :content AS TEXT OR NULL, :media AS TEXT OR NULL, :replyTo AS TEXT OR NULL): INSERT INTO ChatMessages VALUES (:msgId, :fromUser, :toUser, :time, :content, :media, :replyTo);
+
+-- Search
+-- Possible BUG! -> if 'uvw AND xyz' is search string then the query we execute searchs for match of both 'uvw' and 'xyz'
+-- Remove key words from search string if this happens
+searchChatMessages(:query AS TEXT, :limit AS INT OR NULL): SELECT c.content, u.* FROM Users u JOIN (SELECT fromUser, toUser, content FROM ChatMessagesTextIndex WHERE content MATCH :query ORDER BY rank LIMIT :limit) c ON c.fromUser = u.userId OR c.toUser = u.userId;
+
+--------
+-- Rooms
+--------
+-- NOTE
+-- While using text full search index, if we use normal way like chats.moor
+-- With edit of non text field, while index of text will also be updated
+-- Thus we should remove the editable fields other than text into a different table and reference it in main table. EX: Pins & Reacts
+-- Also, not that if text is edited then message ID will be changed, that means, we won't have row updates for text instead row delete and a new row insert with a completely different message ID

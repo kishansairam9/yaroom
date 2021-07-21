@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'tabs.dart';
+import '../screens/home/tabs.dart';
 import 'errorPage.dart';
-import 'rooms.dart';
+import '../screens/rooms/room.dart';
 
 // TODO: Currently visiting any random route on web crashes the app FIX THIS
 
