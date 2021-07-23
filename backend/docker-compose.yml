@@ -67,7 +67,9 @@ services:
     networks:
       - yaroom-testing
 
-  els_seed_node:
+    
+  els_node:
+    container_name: yaroom-elassandra
     image: "docker.io/strapdata/elassandra:6.8.4.3"
     environment:
       - "JVM_OPTS=-Dcassandra.custom_query_handler_class=org.elassandra.index.ElasticQueryHandler"
@@ -75,14 +77,6 @@ services:
       - "HEAP_NEWSIZE=300m"
       - "CASSANDRA_CGROUP_MEMORY_LIMIT=true"
       - "DEBUG=true"
-    cap_add:
-      - IPC_LOCK
-    ulimits:
-      memlock: -1
-    mem_limit: 2000m
-    ports:
-      - "9042:9042"
-      - "9200:9200"
     volumes:
       - type: bind
         source: ~/containerVolumes/elassandra
@@ -90,18 +84,22 @@ services:
       - type: bind
         source: ~/containerVolumes/logs/elassandra
         target: /var/log/cassandra
+    ports:
+      - "9042:9042"
+      - "9200:9200"
     networks:
       - yaroom-testing
 
-  els_kibana:
+  kibana:
+    container_name: yaroom-kibana
     image: docker.elastic.co/kibana/kibana-oss:6.8.4
     environment:
-      - "ELASTICSEARCH_URL=http://localhost:9200"
+      - "ELASTICSEARCH_URL=http://els_node:9200"
     ports:
       - "5601:5601"
-    mem_limit: 500m
     networks:
       - yaroom-testing
+
 
 networks:
   yaroom-testing:
