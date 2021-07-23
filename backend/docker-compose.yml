@@ -32,11 +32,14 @@ services:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: password
       MONGO_DATA_DIR: /data/db
-      MONGO_LOG_DIR: /data/db
+      MONGO_LOG_DIR: /data/logs
     volumes:
       - type: bind
         source: ~/containerVolumes/mongodb
         target: /data/db
+      - type: bind
+        source: ~/containerVolumes/logs/mongodb
+        target: /data/logs
     ports:
       - "27017:27017"
     networks:
@@ -61,6 +64,44 @@ services:
       interval: 30s
       timeout: 20s
       retries: 3
+    networks:
+      - yaroom-testing
+
+  els_seed_node:
+    image: "docker.io/strapdata/elassandra:6.8.4.3"
+    environment:
+      - "JVM_OPTS=-Dcassandra.custom_query_handler_class=org.elassandra.index.ElasticQueryHandler"
+      - "MAX_HEAP_SIZE=1200m"
+      - "HEAP_NEWSIZE=300m"
+      - "CASSANDRA_CGROUP_MEMORY_LIMIT=true"
+      - "DEBUG=true"
+    cap_add:
+      - IPC_LOCK
+    ulimits:
+      memlock: -1
+    mem_limit: 2000m
+    ports:
+      - "9042:9042"
+      - "9200:9200"
+    volumes:
+      - type: bind
+        source: ~/containerVolumes/elassandra
+        target: /var/lib/cassandra
+      - type: bind
+        source: ~/containerVolumes/logs/elassandra
+        target: /var/log/cassandra
+    networks:
+      - yaroom-testing
+
+  els_kibana:
+    image: docker.elastic.co/kibana/kibana-oss:6.8.4
+    environment:
+      - "ELASTICSEARCH_URL=http://localhost:9200"
+    ports:
+      - "5601:5601"
+    mem_limit: 500m
+    networks:
+      - yaroom-testing
 
 networks:
   yaroom-testing:
