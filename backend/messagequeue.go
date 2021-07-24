@@ -81,7 +81,7 @@ func msgQueueReadRoutine(userId string, outputChan chan<- interface{}, quit chan
 			if err := json.Unmarshal(d.Body, &msg); err != nil {
 				log.Error().Str("where", "queue read").Str("type", "failed to parse message").Msg(err.Error())
 			}
-			msg, err = addMessage(msg)
+			err = addMessage(&msg)
 			if err != nil {
 				log.Error().Str("where", "add message").Str("type", "failed to add messsage to db").Msg(err.Error())
 			} else {
