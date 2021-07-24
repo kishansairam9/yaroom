@@ -11,6 +11,7 @@ Function counterClosure(int start) {
 dynamic getUserId = counterClosure(13);
 dynamic getMsgId = counterClosure(44000);
 dynamic getGroupId = counterClosure(100000);
+dynamic getRoomId = counterClosure(5000000);
 
 dynamic getImage() => faker.image.image(
     width: 150, height: 150, keywords: ['people', 'nature'], random: true);

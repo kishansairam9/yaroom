@@ -22,12 +22,15 @@ type WSMessage struct {
 	MediaData *WSMediaFile `json:"mediaData,omitempty"`
 	Media     string       `json:"media,omitempty"`
 	ReplyTo   string       `json:"replyTo,omitempty"`
+  RoomId    string       `json:"roomId,omitempty"`
+	ChannelId string       `json:"channelId,omitempty"`
 }
 
 type WSMediaFile struct {
 	Name  string `json:"name"`
 	Bytes []byte `json:"bytes"`
 }
+
 
 type WSError struct {
 	Error string `json:"error"`
@@ -77,6 +80,7 @@ func wsHandler(g *gin.Context) {
 				ch <- WSError{Error: "Invalid fromUser! Identifications spoofing"}
 				continue
 			}
+      
 			ch <- msg
 			select {
 			case <-quit:

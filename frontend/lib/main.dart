@@ -1,6 +1,8 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:hydrated_bloc/hydrated_bloc.dart';
+import 'package:path_provider/path_provider.dart';
 import 'utils/router.dart';
 import 'moor/db.dart';
 import 'fakegen.dart';
@@ -70,10 +72,48 @@ void fakeInsert(AppDb db, UserId userId) {
           content: exchange[0][j]);
     }
   }
+
+  for (var i = 0; i < 15; i++) {
+    String rid = getRoomId();
+    db.createRoom(
+        roomId: rid,
+        name: getCompanyName(),
+        description: getAbout(),
+        roomIcon: getGroupImage());
+    int roomSize = getRandomInt(5, 20);
+    var roomMembers = new List.generate(
+        roomSize, (_) => others[Random().nextInt(others.length)]);
+    roomMembers.add(userId);
+    roomMembers = roomMembers.toSet().toList();
+    roomSize = roomMembers.length;
+    for (var j = 0; j < roomSize; j++) {
+      db.addUserToRoom(roomsId: rid, userId: roomMembers[j]);
+    }
+    int randomNo = Random().nextInt(10) + 1;
+    for (var j = 0; j < randomNo; j++) {
+      db.addChannelsToRoom(
+          roomId: rid,
+          channelId: j.toString(),
+          channelName: getRandomString(5));
+      var exchange = getExchange();
+      for (var k = 0; k < exchange[0].length; k++) {
+        db.insertRoomsChannelMessage(
+            msgId: getMsgId(),
+            roomId: rid,
+            channelId: j.toString(),
+            fromUser: roomMembers[Random().nextInt(roomMembers.length)],
+            time: DateTime.fromMicrosecondsSinceEpoch(j * 1000 * 62),
+            content: exchange[0][k]);
+      }
+    }
+  }
 }
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  HydratedBloc.storage = await HydratedStorage.build(
+    storageDirectory: await getTemporaryDirectory(),
+  );
   final removeExistingDB = true;
   AppDb db = constructDb(logStatements: true, removeExisting: removeExistingDB);
   // Fake app user
@@ -131,6 +171,21 @@ class MyApp extends StatelessWidget {
                         !data.containsKey('replyTo') || data['replyTo'] == ''
                             ? null
                             : data['replyTo'],
+                  )
+                      .catchError((e) {
+                    print("Database insert failed with error $e");
+                  });
+                } else if (data['type'] == 'RoomsMessage') {
+                  await db
+                      .insertRoomsChannelMessage(
+                    msgId: data['msgId'],
+                    roomId: data['roomId'],
+                    channelId: data['channelId'],
+                    fromUser: data['fromUser'],
+                    time: data['time'],
+                    content: data['content'] == '' ? null : data['content'],
+                    media: data['media'] == '' ? null : data['media'],
+                    replyTo: data['replyTo'] == '' ? null : data['replyTo'],
                   )
                       .catchError((e) {
                     print("Database insert failed with error $e");
