@@ -11,14 +11,18 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/gocql/gocql"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/rs/zerolog/log"
 	"github.com/scylladb/gocqlx/v2"
-
 	"github.com/streadway/amqp"
 )
 
 var rmqConn *amqp.Connection
 var dbSession gocqlx.Session
+var minioClient *minio.Client
+
+const miniobucket = "yaroom-test"
 
 func main() {
 	var err error
@@ -41,6 +45,34 @@ func main() {
 		setupDB()
 	}
 
+	// Media store
+	{
+		endpoint := "localhost:9000"
+		accessKeyID := "minio"
+		secretAccessKey := "minio123"
+		useSSL := false
+		minioClient, err = minio.New(endpoint, &minio.Options{
+			Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
+			Secure: useSSL,
+		})
+		if err != nil {
+			log.Fatal().Str("where", "minio new").Str("type", "failed to connect to minio").Msg(err.Error())
+		}
+		found, err := minioClient.BucketExists(context.Background(), miniobucket)
+		if err != nil {
+			log.Fatal().Str("where", "minio check bucket").Str("type", "failed to check minio bucket exists").Msg(err.Error())
+			return
+		}
+		if !found {
+			// Create bucket
+			err = minioClient.MakeBucket(context.Background(), miniobucket, minio.MakeBucketOptions{Region: "us-east-1", ObjectLocking: false})
+			if err != nil {
+				log.Fatal().Str("where", "minio create bucket").Str("type", "failed to create minio bucket").Msg(err.Error())
+				return
+			}
+		}
+	}
+
 	// Server
 	r := gin.Default()
 	r.Use(cors.Default())
@@ -52,9 +84,7 @@ func main() {
 	})
 
 	// Websocket mock
-	r.GET("/", func(c *gin.Context) {
-		wsHandler(c)
-	})
+	r.GET("/", wsHandler)
 
 	// Protected routes // TODO: Protect all at later stage, currently only testing
 	secured := r.Group("/secured", jwtHandler)
@@ -82,6 +112,9 @@ func main() {
 			g.JSON(200, gin.H{"userId": userId})
 		})
 
+		// Media handler
+		testing.GET("/media/:objectid", mediaServerHandler)
+
 		testing.POST("/addMessage", func(g *gin.Context) {
 			var msg WSMessage
 			if err := g.BindJSON(&msg); err != nil {
@@ -94,7 +127,7 @@ func main() {
 				g.AbortWithStatusJSON(400, gin.H{"error": "Request sender and msg fromUser don't match"})
 				return
 			}
-			msg, err := addMessage(msg)
+			err := addMessage(&msg)
 			if err != nil {
 				if err.Error() == "unknown message type" {
 					g.AbortWithStatusJSON(400, gin.H{"error": "Unknown message type"})

@@ -13,14 +13,20 @@ var wsUpgrader = websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024}
 
 // All message types are handled by one raw struct (non relavant fields are ignored), we switch based on type of message as required
 type WSMessage struct {
-	Type     string    `json:"type"`
-	MsgId    string    `json:"msgId,omitempty"`
-	FromUser string    `json:"fromUser"`
-	ToUser   string    `json:"toUser,omitempty"`
-	Time     time.Time `json:"time"`
-	Content  string    `json:"content,omitempty"`
-	Media    string    `json:"media,omitempty"`
-	ReplyTo  string    `json:"replyTo,omitempty"`
+	Type      string       `json:"type"`
+	MsgId     string       `json:"msgId,omitempty"`
+	FromUser  string       `json:"fromUser"`
+	ToUser    string       `json:"toUser,omitempty"`
+	Time      time.Time    `json:"time,omitempty"`
+	Content   string       `json:"content,omitempty"`
+	MediaData *WSMediaFile `json:"mediaData,omitempty"`
+	Media     string       `json:"media,omitempty"`
+	ReplyTo   string       `json:"replyTo,omitempty"`
+}
+
+type WSMediaFile struct {
+	Name  string `json:"name"`
+	Bytes []byte `json:"bytes"`
 }
 
 type WSError struct {
@@ -31,12 +37,18 @@ func wsHandler(g *gin.Context) {
 	conn, err := wsUpgrader.Upgrade(g.Writer, g.Request, nil)
 	if err != nil {
 		log.Warn().Str("where", "wsHandler").Str("type", "ws upgrade").Msg(err.Error())
+		g.AbortWithStatusJSON(400, gin.H{"error": "failed to upgrade connection to websocket"})
 		return
 	}
 
-	// TODO uncomment after securing ws route
-	// rawUserId, _ := g.Get("userId")
-	// userId := rawUserId.(string)
+	rawUserId, exists := g.Get("userId")
+	if !exists {
+		// TODO: REMOVE DUMMY USER ID AFTER SECURING ROUTE AND THROW ERROR
+		rawUserId = "0"
+		// g.AbortWithStatusJSON(400, gin.H{"error": "user not authenticated"})
+		// return
+	}
+	userId := rawUserId.(string)
 
 	// Database insert routine
 	dbInChannel := make(chan interface{}, 50)
@@ -60,12 +72,11 @@ func wsHandler(g *gin.Context) {
 				ch <- WSError{Error: "Error parsing message contents"}
 				continue
 			}
-			// TODO uncomment after securing ws route
-			// // Validate fromUser with userId in JWT to prevent
-			// if msg.FromUser != userId {
-			// 	ch <- WSError{Error: "Invalid fromUser! Identifications spoofing"}
-			// 	continue
-			// }
+			// Validate fromUser with userId in JWT to prevent
+			if msg.FromUser != userId {
+				ch <- WSError{Error: "Invalid fromUser! Identifications spoofing"}
+				continue
+			}
 			ch <- msg
 			select {
 			case <-quit:
@@ -77,8 +88,7 @@ func wsHandler(g *gin.Context) {
 
 	// Message queue read routine
 	msgQueueReadQuit := make(chan bool)
-	// TODO: Replace userID with jwt user ID
-	go msgQueueReadRoutine("userId", dbOutChannel, msgQueueReadQuit)
+	go msgQueueReadRoutine(userId, dbOutChannel, msgQueueReadQuit)
 
 	gotQuitFromRead, gotQuitFromMsgReadQueue := false, false
 
@@ -105,9 +115,8 @@ func wsHandler(g *gin.Context) {
 				log.Info().Str("where", "wsHandler").Str("type", "writing message").Msg(err.Error())
 				connFailed = true
 			}
-			// TODO: Replace userID with jwt user ID
 			data, isMsg := out.(WSMessage)
-			if isMsg && data.FromUser == "userId" {
+			if isMsg && data.FromUser == userId {
 				if err = msgQueueSendToUser(out.(WSMessage).ToUser, out.(WSMessage)); err != nil {
 					log.Error().Str("where", "msgQueue send to user").Str("type", "failed to write to user queue").Msg(err.Error())
 				}

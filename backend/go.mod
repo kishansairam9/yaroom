@@ -9,8 +9,7 @@ require (
 	github.com/gin-gonic/gin v1.7.2
 	github.com/gocql/gocql v0.0.0-20210707082121-9a3953d1826d
 	github.com/gorilla/websocket v1.4.2
-	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
-	github.com/modern-go/reflect2 v1.0.1 // indirect
+	github.com/minio/minio-go/v7 v7.0.12
 	github.com/rs/xid v1.2.1
 	github.com/rs/zerolog v1.23.0
 	github.com/scylladb/gocqlx/v2 v2.4.0
