@@ -89,16 +89,17 @@ class ChatPageState extends State<ChatPage> {
     }
     late final dateString;
     if (DateTime.now().day == prependDay.day) {
-      dateString = "TODAY";
+      dateString = "Today";
     } else if (DateTime.now().difference(prependDay).inDays == -1) {
-      dateString = "YESTERDAY";
+      dateString = "Yesterday";
     } else {
       dateString =
-          "${prependDay.day.toString()}/${prependDay.month.toString()}/${prependDay.year.toString().substring(2)}";
+          "${prependDay.day.toString().padLeft(2, "0")}/${prependDay.month.toString().padLeft(2, "0")}/${prependDay.year.toString().substring(2)}";
     }
     return Column(
       children: [
         Bubble(
+          margin: BubbleEdges.only(top: msgSpacing),
           alignment: Alignment.center,
           color: Colors.amber[200],
           child: Text(dateString,
@@ -197,7 +198,7 @@ class ChatPageState extends State<ChatPage> {
                   msgId: data['msgId'],
                   toUser: data['toUser'],
                   fromUser: data['fromUser'],
-                  time: DateTime.parse(data['time']),
+                  time: DateTime.parse(data['time']).toLocal(),
                   content: data['content'] == '' ? null : data['content'],
                   media: data['media'] == '' ? null : data['media'],
                   replyTo: data['replyTo'] == '' ? null : data['replyTo'],

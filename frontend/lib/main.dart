@@ -112,7 +112,7 @@ class MyApp extends StatelessWidget {
                   print("WS stream returned error ${data['error']}");
                   return;
                 }
-                data['time'] = DateTime.parse(data['time']);
+                data['time'] = DateTime.parse(data['time']).toLocal();
                 if (data['type'] == 'ChatMessage') {
                   await db
                       .insertMessage(
