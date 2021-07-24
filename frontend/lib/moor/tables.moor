@@ -46,6 +46,54 @@ CREATE TRIGGER ChatMessagesTextIndex_AU AFTER UPDATE ON ChatMessages BEGIN
 END;
 
 -------------
+-- Rooms Table
+-------------
+
+CREATE TABLE RoomsList (
+    roomId TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    roomIcon TEXT
+);
+
+-------------
+-- Rooms - User Mapping
+-------------
+
+CREATE TABLE RoomsUserMapping (
+    roomId TEXT NOT NULL REFERENCES RoomsList(roomId),
+    userId TEXT NOT NULL REFERENCES Users(userId),
+    PRIMARY KEY(roomId, userId)
+);
+
+-------------
+-- Channels list in Rooms
+-------------
+
+CREATE TABLE RoomsChannels (
+    roomId TEXT NOT NULL REFERENCES RoomsList(roomId),
+    channelId TEXT NOT NULL,
+    channelName TEXT NOT NULL,
+    PRIMARY KEY(roomId, channelId)
+);
+
+-------------
+-- Rooms Messages
+-------------
+
+CREATE TABLE RoomsMessages (
+    msgId TEXT NOT NULL PRIMARY KEY,
+    roomId TEXT NOT NULL REFERENCES RoomsList(roomId),
+    channelId TEXT NOT NULL REFERENCES RoomsChannels(channelId),
+    fromUser TEXT NOT NULL REFERENCES Users(userId),
+    time DATETIME NOT NULL,
+    content TEXT,
+    media TEXT,
+    replyTo TEXT,
+    CONSTRAINT hasData CHECK (content IS NOT NULL OR media IS NOT NULL)
+);
+
+-------------
 -- Group Table
 -------------
 CREATE TABLE GroupDMs (
@@ -103,8 +151,8 @@ createGroup(:groupId AS TEXT, :name AS TEXT, :description AS TEXT OR NULL, :grou
 addUserToGroup(:groupId AS TEXT, :userId AS TEXT): INSERT into GroupUserMapping VALUES (:groupId, :userId);
 
 
-getGroupsOfUser(:userID AS TEXT): SELECT DISTINCT G.groupId, G.name, G.description, G.groupIcon FROM GroupDMs AS G, GroupUserMapping as GM WHERE GM.userId == :userID;   
-getGroupMembers(:groupID AS TEXT): SELECT U.* FROM Users AS U, (SELECT DISTINCT userId FROM GroupUserMapping AS GM WHERE GM.groupId == :groupID) AS UID WHERE U.userId == UID.userId; 
+getGroupsOfUser(:userID AS TEXT): SELECT DISTINCT G.groupId, G.name, G.description, G.groupIcon FROM GroupDMs AS G, GroupUserMapping as GM WHERE GM.userId = :userID;   
+getGroupMembers(:groupID AS TEXT): SELECT U.* FROM Users AS U, (SELECT DISTINCT userId FROM GroupUserMapping AS GM WHERE GM.groupId = :groupID) AS UID WHERE U.userId = UID.userId; 
 
 -------------
 -- Group Chat Messages Table
@@ -128,6 +176,31 @@ searchChatMessages(:query AS TEXT, :limit AS INT OR NULL): SELECT c.content, u.*
 --------
 -- Rooms
 --------
+createRoom(:roomId AS TEXT, :name AS TEXT, :description AS TEXT OR NULL, :roomIcon AS TEXT OR NULL): INSERT into RoomsList VALUES (:roomId, :name, :description, :roomIcon);
+
+-------------
+-- Rooms-User Mapping Table
+-------------
+addUserToRoom(:roomId AS TEXT, :userId AS TEXT): INSERT into RoomsUserMapping VALUES (:roomsId, :userId);
+
+
+getRoomsOfUser(:userID AS TEXT): SELECT DISTINCT R.roomId, R.name, R.description, R.roomIcon FROM RoomsList AS R, RoomsUserMapping as RM WHERE RM.userId = :userID;   
+getRoomMembers(:roomID AS TEXT): SELECT U.* FROM Users AS U, (SELECT DISTINCT userId FROM RoomsUserMapping AS RM WHERE RM.roomId = :roomID) AS UID WHERE U.userId = UID.userId; 
+
+-------------
+-- Rooms-Channels Mapping Table
+-------------
+addChannelsToRoom(:channelId AS TEXT, :roomId AS TEXT, :channelName as TEXT): INSERT into RoomsChannels VALUES (:roomId, :channelId, :channelName);
+
+getChannelsOfRoom(:roomID AS TEXT): SELECT RC.* FROM RoomsChannels AS RC WHERE RC.roomId = :roomID;
+getChannelName(:roomId AS TEXT, :channelId AS TEXT): SELECT * FROM RoomsChannels WHERE roomId = :roomId AND channelId = :channelId;
+-------------
+-- Rooms Channel-wise Messages Table
+-------------
+insertRoomsChannelMessage(:msgId AS TEXT, :roomID AS TEXT, :channelId AS TEXT, :fromUser AS TEXT, :time AS DATETIME, :content AS TEXT OR NULL, :media AS TEXT OR NULL, :replyTo AS TEXT OR NULL): INSERT INTO RoomsMessages VALUES (:msgId, :roomId, :channelId,:fromUser, :time, :content, :media, :replyTo);
+
+getRoomChannelChat(:roomId AS TEXT): SELECT * FROM RoomsMessages WHERE roomId = :roomId ORDER BY msgId;
+
 -- NOTE
 -- While using text full search index, if we use normal way like chats.moor
 -- With edit of non text field, while index of text will also be updated

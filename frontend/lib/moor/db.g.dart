@@ -1010,6 +1010,1095 @@ class ChatMessagesTextIndex extends Table
       'fts5(msgId UNINDEXED, fromUser UNINDEXED, toUser UNINDEXED, time UNINDEXED, content, media UNINDEXED, replyTo UNINDEXED, content=\'ChatMessages\', content_rowid=\'rowid\', tokenize = \'porter unicode61\')';
 }
 
+class RoomsListData extends DataClass implements Insertable<RoomsListData> {
+  final String roomId;
+  final String name;
+  final String? description;
+  final String? roomIcon;
+  RoomsListData(
+      {required this.roomId,
+      required this.name,
+      this.description,
+      this.roomIcon});
+  factory RoomsListData.fromData(
+      Map<String, dynamic> data, GeneratedDatabase db,
+      {String? prefix}) {
+    final effectivePrefix = prefix ?? '';
+    return RoomsListData(
+      roomId: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}roomId'])!,
+      name: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}name'])!,
+      description: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}description']),
+      roomIcon: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}roomIcon']),
+    );
+  }
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['roomId'] = Variable<String>(roomId);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String?>(description);
+    }
+    if (!nullToAbsent || roomIcon != null) {
+      map['roomIcon'] = Variable<String?>(roomIcon);
+    }
+    return map;
+  }
+
+  RoomsListCompanion toCompanion(bool nullToAbsent) {
+    return RoomsListCompanion(
+      roomId: Value(roomId),
+      name: Value(name),
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
+      roomIcon: roomIcon == null && nullToAbsent
+          ? const Value.absent()
+          : Value(roomIcon),
+    );
+  }
+
+  factory RoomsListData.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= moorRuntimeOptions.defaultSerializer;
+    return RoomsListData(
+      roomId: serializer.fromJson<String>(json['roomId']),
+      name: serializer.fromJson<String>(json['name']),
+      description: serializer.fromJson<String?>(json['description']),
+      roomIcon: serializer.fromJson<String?>(json['roomIcon']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= moorRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'roomId': serializer.toJson<String>(roomId),
+      'name': serializer.toJson<String>(name),
+      'description': serializer.toJson<String?>(description),
+      'roomIcon': serializer.toJson<String?>(roomIcon),
+    };
+  }
+
+  RoomsListData copyWith(
+          {String? roomId,
+          String? name,
+          Value<String?> description = const Value.absent(),
+          Value<String?> roomIcon = const Value.absent()}) =>
+      RoomsListData(
+        roomId: roomId ?? this.roomId,
+        name: name ?? this.name,
+        description: description.present ? description.value : this.description,
+        roomIcon: roomIcon.present ? roomIcon.value : this.roomIcon,
+      );
+  @override
+  String toString() {
+    return (StringBuffer('RoomsListData(')
+          ..write('roomId: $roomId, ')
+          ..write('name: $name, ')
+          ..write('description: $description, ')
+          ..write('roomIcon: $roomIcon')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => $mrjf($mrjc(roomId.hashCode,
+      $mrjc(name.hashCode, $mrjc(description.hashCode, roomIcon.hashCode))));
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RoomsListData &&
+          other.roomId == this.roomId &&
+          other.name == this.name &&
+          other.description == this.description &&
+          other.roomIcon == this.roomIcon);
+}
+
+class RoomsListCompanion extends UpdateCompanion<RoomsListData> {
+  final Value<String> roomId;
+  final Value<String> name;
+  final Value<String?> description;
+  final Value<String?> roomIcon;
+  const RoomsListCompanion({
+    this.roomId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.description = const Value.absent(),
+    this.roomIcon = const Value.absent(),
+  });
+  RoomsListCompanion.insert({
+    required String roomId,
+    required String name,
+    this.description = const Value.absent(),
+    this.roomIcon = const Value.absent(),
+  })  : roomId = Value(roomId),
+        name = Value(name);
+  static Insertable<RoomsListData> custom({
+    Expression<String>? roomId,
+    Expression<String>? name,
+    Expression<String?>? description,
+    Expression<String?>? roomIcon,
+  }) {
+    return RawValuesInsertable({
+      if (roomId != null) 'roomId': roomId,
+      if (name != null) 'name': name,
+      if (description != null) 'description': description,
+      if (roomIcon != null) 'roomIcon': roomIcon,
+    });
+  }
+
+  RoomsListCompanion copyWith(
+      {Value<String>? roomId,
+      Value<String>? name,
+      Value<String?>? description,
+      Value<String?>? roomIcon}) {
+    return RoomsListCompanion(
+      roomId: roomId ?? this.roomId,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      roomIcon: roomIcon ?? this.roomIcon,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (roomId.present) {
+      map['roomId'] = Variable<String>(roomId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String?>(description.value);
+    }
+    if (roomIcon.present) {
+      map['roomIcon'] = Variable<String?>(roomIcon.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RoomsListCompanion(')
+          ..write('roomId: $roomId, ')
+          ..write('name: $name, ')
+          ..write('description: $description, ')
+          ..write('roomIcon: $roomIcon')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class RoomsList extends Table with TableInfo<RoomsList, RoomsListData> {
+  final GeneratedDatabase _db;
+  final String? _alias;
+  RoomsList(this._db, [this._alias]);
+  final VerificationMeta _roomIdMeta = const VerificationMeta('roomId');
+  late final GeneratedColumn<String?> roomId = GeneratedColumn<String?>(
+      'roomId', aliasedName, false,
+      typeName: 'TEXT',
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL PRIMARY KEY');
+  final VerificationMeta _nameMeta = const VerificationMeta('name');
+  late final GeneratedColumn<String?> name = GeneratedColumn<String?>(
+      'name', aliasedName, false,
+      typeName: 'TEXT',
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL');
+  final VerificationMeta _descriptionMeta =
+      const VerificationMeta('description');
+  late final GeneratedColumn<String?> description = GeneratedColumn<String?>(
+      'description', aliasedName, true,
+      typeName: 'TEXT', requiredDuringInsert: false, $customConstraints: '');
+  final VerificationMeta _roomIconMeta = const VerificationMeta('roomIcon');
+  late final GeneratedColumn<String?> roomIcon = GeneratedColumn<String?>(
+      'roomIcon', aliasedName, true,
+      typeName: 'TEXT', requiredDuringInsert: false, $customConstraints: '');
+  @override
+  List<GeneratedColumn> get $columns => [roomId, name, description, roomIcon];
+  @override
+  String get aliasedName => _alias ?? 'RoomsList';
+  @override
+  String get actualTableName => 'RoomsList';
+  @override
+  VerificationContext validateIntegrity(Insertable<RoomsListData> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('roomId')) {
+      context.handle(_roomIdMeta,
+          roomId.isAcceptableOrUnknown(data['roomId']!, _roomIdMeta));
+    } else if (isInserting) {
+      context.missing(_roomIdMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+          _descriptionMeta,
+          description.isAcceptableOrUnknown(
+              data['description']!, _descriptionMeta));
+    }
+    if (data.containsKey('roomIcon')) {
+      context.handle(_roomIconMeta,
+          roomIcon.isAcceptableOrUnknown(data['roomIcon']!, _roomIconMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {roomId};
+  @override
+  RoomsListData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    return RoomsListData.fromData(data, _db,
+        prefix: tablePrefix != null ? '$tablePrefix.' : null);
+  }
+
+  @override
+  RoomsList createAlias(String alias) {
+    return RoomsList(_db, alias);
+  }
+
+  @override
+  bool get dontWriteConstraints => true;
+}
+
+class RoomsUserMappingData extends DataClass
+    implements Insertable<RoomsUserMappingData> {
+  final String roomId;
+  final String userId;
+  RoomsUserMappingData({required this.roomId, required this.userId});
+  factory RoomsUserMappingData.fromData(
+      Map<String, dynamic> data, GeneratedDatabase db,
+      {String? prefix}) {
+    final effectivePrefix = prefix ?? '';
+    return RoomsUserMappingData(
+      roomId: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}roomId'])!,
+      userId: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}userId'])!,
+    );
+  }
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['roomId'] = Variable<String>(roomId);
+    map['userId'] = Variable<String>(userId);
+    return map;
+  }
+
+  RoomsUserMappingCompanion toCompanion(bool nullToAbsent) {
+    return RoomsUserMappingCompanion(
+      roomId: Value(roomId),
+      userId: Value(userId),
+    );
+  }
+
+  factory RoomsUserMappingData.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= moorRuntimeOptions.defaultSerializer;
+    return RoomsUserMappingData(
+      roomId: serializer.fromJson<String>(json['roomId']),
+      userId: serializer.fromJson<String>(json['userId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= moorRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'roomId': serializer.toJson<String>(roomId),
+      'userId': serializer.toJson<String>(userId),
+    };
+  }
+
+  RoomsUserMappingData copyWith({String? roomId, String? userId}) =>
+      RoomsUserMappingData(
+        roomId: roomId ?? this.roomId,
+        userId: userId ?? this.userId,
+      );
+  @override
+  String toString() {
+    return (StringBuffer('RoomsUserMappingData(')
+          ..write('roomId: $roomId, ')
+          ..write('userId: $userId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => $mrjf($mrjc(roomId.hashCode, userId.hashCode));
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RoomsUserMappingData &&
+          other.roomId == this.roomId &&
+          other.userId == this.userId);
+}
+
+class RoomsUserMappingCompanion extends UpdateCompanion<RoomsUserMappingData> {
+  final Value<String> roomId;
+  final Value<String> userId;
+  const RoomsUserMappingCompanion({
+    this.roomId = const Value.absent(),
+    this.userId = const Value.absent(),
+  });
+  RoomsUserMappingCompanion.insert({
+    required String roomId,
+    required String userId,
+  })  : roomId = Value(roomId),
+        userId = Value(userId);
+  static Insertable<RoomsUserMappingData> custom({
+    Expression<String>? roomId,
+    Expression<String>? userId,
+  }) {
+    return RawValuesInsertable({
+      if (roomId != null) 'roomId': roomId,
+      if (userId != null) 'userId': userId,
+    });
+  }
+
+  RoomsUserMappingCompanion copyWith(
+      {Value<String>? roomId, Value<String>? userId}) {
+    return RoomsUserMappingCompanion(
+      roomId: roomId ?? this.roomId,
+      userId: userId ?? this.userId,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (roomId.present) {
+      map['roomId'] = Variable<String>(roomId.value);
+    }
+    if (userId.present) {
+      map['userId'] = Variable<String>(userId.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RoomsUserMappingCompanion(')
+          ..write('roomId: $roomId, ')
+          ..write('userId: $userId')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class RoomsUserMapping extends Table
+    with TableInfo<RoomsUserMapping, RoomsUserMappingData> {
+  final GeneratedDatabase _db;
+  final String? _alias;
+  RoomsUserMapping(this._db, [this._alias]);
+  final VerificationMeta _roomIdMeta = const VerificationMeta('roomId');
+  late final GeneratedColumn<String?> roomId = GeneratedColumn<String?>(
+      'roomId', aliasedName, false,
+      typeName: 'TEXT',
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL REFERENCES RoomsList(roomId)');
+  final VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  late final GeneratedColumn<String?> userId = GeneratedColumn<String?>(
+      'userId', aliasedName, false,
+      typeName: 'TEXT',
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL REFERENCES Users(userId)');
+  @override
+  List<GeneratedColumn> get $columns => [roomId, userId];
+  @override
+  String get aliasedName => _alias ?? 'RoomsUserMapping';
+  @override
+  String get actualTableName => 'RoomsUserMapping';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<RoomsUserMappingData> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('roomId')) {
+      context.handle(_roomIdMeta,
+          roomId.isAcceptableOrUnknown(data['roomId']!, _roomIdMeta));
+    } else if (isInserting) {
+      context.missing(_roomIdMeta);
+    }
+    if (data.containsKey('userId')) {
+      context.handle(_userIdMeta,
+          userId.isAcceptableOrUnknown(data['userId']!, _userIdMeta));
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {roomId, userId};
+  @override
+  RoomsUserMappingData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    return RoomsUserMappingData.fromData(data, _db,
+        prefix: tablePrefix != null ? '$tablePrefix.' : null);
+  }
+
+  @override
+  RoomsUserMapping createAlias(String alias) {
+    return RoomsUserMapping(_db, alias);
+  }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(roomId, userId)'];
+  @override
+  bool get dontWriteConstraints => true;
+}
+
+class RoomsChannel extends DataClass implements Insertable<RoomsChannel> {
+  final String roomId;
+  final String channelId;
+  final String channelName;
+  RoomsChannel(
+      {required this.roomId,
+      required this.channelId,
+      required this.channelName});
+  factory RoomsChannel.fromData(Map<String, dynamic> data, GeneratedDatabase db,
+      {String? prefix}) {
+    final effectivePrefix = prefix ?? '';
+    return RoomsChannel(
+      roomId: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}roomId'])!,
+      channelId: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}channelId'])!,
+      channelName: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}channelName'])!,
+    );
+  }
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['roomId'] = Variable<String>(roomId);
+    map['channelId'] = Variable<String>(channelId);
+    map['channelName'] = Variable<String>(channelName);
+    return map;
+  }
+
+  RoomsChannelsCompanion toCompanion(bool nullToAbsent) {
+    return RoomsChannelsCompanion(
+      roomId: Value(roomId),
+      channelId: Value(channelId),
+      channelName: Value(channelName),
+    );
+  }
+
+  factory RoomsChannel.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= moorRuntimeOptions.defaultSerializer;
+    return RoomsChannel(
+      roomId: serializer.fromJson<String>(json['roomId']),
+      channelId: serializer.fromJson<String>(json['channelId']),
+      channelName: serializer.fromJson<String>(json['channelName']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= moorRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'roomId': serializer.toJson<String>(roomId),
+      'channelId': serializer.toJson<String>(channelId),
+      'channelName': serializer.toJson<String>(channelName),
+    };
+  }
+
+  RoomsChannel copyWith(
+          {String? roomId, String? channelId, String? channelName}) =>
+      RoomsChannel(
+        roomId: roomId ?? this.roomId,
+        channelId: channelId ?? this.channelId,
+        channelName: channelName ?? this.channelName,
+      );
+  @override
+  String toString() {
+    return (StringBuffer('RoomsChannel(')
+          ..write('roomId: $roomId, ')
+          ..write('channelId: $channelId, ')
+          ..write('channelName: $channelName')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => $mrjf(
+      $mrjc(roomId.hashCode, $mrjc(channelId.hashCode, channelName.hashCode)));
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RoomsChannel &&
+          other.roomId == this.roomId &&
+          other.channelId == this.channelId &&
+          other.channelName == this.channelName);
+}
+
+class RoomsChannelsCompanion extends UpdateCompanion<RoomsChannel> {
+  final Value<String> roomId;
+  final Value<String> channelId;
+  final Value<String> channelName;
+  const RoomsChannelsCompanion({
+    this.roomId = const Value.absent(),
+    this.channelId = const Value.absent(),
+    this.channelName = const Value.absent(),
+  });
+  RoomsChannelsCompanion.insert({
+    required String roomId,
+    required String channelId,
+    required String channelName,
+  })  : roomId = Value(roomId),
+        channelId = Value(channelId),
+        channelName = Value(channelName);
+  static Insertable<RoomsChannel> custom({
+    Expression<String>? roomId,
+    Expression<String>? channelId,
+    Expression<String>? channelName,
+  }) {
+    return RawValuesInsertable({
+      if (roomId != null) 'roomId': roomId,
+      if (channelId != null) 'channelId': channelId,
+      if (channelName != null) 'channelName': channelName,
+    });
+  }
+
+  RoomsChannelsCompanion copyWith(
+      {Value<String>? roomId,
+      Value<String>? channelId,
+      Value<String>? channelName}) {
+    return RoomsChannelsCompanion(
+      roomId: roomId ?? this.roomId,
+      channelId: channelId ?? this.channelId,
+      channelName: channelName ?? this.channelName,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (roomId.present) {
+      map['roomId'] = Variable<String>(roomId.value);
+    }
+    if (channelId.present) {
+      map['channelId'] = Variable<String>(channelId.value);
+    }
+    if (channelName.present) {
+      map['channelName'] = Variable<String>(channelName.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RoomsChannelsCompanion(')
+          ..write('roomId: $roomId, ')
+          ..write('channelId: $channelId, ')
+          ..write('channelName: $channelName')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class RoomsChannels extends Table with TableInfo<RoomsChannels, RoomsChannel> {
+  final GeneratedDatabase _db;
+  final String? _alias;
+  RoomsChannels(this._db, [this._alias]);
+  final VerificationMeta _roomIdMeta = const VerificationMeta('roomId');
+  late final GeneratedColumn<String?> roomId = GeneratedColumn<String?>(
+      'roomId', aliasedName, false,
+      typeName: 'TEXT',
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL REFERENCES RoomsList(roomId)');
+  final VerificationMeta _channelIdMeta = const VerificationMeta('channelId');
+  late final GeneratedColumn<String?> channelId = GeneratedColumn<String?>(
+      'channelId', aliasedName, false,
+      typeName: 'TEXT',
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL');
+  final VerificationMeta _channelNameMeta =
+      const VerificationMeta('channelName');
+  late final GeneratedColumn<String?> channelName = GeneratedColumn<String?>(
+      'channelName', aliasedName, false,
+      typeName: 'TEXT',
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL');
+  @override
+  List<GeneratedColumn> get $columns => [roomId, channelId, channelName];
+  @override
+  String get aliasedName => _alias ?? 'RoomsChannels';
+  @override
+  String get actualTableName => 'RoomsChannels';
+  @override
+  VerificationContext validateIntegrity(Insertable<RoomsChannel> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('roomId')) {
+      context.handle(_roomIdMeta,
+          roomId.isAcceptableOrUnknown(data['roomId']!, _roomIdMeta));
+    } else if (isInserting) {
+      context.missing(_roomIdMeta);
+    }
+    if (data.containsKey('channelId')) {
+      context.handle(_channelIdMeta,
+          channelId.isAcceptableOrUnknown(data['channelId']!, _channelIdMeta));
+    } else if (isInserting) {
+      context.missing(_channelIdMeta);
+    }
+    if (data.containsKey('channelName')) {
+      context.handle(
+          _channelNameMeta,
+          channelName.isAcceptableOrUnknown(
+              data['channelName']!, _channelNameMeta));
+    } else if (isInserting) {
+      context.missing(_channelNameMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {roomId, channelId};
+  @override
+  RoomsChannel map(Map<String, dynamic> data, {String? tablePrefix}) {
+    return RoomsChannel.fromData(data, _db,
+        prefix: tablePrefix != null ? '$tablePrefix.' : null);
+  }
+
+  @override
+  RoomsChannels createAlias(String alias) {
+    return RoomsChannels(_db, alias);
+  }
+
+  @override
+  List<String> get customConstraints =>
+      const ['PRIMARY KEY(roomId, channelId)'];
+  @override
+  bool get dontWriteConstraints => true;
+}
+
+class RoomsMessage extends DataClass implements Insertable<RoomsMessage> {
+  final String msgId;
+  final String roomId;
+  final String channelId;
+  final String fromUser;
+  final DateTime time;
+  final String? content;
+  final String? media;
+  final String? replyTo;
+  RoomsMessage(
+      {required this.msgId,
+      required this.roomId,
+      required this.channelId,
+      required this.fromUser,
+      required this.time,
+      this.content,
+      this.media,
+      this.replyTo});
+  factory RoomsMessage.fromData(Map<String, dynamic> data, GeneratedDatabase db,
+      {String? prefix}) {
+    final effectivePrefix = prefix ?? '';
+    return RoomsMessage(
+      msgId: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}msgId'])!,
+      roomId: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}roomId'])!,
+      channelId: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}channelId'])!,
+      fromUser: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}fromUser'])!,
+      time: const DateTimeType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}time'])!,
+      content: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}content']),
+      media: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}media']),
+      replyTo: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}replyTo']),
+    );
+  }
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['msgId'] = Variable<String>(msgId);
+    map['roomId'] = Variable<String>(roomId);
+    map['channelId'] = Variable<String>(channelId);
+    map['fromUser'] = Variable<String>(fromUser);
+    map['time'] = Variable<DateTime>(time);
+    if (!nullToAbsent || content != null) {
+      map['content'] = Variable<String?>(content);
+    }
+    if (!nullToAbsent || media != null) {
+      map['media'] = Variable<String?>(media);
+    }
+    if (!nullToAbsent || replyTo != null) {
+      map['replyTo'] = Variable<String?>(replyTo);
+    }
+    return map;
+  }
+
+  RoomsMessagesCompanion toCompanion(bool nullToAbsent) {
+    return RoomsMessagesCompanion(
+      msgId: Value(msgId),
+      roomId: Value(roomId),
+      channelId: Value(channelId),
+      fromUser: Value(fromUser),
+      time: Value(time),
+      content: content == null && nullToAbsent
+          ? const Value.absent()
+          : Value(content),
+      media:
+          media == null && nullToAbsent ? const Value.absent() : Value(media),
+      replyTo: replyTo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(replyTo),
+    );
+  }
+
+  factory RoomsMessage.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= moorRuntimeOptions.defaultSerializer;
+    return RoomsMessage(
+      msgId: serializer.fromJson<String>(json['msgId']),
+      roomId: serializer.fromJson<String>(json['roomId']),
+      channelId: serializer.fromJson<String>(json['channelId']),
+      fromUser: serializer.fromJson<String>(json['fromUser']),
+      time: serializer.fromJson<DateTime>(json['time']),
+      content: serializer.fromJson<String?>(json['content']),
+      media: serializer.fromJson<String?>(json['media']),
+      replyTo: serializer.fromJson<String?>(json['replyTo']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= moorRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'msgId': serializer.toJson<String>(msgId),
+      'roomId': serializer.toJson<String>(roomId),
+      'channelId': serializer.toJson<String>(channelId),
+      'fromUser': serializer.toJson<String>(fromUser),
+      'time': serializer.toJson<DateTime>(time),
+      'content': serializer.toJson<String?>(content),
+      'media': serializer.toJson<String?>(media),
+      'replyTo': serializer.toJson<String?>(replyTo),
+    };
+  }
+
+  RoomsMessage copyWith(
+          {String? msgId,
+          String? roomId,
+          String? channelId,
+          String? fromUser,
+          DateTime? time,
+          Value<String?> content = const Value.absent(),
+          Value<String?> media = const Value.absent(),
+          Value<String?> replyTo = const Value.absent()}) =>
+      RoomsMessage(
+        msgId: msgId ?? this.msgId,
+        roomId: roomId ?? this.roomId,
+        channelId: channelId ?? this.channelId,
+        fromUser: fromUser ?? this.fromUser,
+        time: time ?? this.time,
+        content: content.present ? content.value : this.content,
+        media: media.present ? media.value : this.media,
+        replyTo: replyTo.present ? replyTo.value : this.replyTo,
+      );
+  @override
+  String toString() {
+    return (StringBuffer('RoomsMessage(')
+          ..write('msgId: $msgId, ')
+          ..write('roomId: $roomId, ')
+          ..write('channelId: $channelId, ')
+          ..write('fromUser: $fromUser, ')
+          ..write('time: $time, ')
+          ..write('content: $content, ')
+          ..write('media: $media, ')
+          ..write('replyTo: $replyTo')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => $mrjf($mrjc(
+      msgId.hashCode,
+      $mrjc(
+          roomId.hashCode,
+          $mrjc(
+              channelId.hashCode,
+              $mrjc(
+                  fromUser.hashCode,
+                  $mrjc(
+                      time.hashCode,
+                      $mrjc(content.hashCode,
+                          $mrjc(media.hashCode, replyTo.hashCode))))))));
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RoomsMessage &&
+          other.msgId == this.msgId &&
+          other.roomId == this.roomId &&
+          other.channelId == this.channelId &&
+          other.fromUser == this.fromUser &&
+          other.time == this.time &&
+          other.content == this.content &&
+          other.media == this.media &&
+          other.replyTo == this.replyTo);
+}
+
+class RoomsMessagesCompanion extends UpdateCompanion<RoomsMessage> {
+  final Value<String> msgId;
+  final Value<String> roomId;
+  final Value<String> channelId;
+  final Value<String> fromUser;
+  final Value<DateTime> time;
+  final Value<String?> content;
+  final Value<String?> media;
+  final Value<String?> replyTo;
+  const RoomsMessagesCompanion({
+    this.msgId = const Value.absent(),
+    this.roomId = const Value.absent(),
+    this.channelId = const Value.absent(),
+    this.fromUser = const Value.absent(),
+    this.time = const Value.absent(),
+    this.content = const Value.absent(),
+    this.media = const Value.absent(),
+    this.replyTo = const Value.absent(),
+  });
+  RoomsMessagesCompanion.insert({
+    required String msgId,
+    required String roomId,
+    required String channelId,
+    required String fromUser,
+    required DateTime time,
+    this.content = const Value.absent(),
+    this.media = const Value.absent(),
+    this.replyTo = const Value.absent(),
+  })  : msgId = Value(msgId),
+        roomId = Value(roomId),
+        channelId = Value(channelId),
+        fromUser = Value(fromUser),
+        time = Value(time);
+  static Insertable<RoomsMessage> custom({
+    Expression<String>? msgId,
+    Expression<String>? roomId,
+    Expression<String>? channelId,
+    Expression<String>? fromUser,
+    Expression<DateTime>? time,
+    Expression<String?>? content,
+    Expression<String?>? media,
+    Expression<String?>? replyTo,
+  }) {
+    return RawValuesInsertable({
+      if (msgId != null) 'msgId': msgId,
+      if (roomId != null) 'roomId': roomId,
+      if (channelId != null) 'channelId': channelId,
+      if (fromUser != null) 'fromUser': fromUser,
+      if (time != null) 'time': time,
+      if (content != null) 'content': content,
+      if (media != null) 'media': media,
+      if (replyTo != null) 'replyTo': replyTo,
+    });
+  }
+
+  RoomsMessagesCompanion copyWith(
+      {Value<String>? msgId,
+      Value<String>? roomId,
+      Value<String>? channelId,
+      Value<String>? fromUser,
+      Value<DateTime>? time,
+      Value<String?>? content,
+      Value<String?>? media,
+      Value<String?>? replyTo}) {
+    return RoomsMessagesCompanion(
+      msgId: msgId ?? this.msgId,
+      roomId: roomId ?? this.roomId,
+      channelId: channelId ?? this.channelId,
+      fromUser: fromUser ?? this.fromUser,
+      time: time ?? this.time,
+      content: content ?? this.content,
+      media: media ?? this.media,
+      replyTo: replyTo ?? this.replyTo,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (msgId.present) {
+      map['msgId'] = Variable<String>(msgId.value);
+    }
+    if (roomId.present) {
+      map['roomId'] = Variable<String>(roomId.value);
+    }
+    if (channelId.present) {
+      map['channelId'] = Variable<String>(channelId.value);
+    }
+    if (fromUser.present) {
+      map['fromUser'] = Variable<String>(fromUser.value);
+    }
+    if (time.present) {
+      map['time'] = Variable<DateTime>(time.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String?>(content.value);
+    }
+    if (media.present) {
+      map['media'] = Variable<String?>(media.value);
+    }
+    if (replyTo.present) {
+      map['replyTo'] = Variable<String?>(replyTo.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RoomsMessagesCompanion(')
+          ..write('msgId: $msgId, ')
+          ..write('roomId: $roomId, ')
+          ..write('channelId: $channelId, ')
+          ..write('fromUser: $fromUser, ')
+          ..write('time: $time, ')
+          ..write('content: $content, ')
+          ..write('media: $media, ')
+          ..write('replyTo: $replyTo')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class RoomsMessages extends Table with TableInfo<RoomsMessages, RoomsMessage> {
+  final GeneratedDatabase _db;
+  final String? _alias;
+  RoomsMessages(this._db, [this._alias]);
+  final VerificationMeta _msgIdMeta = const VerificationMeta('msgId');
+  late final GeneratedColumn<String?> msgId = GeneratedColumn<String?>(
+      'msgId', aliasedName, false,
+      typeName: 'TEXT',
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL PRIMARY KEY');
+  final VerificationMeta _roomIdMeta = const VerificationMeta('roomId');
+  late final GeneratedColumn<String?> roomId = GeneratedColumn<String?>(
+      'roomId', aliasedName, false,
+      typeName: 'TEXT',
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL REFERENCES RoomsList(roomId)');
+  final VerificationMeta _channelIdMeta = const VerificationMeta('channelId');
+  late final GeneratedColumn<String?> channelId = GeneratedColumn<String?>(
+      'channelId', aliasedName, false,
+      typeName: 'TEXT',
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL REFERENCES RoomsChannels(channelId)');
+  final VerificationMeta _fromUserMeta = const VerificationMeta('fromUser');
+  late final GeneratedColumn<String?> fromUser = GeneratedColumn<String?>(
+      'fromUser', aliasedName, false,
+      typeName: 'TEXT',
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL REFERENCES Users(userId)');
+  final VerificationMeta _timeMeta = const VerificationMeta('time');
+  late final GeneratedColumn<DateTime?> time = GeneratedColumn<DateTime?>(
+      'time', aliasedName, false,
+      typeName: 'INTEGER',
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL');
+  final VerificationMeta _contentMeta = const VerificationMeta('content');
+  late final GeneratedColumn<String?> content = GeneratedColumn<String?>(
+      'content', aliasedName, true,
+      typeName: 'TEXT', requiredDuringInsert: false, $customConstraints: '');
+  final VerificationMeta _mediaMeta = const VerificationMeta('media');
+  late final GeneratedColumn<String?> media = GeneratedColumn<String?>(
+      'media', aliasedName, true,
+      typeName: 'TEXT', requiredDuringInsert: false, $customConstraints: '');
+  final VerificationMeta _replyToMeta = const VerificationMeta('replyTo');
+  late final GeneratedColumn<String?> replyTo = GeneratedColumn<String?>(
+      'replyTo', aliasedName, true,
+      typeName: 'TEXT', requiredDuringInsert: false, $customConstraints: '');
+  @override
+  List<GeneratedColumn> get $columns =>
+      [msgId, roomId, channelId, fromUser, time, content, media, replyTo];
+  @override
+  String get aliasedName => _alias ?? 'RoomsMessages';
+  @override
+  String get actualTableName => 'RoomsMessages';
+  @override
+  VerificationContext validateIntegrity(Insertable<RoomsMessage> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('msgId')) {
+      context.handle(
+          _msgIdMeta, msgId.isAcceptableOrUnknown(data['msgId']!, _msgIdMeta));
+    } else if (isInserting) {
+      context.missing(_msgIdMeta);
+    }
+    if (data.containsKey('roomId')) {
+      context.handle(_roomIdMeta,
+          roomId.isAcceptableOrUnknown(data['roomId']!, _roomIdMeta));
+    } else if (isInserting) {
+      context.missing(_roomIdMeta);
+    }
+    if (data.containsKey('channelId')) {
+      context.handle(_channelIdMeta,
+          channelId.isAcceptableOrUnknown(data['channelId']!, _channelIdMeta));
+    } else if (isInserting) {
+      context.missing(_channelIdMeta);
+    }
+    if (data.containsKey('fromUser')) {
+      context.handle(_fromUserMeta,
+          fromUser.isAcceptableOrUnknown(data['fromUser']!, _fromUserMeta));
+    } else if (isInserting) {
+      context.missing(_fromUserMeta);
+    }
+    if (data.containsKey('time')) {
+      context.handle(
+          _timeMeta, time.isAcceptableOrUnknown(data['time']!, _timeMeta));
+    } else if (isInserting) {
+      context.missing(_timeMeta);
+    }
+    if (data.containsKey('content')) {
+      context.handle(_contentMeta,
+          content.isAcceptableOrUnknown(data['content']!, _contentMeta));
+    }
+    if (data.containsKey('media')) {
+      context.handle(
+          _mediaMeta, media.isAcceptableOrUnknown(data['media']!, _mediaMeta));
+    }
+    if (data.containsKey('replyTo')) {
+      context.handle(_replyToMeta,
+          replyTo.isAcceptableOrUnknown(data['replyTo']!, _replyToMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {msgId};
+  @override
+  RoomsMessage map(Map<String, dynamic> data, {String? tablePrefix}) {
+    return RoomsMessage.fromData(data, _db,
+        prefix: tablePrefix != null ? '$tablePrefix.' : null);
+  }
+
+  @override
+  RoomsMessages createAlias(String alias) {
+    return RoomsMessages(_db, alias);
+  }
+
+  @override
+  List<String> get customConstraints => const [
+        'CONSTRAINT hasData CHECK (content IS NOT NULL OR media IS NOT NULL)'
+      ];
+  @override
+  bool get dontWriteConstraints => true;
+}
+
 class GroupDM extends DataClass implements Insertable<GroupDM> {
   final String groupId;
   final String name;
@@ -1856,6 +2945,10 @@ abstract class _$AppDb extends GeneratedDatabase {
   late final Trigger chatMessagesTextIndexAU = Trigger(
       'CREATE TRIGGER ChatMessagesTextIndex_AU AFTER UPDATE ON ChatMessages BEGIN INSERT INTO ChatMessagesTextIndex (ChatMessagesTextIndex, "rowid", msgId, fromUser, toUser, time, content, media, replyTo) VALUES (\'delete\', old."rowid", old.msgId, old.fromUser, old.toUser, old.time, old.content, old.media, old.replyTo);INSERT INTO ChatMessagesTextIndex ("rowid", msgId, fromUser, toUser, time, content, media, replyTo) VALUES (new."rowid", new.msgId, new.fromUser, new.toUser, new.time, new.content, new.media, new.replyTo);END',
       'ChatMessagesTextIndex_AU');
+  late final RoomsList roomsList = RoomsList(this);
+  late final RoomsUserMapping roomsUserMapping = RoomsUserMapping(this);
+  late final RoomsChannels roomsChannels = RoomsChannels(this);
+  late final RoomsMessages roomsMessages = RoomsMessages(this);
   late final GroupDMs groupDMs = GroupDMs(this);
   late final GroupUserMapping groupUserMapping = GroupUserMapping(this);
   late final GroupChatMessages groupChatMessages = GroupChatMessages(this);
@@ -1921,7 +3014,7 @@ abstract class _$AppDb extends GeneratedDatabase {
 
   Selectable<GroupDM> getGroupsOfUser({required String userID}) {
     return customSelect(
-        'SELECT DISTINCT G.groupId, G.name, G.description, G.groupIcon FROM GroupDMs AS G,GroupUserMapping AS GM WHERE GM.userId == :userID',
+        'SELECT DISTINCT G.groupId, G.name, G.description, G.groupIcon FROM GroupDMs AS G,GroupUserMapping AS GM WHERE GM.userId = :userID',
         variables: [
           Variable<String>(userID)
         ],
@@ -1933,7 +3026,7 @@ abstract class _$AppDb extends GeneratedDatabase {
 
   Selectable<User> getGroupMembers({required String groupID}) {
     return customSelect(
-        'SELECT U.* FROM Users AS U,(SELECT DISTINCT userId FROM GroupUserMapping AS GM WHERE GM.groupId == :groupID) AS UID WHERE U.userId == UID.userId',
+        'SELECT U.* FROM Users AS U,(SELECT DISTINCT userId FROM GroupUserMapping AS GM WHERE GM.groupId = :groupID) AS UID WHERE U.userId = UID.userId',
         variables: [
           Variable<String>(groupID)
         ],
@@ -2033,6 +3126,130 @@ abstract class _$AppDb extends GeneratedDatabase {
     });
   }
 
+  Future<int> createRoom(
+      {required String roomId,
+      required String name,
+      String? description,
+      String? roomIcon}) {
+    return customInsert(
+      'INSERT INTO RoomsList VALUES (:roomId, :name, :description, :roomIcon)',
+      variables: [
+        Variable<String>(roomId),
+        Variable<String>(name),
+        Variable<String?>(description),
+        Variable<String?>(roomIcon)
+      ],
+      updates: {roomsList},
+    );
+  }
+
+  Future<int> addUserToRoom({required String roomsId, required String userId}) {
+    return customInsert(
+      'INSERT INTO RoomsUserMapping VALUES (:roomsId, :userId)',
+      variables: [Variable<String>(roomsId), Variable<String>(userId)],
+      updates: {roomsUserMapping},
+    );
+  }
+
+  Selectable<RoomsListData> getRoomsOfUser({required String userID}) {
+    return customSelect(
+        'SELECT DISTINCT R.roomId, R.name, R.description, R.roomIcon FROM RoomsList AS R,RoomsUserMapping AS RM WHERE RM.userId = :userID',
+        variables: [
+          Variable<String>(userID)
+        ],
+        readsFrom: {
+          roomsList,
+          roomsUserMapping,
+        }).map(roomsList.mapFromRow);
+  }
+
+  Selectable<User> getRoomMembers({required String roomID}) {
+    return customSelect(
+        'SELECT U.* FROM Users AS U,(SELECT DISTINCT userId FROM RoomsUserMapping AS RM WHERE RM.roomId = :roomID) AS UID WHERE U.userId = UID.userId',
+        variables: [
+          Variable<String>(roomID)
+        ],
+        readsFrom: {
+          users,
+          roomsUserMapping,
+        }).map(users.mapFromRow);
+  }
+
+  Future<int> addChannelsToRoom(
+      {required String roomId,
+      required String channelId,
+      required String channelName}) {
+    return customInsert(
+      'INSERT INTO RoomsChannels VALUES (:roomId, :channelId, :channelName)',
+      variables: [
+        Variable<String>(roomId),
+        Variable<String>(channelId),
+        Variable<String>(channelName)
+      ],
+      updates: {roomsChannels},
+    );
+  }
+
+  Selectable<RoomsChannel> getChannelsOfRoom({required String roomID}) {
+    return customSelect(
+        'SELECT RC.* FROM RoomsChannels AS RC WHERE RC.roomId = :roomID',
+        variables: [
+          Variable<String>(roomID)
+        ],
+        readsFrom: {
+          roomsChannels,
+        }).map(roomsChannels.mapFromRow);
+  }
+
+  Selectable<RoomsChannel> getChannelName(
+      {required String roomId, required String channelId}) {
+    return customSelect(
+        'SELECT * FROM RoomsChannels WHERE roomId = :roomId AND channelId = :channelId',
+        variables: [
+          Variable<String>(roomId),
+          Variable<String>(channelId)
+        ],
+        readsFrom: {
+          roomsChannels,
+        }).map(roomsChannels.mapFromRow);
+  }
+
+  Future<int> insertRoomsChannelMessage(
+      {required String msgId,
+      required String roomId,
+      required String channelId,
+      required String fromUser,
+      required DateTime time,
+      String? content,
+      String? media,
+      String? replyTo}) {
+    return customInsert(
+      'INSERT INTO RoomsMessages VALUES (:msgId, :roomId, :channelId, :fromUser, :time, :content, :media, :replyTo)',
+      variables: [
+        Variable<String>(msgId),
+        Variable<String>(roomId),
+        Variable<String>(channelId),
+        Variable<String>(fromUser),
+        Variable<DateTime>(time),
+        Variable<String?>(content),
+        Variable<String?>(media),
+        Variable<String?>(replyTo)
+      ],
+      updates: {roomsMessages},
+    );
+  }
+
+  Selectable<RoomsMessage> getRoomChannelChat({required String roomId}) {
+    return customSelect(
+        'SELECT * FROM RoomsMessages WHERE roomId = :roomId ORDER BY msgId',
+        variables: [
+          Variable<String>(roomId)
+        ],
+        readsFrom: {
+          roomsMessages,
+        }).map(roomsMessages.mapFromRow);
+  }
+
   @override
   Iterable<TableInfo> get allTables => allSchemaEntities.whereType<TableInfo>();
   @override
@@ -2045,6 +3262,10 @@ abstract class _$AppDb extends GeneratedDatabase {
         chatMessagesTextIndexAI,
         chatMessagesTextIndexAD,
         chatMessagesTextIndexAU,
+        roomsList,
+        roomsUserMapping,
+        roomsChannels,
+        roomsMessages,
         groupDMs,
         groupUserMapping,
         groupChatMessages
