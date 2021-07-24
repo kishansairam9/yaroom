@@ -12,11 +12,6 @@ import (
 	"github.com/scylladb/gocqlx/v2/table"
 )
 
-// Note: If we use primitive object ID as type then we need to limit to 12 char strings
-// But our user ID is longer hence, we use type as string. Note that however
-// though type is string, if it refers to `_id` then it is still created as an index
-// And references to other objects we are creating indexes manually in db
-
 var ChatMessageMetadata = table.Metadata{
 	Name:    "messages.chat_messages",
 	Columns: []string{"exchange_id", "msgid", "fromuser", "touser", "msgtime", "content", "media", "replyto", "es_query", "es_options"},
