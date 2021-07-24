@@ -148,8 +148,10 @@ class MyApp extends StatelessWidget {
               var ws = WebSocketWrapper("ws://localhost:8884");
               ws.stream.listen((encodedData) async {
                 var data = jsonDecode(encodedData) as Map;
-                print(data['msgId']);
-                print(data['type']);
+                if (data.containsKey('error')) {
+                  print("WS stream returned error ${data['error']}");
+                  return;
+                }
                 data['time'] = DateTime.parse(data['time']).toLocal();
                 if (data['type'] == 'ChatMessage') {
                   await db
@@ -158,9 +160,17 @@ class MyApp extends StatelessWidget {
                     toUser: data['toUser'],
                     fromUser: data['fromUser'],
                     time: data['time'],
-                    content: data['content'] == '' ? null : data['content'],
-                    media: data['media'] == '' ? null : data['media'],
-                    replyTo: data['replyTo'] == '' ? null : data['replyTo'],
+                    content:
+                        !data.containsKey('content') || data['content'] == ''
+                            ? null
+                            : data['content'],
+                    media: !data.containsKey('media') || data['media'] == ''
+                        ? null
+                        : data['media'],
+                    replyTo:
+                        !data.containsKey('replyTo') || data['replyTo'] == ''
+                            ? null
+                            : data['replyTo'],
                   )
                       .catchError((e) {
                     print("Database insert failed with error $e");
@@ -186,6 +196,7 @@ class MyApp extends StatelessWidget {
               });
               return ws;
             },
+            lazy: false,
           )
         ],
         child: MaterialApp(

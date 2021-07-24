@@ -7,6 +7,8 @@ import (
 
 	jwtmiddleware "github.com/auth0/go-jwt-middleware"
 	"github.com/form3tech-oss/jwt-go"
+	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog/log"
 )
 
 type Response struct {
@@ -81,3 +83,18 @@ var jwtMiddleware = jwtmiddleware.New(jwtmiddleware.Options{
 	},
 	SigningMethod: jwt.SigningMethodRS256,
 })
+
+func jwtHandler(g *gin.Context) {
+	if err := jwtMiddleware.CheckJWT(g.Writer, g.Request); err != nil {
+		g.AbortWithStatus(401)
+	}
+	tokContext := g.Request.Context().Value("user")
+	claims := tokContext.(*jwt.Token).Claims.(jwt.MapClaims)
+	userId, ok := claims["userId"].(string)
+	if !ok {
+		log.Info().Str("where", "post JWT verify, userID extraction").Str("type", "token missing fields").Msg("Field userID not found in recieved JWT")
+		g.AbortWithStatusJSON(400, gin.H{"error": "Invalid token format, missing fields"})
+		return
+	}
+	g.Set("userId", userId)
+}
