@@ -19,7 +19,7 @@ var ChatMessageMetadata = table.Metadata{
 	Name:    "messages.chat_messages",
 	Columns: []string{"exchange_id", "msgid", "fromuser", "touser", "msgtime", "content", "mediaid", "replyto", "es_query", "es_options"},
 	PartKey: []string{"exchange_id"},
-	SortKey: []string{"msgtime", "msgid"},
+	SortKey: []string{"msgid"},
 }
 
 var ChatMessageTable *table.Table
