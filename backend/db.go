@@ -1,17 +1,15 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
+	"sort"
 	"time"
 
+	"github.com/rs/xid"
 	"github.com/rs/zerolog/log"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/x/bsonx"
+	"github.com/scylladb/gocqlx/v2"
+	"github.com/scylladb/gocqlx/v2/table"
 )
 
 // Note: If we use primitive object ID as type then we need to limit to 12 char strings
@@ -19,63 +17,58 @@ import (
 // though type is string, if it refers to `_id` then it is still created as an index
 // And references to other objects we are creating indexes manually in db
 
-type User struct {
-	UserId     string   `bson:"_id"`
-	Name       string   `bson:"name"`
-	About      string   `bson:"about,omitempty"`
-	ProfileImg string   `bson:"profileImg,omitempty"`
-	Friends    []string `bson:"friends"`
-	Groups     []string `bson:"groups"`
+var ChatMessageMetadata = table.Metadata{
+	Name:    "messages.chat_messages",
+	Columns: []string{"exchange_id", "msgid", "fromuser", "touser", "msgtime", "content", "media", "replyto", "es_query", "es_options"},
+	PartKey: []string{"exchange_id"},
+	SortKey: []string{"msgtime", "msgid"},
+}
+
+var ChatMessageTable *table.Table
+
+var InsertChatMessage *gocqlx.Queryx
+
+func setupDB() {
+	ChatMessageTable = table.New(ChatMessageMetadata)
+	InsertChatMessage = ChatMessageTable.InsertQuery(dbSession)
 }
 
 type ChatMessage struct {
-	MsgId    string    `bson:"_id,omitempty"` // NOTE: Remember while querying, msgId is stored as _id
-	FromUser string    `bson:"fromUser"`
-	ToUser   string    `bson:"toUser"`
-	Time     time.Time `bson:"time"`
-	Content  string    `bson:"content,omitempty"`
-	Media    string    `bson:"media,omitempty"`
-	ReplyTo  string    `bson:"replyTo,omitempty"`
-}
-
-var chatMsgIndexModels = []mongo.IndexModel{
-	{Keys: bsonx.Doc{{Key: "fromUser", Value: bsonx.Int32(-1)}}},
-	{Keys: bsonx.Doc{{Key: "toUser", Value: bsonx.Int32(-1)}}},
-}
-
-var chatMsgCol *mongo.Collection
-
-func createIndexes(ctx context.Context) {
-	opts := options.CreateIndexes().SetMaxTime(10 * time.Second)
-
-	_, err := chatMsgCol.Indexes().CreateMany(ctx, chatMsgIndexModels, opts)
-	if err != nil {
-		log.Fatal().Str("where", "create indexes").Str("type", "Indexes Create Many chatMsgCol").Msg(err.Error())
-	}
-
-	// TODO: Similarly for Group and Rooms messages
-
-	log.Info().Msg("Database indexes ensured")
+	Exchange_id string    `json:"exchange_id,omitempty"`
+	Msgid       string    `json:"msgId,omitempty"`
+	Fromuser    string    `json:"fromUser"`
+	Touser      string    `json:"toUser"`
+	Msgtime     time.Time `json:"time"`
+	Content     string    `json:"content,omitempty"`
+	Media       string    `json:"media,omitempty"`
+	Replyto     string    `json:"replyTo,omitempty"`
+	Es_query    string    `json:"es_query,omitempty"`
+	Es_options  string    `json:"es_options,omitempty"`
 }
 
 func addMessage(msg WSMessage) (WSMessage, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
 	jsonBytes, _ := json.Marshal(msg)
 
-	var msgId string
+	msgId := xid.New().String()
 
 	switch msg.Type {
 	case "ChatMessage":
 		var data ChatMessage
-		if err := bson.UnmarshalExtJSON(jsonBytes, true, &data); err != nil {
+		if err := json.Unmarshal(jsonBytes, &data); err != nil {
 			return msg, err
 		}
-		res, err := chatMsgCol.InsertOne(ctx, data)
-		if err != nil {
-			return msg, err
+		uids := []string{data.Fromuser, data.Touser}
+		sort.Strings(uids)
+		data.Exchange_id = uids[0] + ":" + uids[1]
+		data.Msgid = msgId
+		if q := InsertChatMessage.BindStruct(data); q.Err() != nil {
+			log.Error().Str("where", "insert chat message").Str("type", "failed to bind struct").Msg(q.Err().Error())
+			return msg, errors.New("internal server error")
 		}
-		msgId = res.InsertedID.(primitive.ObjectID).Hex()
+		if err := InsertChatMessage.Exec(); err != nil {
+			log.Error().Str("where", "insert chat message").Str("type", "failed to execute query").Msg(err.Error())
+			return msg, errors.New("internal server error")
+		}
 	default:
 		return msg, errors.New("unknown message type")
 	}

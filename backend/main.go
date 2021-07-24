@@ -10,21 +10,20 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/gocql/gocql"
 	"github.com/rs/zerolog/log"
+	"github.com/scylladb/gocqlx/v2"
 
 	"github.com/streadway/amqp"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-var db *mongo.Database
 var rmqConn *amqp.Connection
+var dbSession gocqlx.Session
 
 func main() {
+	var err error
 	// Rabbit mq
 	{
-		var err error
 		rmqConn, err = amqp.Dial("amqp://guest:guest@localhost:5672/")
 		if err != nil {
 			log.Fatal().Str("where", "amqp dial").Str("type", "failed to connect to rabbit mq").Msg(err.Error())
@@ -34,30 +33,12 @@ func main() {
 
 	// Database
 	{
-		uri := "mongodb://root:password@127.0.0.1:27017/"
-		dbctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-		defer cancel()
-
-		client, err := mongo.Connect(dbctx, options.Client().ApplyURI(uri))
+		cluster := gocql.NewCluster("localhost")
+		dbSession, err = gocqlx.WrapSession(cluster.CreateSession())
 		if err != nil {
-			log.Fatal().Str("where", "mongo connect").Str("type", "failed to connect to db").Msg(err.Error())
+			log.Fatal().Str("where", "gocqlx wrap session").Str("type", "failed to connect to cassandra").Msg(err.Error())
 		}
-		defer func() {
-			if err = client.Disconnect(dbctx); err != nil {
-				log.Fatal().Str("where", "mongo disconnect").Str("type", "failed to disconnect db").Msg(err.Error())
-			}
-		}()
-		// Ping the primary
-		if err := client.Ping(dbctx, readpref.Primary()); err != nil {
-			panic(err)
-		}
-		log.Info().Msg("Database succesfully connected and pinged")
-
-		db = client.Database("testing")
-
-		chatMsgCol = db.Collection("ChatMessages")
-
-		createIndexes(dbctx)
+		setupDB()
 	}
 
 	// Server

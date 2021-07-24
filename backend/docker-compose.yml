@@ -7,7 +7,6 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
-    restart: always
     volumes:
       - type: bind
         source: ~/containerVolumes/rabbitmq
@@ -20,30 +19,29 @@ services:
     image: redis:6.2.4
     ports:
       - "6379:6379"
-    restart: always
     networks:
       - yaroom-testing
 
-  mongodb:
-    container_name: yaroom-mongodb
-    image: mongo:5.0.0
-    restart: always
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: password
-      MONGO_DATA_DIR: /data/db
-      MONGO_LOG_DIR: /data/logs
-    volumes:
-      - type: bind
-        source: ~/containerVolumes/mongodb
-        target: /data/db
-      - type: bind
-        source: ~/containerVolumes/logs/mongodb
-        target: /data/logs
-    ports:
-      - "27017:27017"
-    networks:
-      - yaroom-testing
+  # mongodb:
+  #   container_name: yaroom-mongodb
+  #   image: mongo:5.0.0
+  #   restart: always
+  #   environment:
+  #     MONGO_INITDB_ROOT_USERNAME: root
+  #     MONGO_INITDB_ROOT_PASSWORD: password
+  #     MONGO_DATA_DIR: /data/db
+  #     MONGO_LOG_DIR: /data/logs
+  #   volumes:
+  #     - type: bind
+  #       source: ~/containerVolumes/mongodb
+  #       target: /data/db
+  #     - type: bind
+  #       source: ~/containerVolumes/logs/mongodb
+  #       target: /data/logs
+  #   ports:
+  #     - "27017:27017"
+  #   networks:
+  #     - yaroom-testing
 
   minio:
     container_name: yaroom-minio
