@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"time"
-
+	"fmt"
 	"github.com/gorilla/websocket"
 	"github.com/rs/xid"
 	"github.com/rs/zerolog/log"
@@ -25,6 +25,18 @@ type ChatMessage struct {
 	Content  string    `json:"content"`
 	Media    string    `json:"media"`
 	ReplyTo  string    `json:"replyTo"`
+}
+
+type RoomsMessage struct {
+	Type      string    `json:"type"`
+	MsgId     string    `json:"msgId"`
+	RoomId    string    `json:"roomId"`
+	ChannelId string    `json:"channelId"`
+	FromUser  string    `json:"fromUser"`
+	Time      time.Time `json:"time"`
+	Content   string    `json:"content"`
+	Media     string    `json:"media"`
+	ReplyTo   string    `json:"replyTo"`
 }
 
 func wsHandler(w http.ResponseWriter, r *http.Request) {
@@ -57,8 +69,17 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 			msg.MsgId = xid.New().String()
 			// TODO: Send to RabbitMQ & Data Store
 			enc, _ = json.Marshal(msg)
+		case "RoomsMessage":
+			var msg RoomsMessage
+			if err := json.Unmarshal(rawMsg, &msg); err != nil {
+				log.Warn().Str("where", "wsHandler").Str("error", "msg type and contents didn't match").Msg(err.Error())
+				continue
+			}
+			fmt.Println(msg);
+			msg.MsgId = xid.New().String()
+			enc, _ = json.Marshal(msg)
 		default:
-			log.Warn().Str("where", "wsHandler").Str("error", "unknown message type").Msg(err.Error())
+			log.Warn().Str("where", "wsHandler").Str("error", "unknown message type")
 			continue
 		}
 		conn.WriteMessage(t, enc)
