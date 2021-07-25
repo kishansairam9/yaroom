@@ -1,10 +1,8 @@
 import 'package:bubble/bubble.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
-import 'dart:io' show Platform; // OS Detection
-import 'package:flutter/foundation.dart' show kIsWeb; // Web detection
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:yaroom/screens/components/msgBox.dart';
 import '../components/contactView.dart';
 import 'package:provider/provider.dart';
 import '../../utils/websocket.dart';
@@ -18,9 +16,6 @@ class ChatPage extends StatefulWidget {
 }
 
 class ChatPageState extends State<ChatPage> {
-  bool isShowSticker = false;
-
-  final inputController = TextEditingController();
   late final webSocketSubscription;
 
   @override
@@ -32,21 +27,7 @@ class ChatPageState extends State<ChatPage> {
   void dispose() {
     // Clean up the controller & subscription when the widget is disposed.
     webSocketSubscription.cancel();
-    inputController.dispose();
     super.dispose();
-  }
-
-  // handling backPress when emoji keyboard is implemented
-  Future<bool> onBackPress() {
-    if (isShowSticker) {
-      setState(() {
-        isShowSticker = false;
-      });
-    } else {
-      Navigator.pop(context);
-    }
-
-    return Future.value(false);
   }
 
   _buildMessage(ChatMessage msg, bool prevIsSame, DateTime? prependDay) {
@@ -211,111 +192,49 @@ class ChatPageState extends State<ChatPage> {
               });
               return cubit;
             }, child: Builder(builder: (context) {
-              return WillPopScope(
-                child: Stack(children: <Widget>[
-                  Scaffold(
-                      appBar: AppBar(
-                        titleSpacing: 0,
-                        title: ListTile(
-                          onTap: () => _showContact(context),
-                          contentPadding:
-                              EdgeInsets.only(left: 0.0, right: 0.0),
-                          tileColor: Colors.transparent,
-                          leading: CircleAvatar(
-                            backgroundColor: Colors.grey[350],
-                            foregroundImage: widget.image == null
-                                ? null
-                                : NetworkImage('${widget.image}'),
-                            backgroundImage:
-                                AssetImage('assets/no-profile.png'),
-                          ),
-                          title: Text(
-                            widget.name,
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                        actions: <Widget>[
-                          IconButton(
-                            onPressed: () => {},
-                            icon: Icon(Icons.phone),
-                            tooltip: 'Call',
-                          ),
-                          IconButton(
-                            onPressed: () => {},
-                            icon: Icon(Icons.more_vert),
-                            tooltip: 'More',
-                          )
-                        ],
+              return Scaffold(
+                  appBar: AppBar(
+                    titleSpacing: 0,
+                    title: ListTile(
+                      onTap: () => _showContact(context),
+                      contentPadding: EdgeInsets.only(left: 0.0, right: 0.0),
+                      tileColor: Colors.transparent,
+                      leading: CircleAvatar(
+                        backgroundColor: Colors.grey[350],
+                        foregroundImage: widget.image == null
+                            ? null
+                            : NetworkImage('${widget.image}'),
+                        backgroundImage: AssetImage('assets/no-profile.png'),
                       ),
-                      body: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.max,
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: <Widget>[
-                            BlocBuilder<UserChatCubit, List<ChatMessage>>(
-                                builder: (BuildContext context,
-                                        List<ChatMessage> state) =>
-                                    _buildMessagesView(state)),
-                            Row(
-                              children: [
-                                Expanded(
-                                    child: RawKeyboardListener(
-                                        focusNode: FocusNode(),
-                                        onKey: (RawKeyEvent event) {
-                                          if (kIsWeb ||
-                                              Platform.isMacOS ||
-                                              Platform.isLinux ||
-                                              Platform.isWindows) {
-                                            // Submit on Enter and new line on Shift + Enter only on desktop devices or Web
-                                            if (event.isKeyPressed(
-                                                    LogicalKeyboardKey.enter) &&
-                                                !event.isShiftPressed) {
-                                              String data =
-                                                  inputController.text;
-                                              inputController.clear();
-                                              // Bug fix for stray new line after Pressing Enter
-                                              Future.delayed(
-                                                  Duration(milliseconds: 100),
-                                                  () =>
-                                                      inputController.clear());
-                                              _sendMessage(
-                                                  context: context,
-                                                  content: data.trim());
-                                            }
-                                          }
-                                        },
-                                        child: TextField(
-                                          maxLines: null,
-                                          controller: inputController,
-                                          textCapitalization:
-                                              TextCapitalization.sentences,
-                                          onEditingComplete: () {
-                                            String data = inputController.text;
-                                            inputController.clear();
-                                            _sendMessage(
-                                                context: context,
-                                                content: data.trim());
-                                          },
-                                          decoration: InputDecoration(
-                                              border: OutlineInputBorder(),
-                                              hintText: 'Type a message'),
-                                        ))),
-                                IconButton(
-                                    onPressed: () {
-                                      String data = inputController.text;
-                                      inputController.clear();
-                                      _sendMessage(
-                                          context: context,
-                                          content: data.trim());
-                                    },
-                                    icon: Icon(Icons.send))
-                              ],
-                            ),
-                            (isShowSticker ? buildSticker() : Container())
-                          ]))
-                ]),
-                onWillPop: onBackPress,
-              );
+                      title: Text(
+                        widget.name,
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                    actions: <Widget>[
+                      IconButton(
+                        onPressed: () => {},
+                        icon: Icon(Icons.phone),
+                        tooltip: 'Call',
+                      ),
+                      IconButton(
+                        onPressed: () => {},
+                        icon: Icon(Icons.more_vert),
+                        tooltip: 'More',
+                      )
+                    ],
+                  ),
+                  body: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.max,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: <Widget>[
+                        BlocBuilder<UserChatCubit, List<ChatMessage>>(
+                            builder: (BuildContext context,
+                                    List<ChatMessage> state) =>
+                                _buildMessagesView(state)),
+                        MsgBox(sendMessage: _sendMessage)
+                      ]));
             }));
           } else if (snapshot.hasError) {
             print(snapshot.error);
@@ -324,15 +243,5 @@ class ChatPageState extends State<ChatPage> {
           }
           return CircularProgressIndicator();
         });
-  }
-
-  // create a emoji keyboard
-  Widget buildSticker() {
-    return Container(
-      margin: const EdgeInsets.all(10.0),
-      color: Colors.amber[600],
-      width: 100.0,
-      height: 5.0,
-    );
   }
 }

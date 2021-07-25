@@ -1,12 +1,10 @@
 import 'dart:convert';
 import 'package:bubble/bubble.dart';
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb; // Web detection
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:yaroom/blocs/rooms.dart';
-import 'package:yaroom/screens/components/contactView.dart';
-import 'package:yaroom/screens/components/msgBox.dart';
+import '../components/contactView.dart';
+import '../components/msgBox.dart';
 import '../home/tabs.dart';
 import '../components/roomsList.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -29,7 +27,6 @@ class Room extends StatefulWidget {
 class RoomState extends State<Room> {
   //  Current State of InnerDrawerState
   late final webSocketSubscription;
-  final inputController = TextEditingController();
 
   @override
   void initState() {
@@ -40,7 +37,6 @@ class RoomState extends State<Room> {
   void dispose() {
     // Clean up the controller & subscription when the widget is disposed.
     webSocketSubscription.cancel();
-    inputController.dispose();
     super.dispose();
   }
 
