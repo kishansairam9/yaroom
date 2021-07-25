@@ -41,10 +41,7 @@ class MsgBoxState extends State<MsgBox> {
   }
 
   Widget emojiKeyboard() {
-
     final emojiList = Emoji.all();
-    var i = 0;
-    print(emojiList.length);
     return Container(
         padding: EdgeInsets.only(left: 5, right: 5, bottom: 5, top: 5),
         width: MediaQuery.of(context).size.width,

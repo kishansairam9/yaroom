@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'chatsView.dart';
 import 'groupsView.dart';
 import '../components/roomsList.dart';
-import '../../utils/inner_drawer.dart';
 import '../../utils/types.dart';
 
 class TabView extends StatefulWidget {

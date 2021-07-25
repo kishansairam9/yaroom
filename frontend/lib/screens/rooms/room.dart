@@ -3,19 +3,16 @@ import 'package:bubble/bubble.dart';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb; // Web detection
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:yaroom/blocs/groupChats.dart';
 import 'package:yaroom/blocs/rooms.dart';
 import 'package:yaroom/screens/components/contactView.dart';
 import 'package:yaroom/screens/components/msgBox.dart';
-import '../../utils/inner_drawer.dart';
 import '../home/tabs.dart';
 import '../components/roomsList.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../utils/websocket.dart';
 import '../../utils/types.dart';
-import 'dart:math';
+import './channels.dart';
 
 class Room extends StatefulWidget {
   static TabViewState? of(BuildContext context) =>
@@ -52,72 +49,6 @@ class RoomState extends State<Room> {
     var curUser = Provider.of<List<User>>(context, listen: false)
         .where((element) => element.userId == msg.fromUser)
         .toList()[0];
-    // return Container(
-    //     padding: EdgeInsets.only(
-    //       left: 5.0,
-    //       right: 5.0,
-    //     ),
-    //     child: Align(
-    //         alignment: Alignment.topCenter,
-    //         child: Row(
-    //           mainAxisAlignment: MainAxisAlignment.start,
-    //           mainAxisSize: MainAxisSize.min,
-    //           children: [
-    //             Flexible(
-    //                 flex: 1,
-    //                 // child: Padding(
-    //                 //     padding: EdgeInsets.only(right: 5.0, top: 0),
-    //                 child: Align(
-    //                   alignment: Alignment.topCenter,
-    //                   child: CircleAvatar(
-    //                     backgroundColor: Colors.grey[350],
-    //                     foregroundImage: curUser.profileImg == null
-    //                         ? null
-    //                         : NetworkImage('${curUser.profileImg}'),
-    //                     backgroundImage: AssetImage('assets/no-profile.png'),
-    //                     radius: 20.0,
-    //                   ),
-    //                 )
-    //                 // )
-    //                 ),
-    //             Flexible(
-    //                 flex: 10,
-    //                 child: Container(
-    //                     padding: EdgeInsets.symmetric(
-    //                         horizontal: 10.0, vertical: 5.0),
-    //                     margin: EdgeInsets.only(top: 7.0, bottom: 7.0),
-    //                     decoration: BoxDecoration(
-    //                       borderRadius: BorderRadius.all(Radius.circular(15.0)),
-    //                       // color: Colors.blueGrey,
-    //                     ),
-    //                     child: Column(
-    //                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    //                         children: [
-    //                           Align(
-    //                               alignment: Alignment.topLeft,
-    //                               child: Text(
-    //                                 curUser.name,
-    //                                 style: TextStyle(
-    //                                     color: Colors.grey,
-    //                                     fontSize: Theme.of(context)
-    //                                         .textTheme
-    //                                         .overline!
-    //                                         .fontSize),
-    //                               )),
-    //                           SizedBox(
-    //                             height: 10,
-    //                           ),
-    //                           Align(
-    //                               alignment: Alignment.centerLeft,
-    //                               child: Text(
-    //                                 msg.content!,
-    //                                 textAlign: TextAlign.left,
-    //                                 style: TextStyle(color: Colors.white),
-    //                               )),
-    //                         ])))
-    //           ],
-    //         )));
-
     final time = TimeOfDay.fromDateTime(msg.time).format(context);
     final double msgSpacing = prevIsSame ? 0 : 11;
     late final dateStr;
@@ -207,22 +138,6 @@ class RoomState extends State<Room> {
                               style: TextStyle(color: Colors.white),
                             )),
                       ]))),
-          // Padding(
-          //   padding: EdgeInsets.only(bottom: 18),
-          //   child: ConstrainedBox(
-          //       constraints: BoxConstraints(minWidth: 60),
-          //       child: Text(
-          //         msg.content!, // Using unicode space is imp as flutter engine trims otherwise
-          //         textAlign: TextAlign.left,
-          //         style: TextStyle(color: Colors.white),
-          //       )),
-          // ),
-          //   Positioned(
-          //       bottom: 0,
-          //       right: 0,
-          //       child: Text(time,
-          //           textAlign: TextAlign.end,
-          //           style: TextStyle(color: Colors.grey)))
         ],
       ),
     );
@@ -238,7 +153,6 @@ class RoomState extends State<Room> {
       dateString =
           "${prependDay.day.toString().padLeft(2, "0")}/${prependDay.month.toString().padLeft(2, "0")}/${prependDay.year.toString().substring(2)}";
     }
-    print('helloworld');
     return Column(
       children: [
         Stack(
@@ -283,7 +197,7 @@ class RoomState extends State<Room> {
     if (media == null && content == null) {
       return;
     }
-    // print('hi');
+
     Provider.of<WebSocketWrapper>(context, listen: false).add(jsonEncode({
       'type': 'RoomsMessage',
       'roomId': widget.roomId,
@@ -360,7 +274,6 @@ class RoomState extends State<Room> {
                                   BlocProvider(
                                       lazy: false,
                                       create: (context) {
-                                        print('holahola');
                                         var cubit = RoomChatCubit(
                                             roomId: widget.roomId,
                                             initialState:
@@ -489,91 +402,6 @@ class RoomState extends State<Room> {
                                                       channelId:
                                                           state[widget.roomId],
                                                     )
-                                                    // Row(
-                                                    //   children: [
-                                                    //     Expanded(
-                                                    //         child:
-                                                    //             RawKeyboardListener(
-                                                    //                 focusNode:
-                                                    //                     FocusNode(),
-                                                    //                 onKey: (RawKeyEvent
-                                                    //                     event) {
-                                                    //                   if (kIsWeb ||
-                                                    //                       Platform
-                                                    //                           .isMacOS ||
-                                                    //                       Platform
-                                                    //                           .isLinux ||
-                                                    //                       Platform
-                                                    //                           .isWindows) {
-                                                    //                     // Submit on Enter and new line on Shift + Enter only on desktop devices or Web
-                                                    //                     if (event.isKeyPressed(LogicalKeyboardKey.enter) &&
-                                                    //                         !event.isShiftPressed) {
-                                                    //                       String
-                                                    //                           data =
-                                                    //                           inputController.text;
-                                                    //                       inputController
-                                                    //                           .clear();
-                                                    //                       // Bug fix for stray new line after Pressing Enter
-                                                    //                       Future.delayed(
-                                                    //                           Duration(milliseconds: 100),
-                                                    //                           () => inputController.clear());
-                                                    //                       _sendMessage(
-                                                    //                           channelId: state[widget.roomId]!,
-                                                    //                           context: context,
-                                                    //                           content: data.trim());
-                                                    //                     }
-                                                    //                   }
-                                                    //                 },
-                                                    //                 child:
-                                                    //                     TextField(
-                                                    //                   maxLines:
-                                                    //                       null,
-                                                    //                   controller:
-                                                    //                       inputController,
-                                                    //                   textCapitalization:
-                                                    //                       TextCapitalization
-                                                    //                           .sentences,
-                                                    //                   onEditingComplete:
-                                                    //                       () {
-                                                    //                     String
-                                                    //                         data =
-                                                    //                         inputController.text;
-                                                    //                     inputController
-                                                    //                         .clear();
-                                                    //                     _sendMessage(
-                                                    //                         channelId: state[widget
-                                                    //                             .roomId]!,
-                                                    //                         context:
-                                                    //                             context,
-                                                    //                         content:
-                                                    //                             data.trim());
-                                                    //                   },
-                                                    //                   decoration: InputDecoration(
-                                                    //                       border:
-                                                    //                           OutlineInputBorder(),
-                                                    //                       hintText:
-                                                    //                           'Type a message'),
-                                                    //                 ))),
-                                                    //     IconButton(
-                                                    //         onPressed: () {
-                                                    //           String data =
-                                                    //               inputController
-                                                    //                   .text;
-                                                    //           inputController
-                                                    //               .clear();
-                                                    //           _sendMessage(
-                                                    //               channelId:
-                                                    //                   state[widget
-                                                    //                       .roomId]!,
-                                                    //               context:
-                                                    //                   context,
-                                                    //               content: data
-                                                    //                   .trim());
-                                                    //         },
-                                                    //         icon: Icon(
-                                                    //             Icons.send))
-                                                    //   ],
-                                                    // ),
                                                   ]);
                                             },
                                           ),
@@ -616,7 +444,7 @@ class RoomState extends State<Room> {
                                                 // VerticalDivider(color: Colors.grey, width: 2),
                                                 Expanded(
                                                     flex: 8,
-                                                    child: channelsView(
+                                                    child: ChannelsView(
                                                       roomId: widget.roomId,
                                                     ))
                                               ],
@@ -716,98 +544,6 @@ class RoomState extends State<Room> {
           },
         );
       }),
-    );
-  }
-}
-
-class channelsView extends StatefulWidget {
-  final _channels = <channelsTile>[];
-  late final String roomId;
-  late final String currChannelID;
-  get tiles => _channels;
-
-  channelsView({
-    required this.roomId,
-  });
-
-  @override
-  channelsViewState createState() => channelsViewState();
-}
-
-class channelsViewState extends State<channelsView> {
-  Widget build(BuildContext context) {
-    return StreamBuilder(
-        stream: RepositoryProvider.of<AppDb>(context)
-            .getChannelsOfRoom(roomID: widget.roomId)
-            .watch(),
-        builder:
-            (BuildContext context, AsyncSnapshot<List<RoomsChannel>> snapshot) {
-          if (snapshot.hasData) {
-            return ListView(
-                children: snapshot.data!
-                    .map((e) => channelsTile(
-                        roomId: widget.roomId,
-                        channelId: e.channelId,
-                        name: e.channelName))
-                    .toList());
-          } else if (snapshot.hasError) {
-            print(snapshot.error);
-            return SnackBar(
-                content: Text('Error has occured while reading from DB'));
-          }
-          return Container();
-        });
-  }
-}
-
-class channelsTile extends StatefulWidget {
-  late final String channelId;
-  late final String name;
-  late final String roomId;
-  late final bool? _unread;
-
-  channelsTile({
-    required this.roomId,
-    required this.channelId,
-    required this.name,
-    bool? unread,
-  }) {
-    _unread = unread;
-  }
-
-  @override
-  channelsTileState createState() => channelsTileState(unread: _unread);
-}
-
-class channelsTileState extends State<channelsTile> {
-  bool _unread = false;
-
-  channelsTileState({
-    bool? unread,
-  }) {
-    _unread = unread ?? (Random().nextInt(2) == 0 ? false : true);
-    // _unread = true;
-  }
-  Widget build(BuildContext context) {
-    return ListTile(
-      minVerticalPadding: 5,
-      // leading: Text("#"),
-      onTap: () => {
-        Navigator.of(context).pop(),
-        BlocProvider.of<RoomsCubit>(context, listen: false)
-            .updateDefaultChannel(widget.roomId, widget.channelId)
-      },
-      title: Text("# " + widget.name),
-      trailing: _unread
-          ? Container(
-              width: 15.0,
-              height: 15.0,
-              decoration: BoxDecoration(
-                color: Colors.orange,
-                shape: BoxShape.circle,
-              ),
-            )
-          : null,
     );
   }
 }
