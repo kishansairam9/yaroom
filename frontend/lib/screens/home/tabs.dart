@@ -25,9 +25,13 @@ class TabViewState extends State<TabView> {
         title: const Text('yaroom'),
         bottomOpacity: 0.0,
         elevation: 0.0,
-        leading: IconButton(
-            icon: Image.asset("assets/yaroom.png"),
-            onPressed: () => {Scaffold.of(context).openDrawer()}),
+        leading: Builder(
+          builder: (context) {
+            return IconButton(
+                icon: Image.asset("assets/yaroom.png"),
+                onPressed: () => {Scaffold.of(context).openDrawer()});
+          },
+        ),
         actions: <Widget>[
           IconButton(
             onPressed: () => {},
