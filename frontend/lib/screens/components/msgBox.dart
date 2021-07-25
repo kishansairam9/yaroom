@@ -7,7 +7,11 @@ import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 class MsgBox extends StatefulWidget {
   final Function sendMessage;
   final String? channelId;
-  MsgBox({required this.sendMessage, this.channelId});
+  final Function? callIfEmojiClosedAndBackPress;
+  MsgBox(
+      {required this.sendMessage,
+      this.channelId,
+      this.callIfEmojiClosedAndBackPress});
 
   @override
   MsgBoxState createState() => new MsgBoxState();
@@ -33,6 +37,8 @@ class MsgBoxState extends State<MsgBox> {
       setState(() {
         emojiShowing = false;
       });
+    } else if (widget.callIfEmojiClosedAndBackPress != null) {
+      widget.callIfEmojiClosedAndBackPress!();
     }
     return Future.value(false);
   }
@@ -59,12 +65,15 @@ class MsgBoxState extends State<MsgBox> {
           Row(
             children: [
               IconButton(
-                  onPressed: () => {
-                        setState(() {
-                          emojiShowing = !emojiShowing;
-                        }),
-                        FocusScope.of(context).unfocus()
-                      },
+                  onPressed: () {
+                    FocusScope.of(context).unfocus();
+                    // Delay only to prevent render overflow when clicking emoji while keyboard open
+                    Future.delayed(
+                        Duration(milliseconds: 150),
+                        () => setState(() {
+                              emojiShowing = !emojiShowing;
+                            }));
+                  },
                   icon: Icon(Icons.emoji_emotions)),
               Expanded(
                   child: RawKeyboardListener(

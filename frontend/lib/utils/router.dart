@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../screens/home/tabs.dart';
-import 'errorPage.dart';
+import '../screens/homePage.dart';
+import '../screens/messaging/chatPage.dart';
+import 'guidePages.dart';
 import '../screens/rooms/room.dart';
 import './types.dart';
 
@@ -10,13 +11,13 @@ class ContentRouter {
   Route onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
       case '/':
-        return MaterialPageRoute(builder: (_) => TabView());
-      case '/rooms':
-        final args = settings.arguments as RoomArguments;
-        return MaterialPageRoute(
-            builder: (_) => Room(
-                roomId: args.roomId,
-                roomName: args.roomName));
+        final args = settings.arguments == null
+            ? HomePageArguments()
+            : settings.arguments as HomePageArguments;
+        return MaterialPageRoute(builder: (_) => HomePage(args));
+      case '/chat':
+        final args = settings.arguments as ChatPageArguments;
+        return MaterialPageRoute(builder: (_) => ChatPage(args));
       default:
         return MaterialPageRoute(builder: (_) => ErrorPage());
     }

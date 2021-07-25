@@ -5,17 +5,12 @@ import 'package:provider/provider.dart';
 import 'package:yaroom/blocs/rooms.dart';
 import '../components/contactView.dart';
 import '../components/msgBox.dart';
-import '../home/tabs.dart';
-import '../components/roomsList.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../utils/websocket.dart';
 import '../../utils/types.dart';
-import './channels.dart';
+import '../../utils/guidePages.dart';
 
 class Room extends StatefulWidget {
-  static TabViewState? of(BuildContext context) =>
-      context.findAncestorStateOfType<TabViewState>();
-
   @override
   RoomState createState() => RoomState();
   late final String roomId;
@@ -206,9 +201,7 @@ class RoomState extends State<Room> {
     }));
   }
 
-  Widget _buildMessagesView(List<RoomsMessage> allmsgs, String channelId) {
-    var msgs =
-        allmsgs.where((element) => element.channelId == channelId).toList();
+  Widget _buildMessagesView(List<RoomsMessage> msgs) {
     return Expanded(
         child: Column(
       children: [
@@ -242,304 +235,95 @@ class RoomState extends State<Room> {
 
   @override
   Widget build(BuildContext context) {
-    // late final String activeChannel = widget.currChannel;
-    return BlocProvider(
-      create: (context) => RoomsCubit(),
-      child: Builder(builder: (context) {
-        return BlocBuilder<RoomsCubit, Map<String, String>>(
-          builder: (BuildContext context, Map<String, String> state) {
-            return FutureBuilder(
-                future: RepositoryProvider.of<AppDb>(context)
-                    .getRoomMembers(roomID: widget.roomId)
-                    .get(),
-                builder: (BuildContext _,
-                    AsyncSnapshot<List<User>> roomMembersSnapshot) {
-                  if (roomMembersSnapshot.hasData) {
-                    return FutureBuilder(
-                        future: RepositoryProvider.of<AppDb>(context)
-                            .getRoomChannelChat(roomId: widget.roomId)
-                            .get(),
-                        builder: (BuildContext context,
-                            AsyncSnapshot<List<RoomsMessage>>
-                                roomChatsnapshot) {
-                          if (roomChatsnapshot.hasData) {
-                            return MultiProvider(
-                                providers: [
-                                  Provider<List<User>>(
-                                      create: (_) => roomMembersSnapshot.data!),
-                                  BlocProvider(
-                                      lazy: false,
-                                      create: (context) {
-                                        var cubit = RoomChatCubit(
-                                            roomId: widget.roomId,
-                                            initialState:
-                                                roomChatsnapshot.data!);
-                                        webSocketSubscription =
-                                            Provider.of<WebSocketWrapper>(
-                                                    context,
-                                                    listen: false)
-                                                .stream
-                                                .where((encodedData) {
-                                          var data = jsonDecode(encodedData);
-                                          return data['roomId'] ==
-                                              widget.roomId;
-                                        }).listen((encodedData) {
-                                          var data = jsonDecode(encodedData);
-                                          cubit.addMessage(
-                                              msgId: data['msgId'],
-                                              fromUser: data['fromUser'],
-                                              roomId: data['roomId'],
-                                              channelId: data['channelId'],
-                                              time: DateTime.parse(data['time'])
-                                                  .toLocal(),
-                                              content: data['content'] == ''
-                                                  ? null
-                                                  : data['content'],
-                                              media: data['media'] == ''
-                                                  ? null
-                                                  : data['media'],
-                                              replyTo: data['replyTo'] == ''
-                                                  ? null
-                                                  : data['replyTo']);
-                                        }, onError: (error) {
-                                          print(error);
-                                          return SnackBar(
-                                              content: Text(
-                                                  'Error has occured while receiving from websocket'));
-                                        });
-                                        return cubit;
-                                      })
-                                ],
-                                child: Builder(builder: (context) {
-                                  return Scaffold(
-                                    appBar: AppBar(
-                                      title: !state.containsKey(widget.roomId)
-                                          ? Text("hi")
-                                          : FutureBuilder(
-                                              future: RepositoryProvider.of<
-                                                      AppDb>(context)
-                                                  .getChannelName(
-                                                      roomId: widget.roomId,
-                                                      channelId:
-                                                          state[widget.roomId]!)
-                                                  .get(),
-                                              builder: (BuildContext context,
-                                                  AsyncSnapshot<
-                                                          List<RoomsChannel>>
-                                                      snapshot) {
-                                                if (snapshot.hasData) {
-                                                  return ListTile(
-                                                    // leading: Text("#"),
-                                                    title: Text(
-                                                      "# " +
-                                                          snapshot.data![0]
-                                                              .channelName,
-                                                      style: TextStyle(
-                                                          fontSize: 20),
-                                                    ),
-                                                  );
-                                                } else if (snapshot.hasError) {
-                                                  print(snapshot.error);
-                                                  return SnackBar(
-                                                      content: Text(
-                                                          'Error has occured while reading from DB'));
-                                                }
-                                                return Container();
-                                              }),
-                                      leading: Builder(
-                                        builder: (context) {
-                                          return IconButton(
-                                            icon: Icon(Icons.settings),
-                                            onPressed: () {
-                                              Scaffold.of(context).openDrawer();
-                                            },
-                                          );
-                                        },
-                                      ),
-                                      actions: <Widget>[
-                                        Builder(
-                                          builder: (context) {
-                                            return IconButton(
-                                              icon: Icon(Icons.person),
-                                              onPressed: () {
-                                                Scaffold.of(context)
-                                                    .openEndDrawer();
-                                              },
-                                            );
-                                          },
-                                        )
-                                      ],
+    return widget.channelId == null
+        ? SelectChannelPage()
+        : FutureBuilder(
+            future: RepositoryProvider.of<AppDb>(context)
+                .getRoomMembers(roomID: widget.roomId)
+                .get(),
+            builder: (BuildContext _,
+                AsyncSnapshot<List<User>> roomMembersSnapshot) {
+              if (roomMembersSnapshot.hasData) {
+                return FutureBuilder(
+                    future: RepositoryProvider.of<AppDb>(context)
+                        .getRoomChannelChat(
+                            roomId: widget.roomId, channelId: widget.channelId!)
+                        .get(),
+                    builder: (BuildContext context,
+                        AsyncSnapshot<List<RoomsMessage>> roomChatsnapshot) {
+                      if (roomChatsnapshot.hasData) {
+                        return MultiProvider(
+                            providers: [
+                              Provider<List<User>>(
+                                  create: (_) => roomMembersSnapshot.data!),
+                              BlocProvider(
+                                  lazy: false,
+                                  create: (context) {
+                                    var cubit = RoomChatCubit(
+                                        roomId: widget.roomId,
+                                        initialState: roomChatsnapshot.data!);
+                                    webSocketSubscription =
+                                        Provider.of<WebSocketWrapper>(context,
+                                                listen: false)
+                                            .stream
+                                            .where((encodedData) {
+                                      var data = jsonDecode(encodedData);
+                                      return data['roomId'] == widget.roomId;
+                                    }).listen((encodedData) {
+                                      var data = jsonDecode(encodedData);
+                                      cubit.addMessage(
+                                          msgId: data['msgId'],
+                                          fromUser: data['fromUser'],
+                                          roomId: data['roomId'],
+                                          channelId: data['channelId'],
+                                          time: DateTime.parse(data['time'])
+                                              .toLocal(),
+                                          content: data['content'] == ''
+                                              ? null
+                                              : data['content'],
+                                          media: data['media'] == ''
+                                              ? null
+                                              : data['media'],
+                                          replyTo: data['replyTo'] == ''
+                                              ? null
+                                              : data['replyTo']);
+                                    }, onError: (error) {
+                                      print(error);
+                                      return SnackBar(
+                                          content: Text(
+                                              'Error has occured while receiving from websocket'));
+                                    });
+                                    return cubit;
+                                  })
+                            ],
+                            child: Builder(builder: (context) {
+                              return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  mainAxisSize: MainAxisSize.max,
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: <Widget>[
+                                    BlocBuilder<RoomChatCubit,
+                                        List<RoomsMessage>>(
+                                      builder: (BuildContext context,
+                                              List<RoomsMessage> chatstate) =>
+                                          _buildMessagesView(chatstate),
                                     ),
-                                    body: !state.containsKey(widget.roomId)
-                                        ? Container(color: Colors.red)
-                                        : Builder(
-                                            builder: (context) {
-                                              return Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.center,
-                                                  mainAxisSize:
-                                                      MainAxisSize.max,
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment.end,
-                                                  children: <Widget>[
-                                                    BlocBuilder<RoomChatCubit,
-                                                        List<RoomsMessage>>(
-                                                      builder: (BuildContext
-                                                                  context,
-                                                              List<RoomsMessage>
-                                                                  chatstate) =>
-                                                          _buildMessagesView(
-                                                              chatstate,
-                                                              state[widget
-                                                                  .roomId]!),
-                                                    ),
-                                                    MsgBox(
-                                                      sendMessage: _sendMessage,
-                                                      channelId:
-                                                          state[widget.roomId],
-                                                    )
-                                                  ]);
-                                            },
-                                          ),
-                                    drawer: SafeArea(
-                                      child: Drawer(
-                                        child: Scaffold(
-                                            appBar: AppBar(
-                                              automaticallyImplyLeading: false,
-                                              title: Row(
-                                                children: [
-                                                  Expanded(
-                                                    flex: 2,
-                                                    child: Container(
-                                                      // width: 50,
-                                                      child: IconButton(
-                                                          padding:
-                                                              EdgeInsets.all(2),
-                                                          icon: Icon(Icons.home,
-                                                              size: 30),
-                                                          onPressed: () =>
-                                                              Navigator.of(
-                                                                      context)
-                                                                  .pushReplacementNamed(
-                                                                      '/')),
-                                                    ),
-                                                  ),
-                                                  // VerticalDivider(color: Colors.grey, width: 2),
-                                                  Expanded(
-                                                      flex: 8,
-                                                      child:
-                                                          Text(widget.roomName))
-                                                ],
-                                              ),
-                                            ),
-                                            body: Row(
-                                              children: [
-                                                Expanded(
-                                                    flex: 2,
-                                                    child: RoomListView()),
-                                                // VerticalDivider(color: Colors.grey, width: 2),
-                                                Expanded(
-                                                    flex: 8,
-                                                    child: ChannelsView(
-                                                      roomId: widget.roomId,
-                                                    ))
-                                              ],
-                                            )),
-                                      ),
-                                    ),
-                                    endDrawer: Drawer(
-                                      child: ListView(
-                                          padding: EdgeInsets.zero,
-                                          children: [
-                                            DrawerHeader(
-                                                child: Column(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment
-                                                            .spaceEvenly,
-                                                    children: [
-                                                  ListTile(
-                                                    tileColor:
-                                                        Colors.transparent,
-                                                    title: Text(widget.roomName,
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                        style: TextStyle(
-                                                            fontSize: 20)),
-                                                  ),
-                                                  Row(
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .spaceAround,
-                                                      children: [
-                                                        Column(
-                                                          children: [
-                                                            IconButton(
-                                                                onPressed: () =>
-                                                                    {},
-                                                                tooltip:
-                                                                    "Pinned Messages",
-                                                                icon: Icon(Icons
-                                                                    .push_pin)),
-                                                            Text("Pins")
-                                                          ],
-                                                        ),
-                                                        Column(
-                                                          children: [
-                                                            IconButton(
-                                                                onPressed: () =>
-                                                                    {},
-                                                                tooltip:
-                                                                    "Search",
-                                                                icon: Icon(Icons
-                                                                    .search)),
-                                                            Text("Search")
-                                                          ],
-                                                        )
-                                                      ])
-                                                ])),
-                                            ...roomMembersSnapshot.data!.map(
-                                                (User e) => ListTile(
-                                                    onTap: () =>
-                                                        showModalBottomSheet(
-                                                            context: context,
-                                                            builder:
-                                                                (BuildContext
-                                                                    c) {
-                                                              return ViewContact(
-                                                                  e);
-                                                            }),
-                                                    tileColor:
-                                                        Colors.transparent,
-                                                    leading: CircleAvatar(
-                                                      backgroundColor:
-                                                          Colors.grey[350],
-                                                      foregroundImage:
-                                                          NetworkImage(
-                                                              '${e.profileImg}'),
-                                                      backgroundImage: AssetImage(
-                                                          'assets/no-profile.png'),
-                                                    ),
-                                                    title: Text(
-                                                      e.name,
-                                                    )))
-                                          ]),
-                                    ),
-                                  );
-                                }));
-                          }
-                          return CircularProgressIndicator();
-                        });
-                  } else if (roomMembersSnapshot.hasError) {
-                    print(roomMembersSnapshot.error);
-                    return SnackBar(
-                        content: Text(
-                            'Error has occured while reading from local DB'));
-                  }
-                  return CircularProgressIndicator();
-                });
-          },
-        );
-      }),
-    );
+                                    MsgBox(
+                                      sendMessage: _sendMessage,
+                                      channelId: widget.channelId!,
+                                    )
+                                  ]);
+                            }));
+                      }
+                      return CircularProgressIndicator();
+                    });
+              } else if (roomMembersSnapshot.hasError) {
+                print(roomMembersSnapshot.error);
+                return SnackBar(
+                    content:
+                        Text('Error has occured while reading from local DB'));
+              }
+              return CircularProgressIndicator();
+            });
   }
 }

@@ -3143,6 +3143,16 @@ abstract class _$AppDb extends GeneratedDatabase {
     );
   }
 
+  Selectable<RoomsListData> getRoomDetails({required String roomId}) {
+    return customSelect('SELECT * FROM RoomsList WHERE roomId = :roomId',
+        variables: [
+          Variable<String>(roomId)
+        ],
+        readsFrom: {
+          roomsList,
+        }).map(roomsList.mapFromRow);
+  }
+
   Future<int> addUserToRoom({required String roomsId, required String userId}) {
     return customInsert(
       'INSERT INTO RoomsUserMapping VALUES (:roomsId, :userId)',
@@ -3239,11 +3249,13 @@ abstract class _$AppDb extends GeneratedDatabase {
     );
   }
 
-  Selectable<RoomsMessage> getRoomChannelChat({required String roomId}) {
+  Selectable<RoomsMessage> getRoomChannelChat(
+      {required String roomId, required String channelId}) {
     return customSelect(
-        'SELECT * FROM RoomsMessages WHERE roomId = :roomId ORDER BY msgId',
+        'SELECT * FROM RoomsMessages WHERE roomId = :roomId AND channelId = :channelId ORDER BY msgId',
         variables: [
-          Variable<String>(roomId)
+          Variable<String>(roomId),
+          Variable<String>(channelId)
         ],
         readsFrom: {
           roomsMessages,

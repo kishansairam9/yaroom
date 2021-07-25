@@ -10,8 +10,14 @@ import '../../utils/types.dart';
 import '../../blocs/chats.dart';
 
 class ChatPage extends StatefulWidget {
-  final userId, name, image;
-  ChatPage({required this.userId, this.name, this.image});
+  late final String userId, name;
+  late final String? image;
+
+  ChatPage(ChatPageArguments args) {
+    this.userId = args.userId;
+    this.name = args.name;
+    this.image = args.image;
+  }
   ChatPageState createState() => new ChatPageState();
 }
 
@@ -155,6 +161,11 @@ class ChatPageState extends State<ChatPage> {
     }));
   }
 
+  Future<bool> onBackPress() {
+    Navigator.of(context).pop();
+    return Future.value(false);
+  }
+
   Widget build(BuildContext context) {
     return FutureBuilder(
         future: RepositoryProvider.of<AppDb>(context)
@@ -194,6 +205,11 @@ class ChatPageState extends State<ChatPage> {
             }, child: Builder(builder: (context) {
               return Scaffold(
                   appBar: AppBar(
+                    automaticallyImplyLeading: false,
+                    leading: IconButton(
+                      icon: Icon(Icons.arrow_back),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
                     titleSpacing: 0,
                     title: ListTile(
                       onTap: () => _showContact(context),
@@ -233,7 +249,9 @@ class ChatPageState extends State<ChatPage> {
                             builder: (BuildContext context,
                                     List<ChatMessage> state) =>
                                 _buildMessagesView(state)),
-                        MsgBox(sendMessage: _sendMessage)
+                        MsgBox(
+                            sendMessage: _sendMessage,
+                            callIfEmojiClosedAndBackPress: onBackPress)
                       ]));
             }));
           } else if (snapshot.hasError) {

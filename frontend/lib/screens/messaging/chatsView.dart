@@ -35,7 +35,7 @@ class ChatViewState extends State<ChatView> {
             return SnackBar(
                 content: Text('Error has occured while reading from DB'));
           }
-          return Container();
+          return CircularProgressIndicator();
         });
   }
 }
@@ -94,11 +94,9 @@ class ProfileTileState extends State<ProfileTile> {
     if (widget._preShowChat != null) {
       Function.apply(widget._preShowChat!, widget._preParams);
     }
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (BuildContext context) {
-      return ChatPage(
-          userId: widget.userId, name: widget.name, image: widget.image);
-    }));
+    Navigator.of(context).pushNamed('/chat',
+        arguments: ChatPageArguments(
+            userId: widget.userId, name: widget.name, image: widget.image));
   }
 
   @override

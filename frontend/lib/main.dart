@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:yaroom/blocs/rooms.dart';
 import 'utils/router.dart';
 import 'moor/db.dart';
 import 'fakegen.dart';
@@ -148,6 +149,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
         providers: [
+          BlocProvider<RoomsCubit>(create: (_) => RoomsCubit()),
           Provider<UserId>(
             create: (_) => userId,
           ),
@@ -208,21 +210,23 @@ class MyApp extends StatelessWidget {
             lazy: false,
           )
         ],
-        child: MaterialApp(
-          debugShowCheckedModeBanner: false,
-          title: 'yaroom',
-          theme: ThemeData(
-            brightness: Brightness.light,
-            primaryColor: Colors.blueGrey[600],
-            accentColor: Colors.grey[300],
+        child: Container(
+          child: MaterialApp(
+            debugShowCheckedModeBanner: false,
+            title: 'yaroom',
+            theme: ThemeData(
+              brightness: Brightness.light,
+              primaryColor: Colors.blueGrey[600],
+              accentColor: Colors.grey[300],
+            ),
+            darkTheme: ThemeData(
+              brightness: Brightness.dark,
+              primaryColor: Colors.blueGrey[600],
+              accentColor: Colors.black38,
+            ),
+            themeMode: ThemeMode.dark,
+            onGenerateRoute: _contentRouter.onGenerateRoute,
           ),
-          darkTheme: ThemeData(
-            brightness: Brightness.dark,
-            primaryColor: Colors.blueGrey[600],
-            accentColor: Colors.black38,
-          ),
-          themeMode: ThemeMode.dark,
-          onGenerateRoute: _contentRouter.onGenerateRoute,
         ));
   }
 }

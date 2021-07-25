@@ -178,13 +178,15 @@ searchChatMessages(:query AS TEXT, :limit AS INT OR NULL): SELECT c.content, u.*
 --------
 createRoom(:roomId AS TEXT, :name AS TEXT, :description AS TEXT OR NULL, :roomIcon AS TEXT OR NULL): INSERT into RoomsList VALUES (:roomId, :name, :description, :roomIcon);
 
+getRoomDetails(:roomId AS TEXT): SELECT * FROM RoomsList WHERE roomId = :roomId;
+
 -------------
 -- Rooms-User Mapping Table
 -------------
 addUserToRoom(:roomId AS TEXT, :userId AS TEXT): INSERT into RoomsUserMapping VALUES (:roomsId, :userId);
 
-
 getRoomsOfUser(:userID AS TEXT): SELECT DISTINCT R.roomId, R.name, R.description, R.roomIcon FROM RoomsList AS R, RoomsUserMapping as RM WHERE RM.userId = :userID;   
+
 getRoomMembers(:roomID AS TEXT): SELECT U.* FROM Users AS U, (SELECT DISTINCT userId FROM RoomsUserMapping AS RM WHERE RM.roomId = :roomID) AS UID WHERE U.userId = UID.userId; 
 
 -------------
@@ -199,7 +201,7 @@ getChannelName(:roomId AS TEXT, :channelId AS TEXT): SELECT * FROM RoomsChannels
 -------------
 insertRoomsChannelMessage(:msgId AS TEXT, :roomID AS TEXT, :channelId AS TEXT, :fromUser AS TEXT, :time AS DATETIME, :content AS TEXT OR NULL, :media AS TEXT OR NULL, :replyTo AS TEXT OR NULL): INSERT INTO RoomsMessages VALUES (:msgId, :roomId, :channelId,:fromUser, :time, :content, :media, :replyTo);
 
-getRoomChannelChat(:roomId AS TEXT): SELECT * FROM RoomsMessages WHERE roomId = :roomId ORDER BY msgId;
+getRoomChannelChat(:roomId AS TEXT, :channelId AS TEXT): SELECT * FROM RoomsMessages WHERE roomId = :roomId AND channelId = :channelId ORDER BY msgId;
 
 -- NOTE
 -- While using text full search index, if we use normal way like chats.moor
