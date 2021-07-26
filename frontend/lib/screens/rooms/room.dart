@@ -6,7 +6,7 @@ import 'package:yaroom/blocs/rooms.dart';
 import '../components/contactView.dart';
 import '../components/msgBox.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../utils/websocket.dart';
+import '../../utils/messageExchange.dart';
 import '../../utils/types.dart';
 import '../../utils/guidePages.dart';
 
@@ -189,7 +189,8 @@ class RoomState extends State<Room> {
       return;
     }
 
-    Provider.of<WebSocketWrapper>(context, listen: false).add(jsonEncode({
+    Provider.of<MessageExchangeStream>(context, listen: false)
+        .sendWSMessage(jsonEncode({
       'type': 'RoomsMessage',
       'roomId': widget.roomId,
       'channelId': channelId,
@@ -263,7 +264,8 @@ class RoomState extends State<Room> {
                                         roomId: widget.roomId,
                                         initialState: roomChatsnapshot.data!);
                                     webSocketSubscription =
-                                        Provider.of<WebSocketWrapper>(context,
+                                        Provider.of<MessageExchangeStream>(
+                                                context,
                                                 listen: false)
                                             .stream
                                             .where((encodedData) {

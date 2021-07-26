@@ -2975,6 +2975,16 @@ abstract class _$AppDb extends GeneratedDatabase {
     }).map(users.mapFromRow);
   }
 
+  Selectable<User> getUserById({required String userId}) {
+    return customSelect('SELECT * FROM Users WHERE userId = :userId',
+        variables: [
+          Variable<String>(userId)
+        ],
+        readsFrom: {
+          users,
+        }).map(users.mapFromRow);
+  }
+
   Selectable<User> getUsersNameMatching({required String match}) {
     return customSelect(
         'SELECT * FROM Users WHERE LOWER(name) LIKE \'%\' || :match || \'%\'',

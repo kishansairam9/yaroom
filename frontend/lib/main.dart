@@ -12,8 +12,10 @@ import 'fakegen.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'utils/types.dart';
-import 'utils/websocket.dart';
+import 'utils/messageExchange.dart';
 import 'dart:convert';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 void fakeInsert(AppDb db, UserId userId) {
   var others = [];
@@ -112,13 +114,79 @@ void fakeInsert(AppDb db, UserId userId) {
   }
 }
 
-void main() async {
+Future<void> updateDb(AppDb db, Map<dynamic, dynamic> data) async {
+  data['time'] = DateTime.parse(data['time']).toLocal();
+  if (data['type'] == 'ChatMessage') {
+    await db
+        .insertMessage(
+      msgId: data['msgId'],
+      toUser: data['toUser'],
+      fromUser: data['fromUser'],
+      time: data['time'],
+      content: !data.containsKey('content') || data['content'] == ''
+          ? null
+          : data['content'],
+      media: !data.containsKey('media') || data['media'] == ''
+          ? null
+          : data['media'],
+      replyTo: !data.containsKey('replyTo') || data['replyTo'] == ''
+          ? null
+          : data['replyTo'],
+    )
+        .catchError((e) {
+      print("Database insert failed with error $e");
+    });
+  } else if (data['type'] == 'RoomsMessage') {
+    await db
+        .insertRoomsChannelMessage(
+      msgId: data['msgId'],
+      roomId: data['roomId'],
+      channelId: data['channelId'],
+      fromUser: data['fromUser'],
+      time: data['time'],
+      content: data['content'] == '' ? null : data['content'],
+      media: data['media'] == '' ? null : data['media'],
+      replyTo: data['replyTo'] == '' ? null : data['replyTo'],
+    )
+        .catchError((e) {
+      print("Database insert failed with error $e");
+    });
+  }
+}
+
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  print("Handling a background message: ${message.messageId}");
+  AppDb db = constructDb(logStatements: true, removeExisting: false);
+  Map<String, dynamic> data = message.data;
+  await updateDb(db, data);
+}
+
+Future<void> main() async {
   LicenseRegistry.addLicense(() async* {
     final license = await rootBundle.loadString('fonts/OFL.txt');
     yield LicenseEntryWithLineBreaks(['google_fonts'], license);
   });
 
   WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp();
+
+  // TODO: Upload token to backend
+  String? token = await FirebaseMessaging.instance.getToken(
+      vapidKey:
+          'BAk6SShjzB8D0LkNQQzCtxwCVQnIBLVx1Eedl-WpcSi1bNTPGTPfzp-YLaL-ob9Md1mv7qgy0F71mdg2mVZRIV8');
+  print("FCM TOKEN: ----- $token");
+  FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
+    token = newToken;
+    print("FCM TOKEN: ----- $token");
+  });
+
+  // TODO Web implementation not done yet
+  // For web we need to handle background messages via javascript
+  if (!kIsWeb) {
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  }
+
   HydratedBloc.storage = await HydratedStorage.build(
     storageDirectory: kIsWeb
         ? HydratedStorage.webStorageDirectory
@@ -154,56 +222,22 @@ class MyApp extends StatelessWidget {
             create: (_) => userId,
           ),
           RepositoryProvider<AppDb>.value(value: db),
-          Provider<WebSocketWrapper>(
+          Provider<MessageExchangeStream>(
             create: (_) {
-              var ws = WebSocketWrapper("ws://localhost:8884");
+              var ws = MessageExchangeStream("ws://localhost:8884");
               ws.stream.listen((encodedData) async {
                 var data = jsonDecode(encodedData) as Map;
                 if (data.containsKey('error')) {
                   print("WS stream returned error ${data['error']}");
                   return;
                 }
-                data['time'] = DateTime.parse(data['time']).toLocal();
-                if (data['type'] == 'ChatMessage') {
-                  await db
-                      .insertMessage(
-                    msgId: data['msgId'],
-                    toUser: data['toUser'],
-                    fromUser: data['fromUser'],
-                    time: data['time'],
-                    content:
-                        !data.containsKey('content') || data['content'] == ''
-                            ? null
-                            : data['content'],
-                    media: !data.containsKey('media') || data['media'] == ''
-                        ? null
-                        : data['media'],
-                    replyTo:
-                        !data.containsKey('replyTo') || data['replyTo'] == ''
-                            ? null
-                            : data['replyTo'],
-                  )
-                      .catchError((e) {
-                    print("Database insert failed with error $e");
-                  });
-                } else if (data['type'] == 'RoomsMessage') {
-                  await db
-                      .insertRoomsChannelMessage(
-                    msgId: data['msgId'],
-                    roomId: data['roomId'],
-                    channelId: data['channelId'],
-                    fromUser: data['fromUser'],
-                    time: data['time'],
-                    content: data['content'] == '' ? null : data['content'],
-                    media: data['media'] == '' ? null : data['media'],
-                    replyTo: data['replyTo'] == '' ? null : data['replyTo'],
-                  )
-                      .catchError((e) {
-                    print("Database insert failed with error $e");
-                  });
-                }
+                await updateDb(db, data);
               }, onError: (e) {
                 print("WS stream returned error $e");
+              });
+              FirebaseMessaging.onMessage.listen((RemoteMessage msg) {
+                print(msg.data);
+                ws.addStreamMessage(msg.data);
               });
               return ws;
             },

@@ -5,7 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:yaroom/screens/components/msgBox.dart';
 import '../components/contactView.dart';
 import 'package:provider/provider.dart';
-import '../../utils/websocket.dart';
+import '../../utils/messageExchange.dart';
 import '../../utils/types.dart';
 import '../../blocs/chats.dart';
 
@@ -21,19 +21,35 @@ class ChatPage extends StatefulWidget {
   ChatPageState createState() => new ChatPageState();
 }
 
-class ChatPageState extends State<ChatPage> {
+class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   late final webSocketSubscription;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance!.addObserver(this);
   }
 
   @override
   void dispose() {
     // Clean up the controller & subscription when the widget is disposed.
     webSocketSubscription.cancel();
+    WidgetsBinding.instance!.removeObserver(this);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    print(state.toString());
+    switch (state) {
+      case AppLifecycleState.resumed:
+        Navigator.of(context).pushReplacementNamed('/chat',
+            arguments: ChatPageArguments(
+                name: widget.name, userId: widget.userId, image: widget.image));
+        break;
+      default:
+        break;
+    }
   }
 
   _buildMessage(ChatMessage msg, bool prevIsSame, DateTime? prependDay) {
@@ -150,7 +166,8 @@ class ChatPageState extends State<ChatPage> {
     if (media == null && content == null) {
       return;
     }
-    Provider.of<WebSocketWrapper>(context, listen: false).add(jsonEncode({
+    Provider.of<MessageExchangeStream>(context, listen: false)
+        .sendWSMessage(jsonEncode({
       'type': 'ChatMessage',
       'toUser': widget.userId,
       'fromUser': Provider.of<UserId>(context, listen: false),
@@ -178,7 +195,7 @@ class ChatPageState extends State<ChatPage> {
               var cubit = UserChatCubit(
                   otherUser: widget.userId, initialState: snapshot.data!);
               webSocketSubscription =
-                  Provider.of<WebSocketWrapper>(context, listen: false)
+                  Provider.of<MessageExchangeStream>(context, listen: false)
                       .stream
                       .where((encodedData) {
                 var data = jsonDecode(encodedData);

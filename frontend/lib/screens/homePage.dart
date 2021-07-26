@@ -10,6 +10,8 @@ import './rooms/room.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import './components/roomsList.dart';
 import '../../utils/animatedStack.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class HomePage extends StatefulWidget {
   late final int initIndex;
@@ -46,10 +48,47 @@ class HomePageState extends State<HomePage> {
 
   HomePageState({required this.currentIndex});
 
+  Future<void> setupInteractedMessage() async {
+    // Get any messages which caused the application to open from
+    // a terminated state.
+    RemoteMessage? initialMessage =
+        await FirebaseMessaging.instance.getInitialMessage();
+
+    // If the message also contains a data property with a "type" of "chat",
+    // navigate to a chat screen
+    if (initialMessage != null &&
+        initialMessage.data['type'] == 'ChatMessage') {
+      List<User> data = await RepositoryProvider.of<AppDb>(context)
+          .getUserById(userId: initialMessage.data['fromUser'])
+          .get();
+      Navigator.pushNamed(context, '/chat',
+          arguments: ChatPageArguments(
+              userId: data[0].userId,
+              name: data[0].name,
+              image: data[0].profileImg));
+    }
+
+    // Also handle any interaction when the app is in the background via a
+    // Stream listener
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) async {
+      if (message.data['type'] == 'ChatMessage') {
+        List<User> data = await RepositoryProvider.of<AppDb>(context)
+            .getUserById(userId: message.data['fromUser'])
+            .get();
+        Navigator.pushNamed(context, '/chat',
+            arguments: ChatPageArguments(
+                userId: data[0].userId,
+                name: data[0].name,
+                image: data[0].profileImg));
+      }
+    });
+  }
+
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: currentIndex);
+    setupInteractedMessage();
   }
 
   @override

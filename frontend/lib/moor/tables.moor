@@ -138,6 +138,7 @@ CREATE TABLE GroupChatMessages (
 addUser(:userId AS TEXT, :name AS TEXT, :about AS TEXT OR NULL, :profileImg AS TEXT OR NULL): INSERT into Users VALUES (:userId, :name, :about, :profileImg);
 
 getAllUsers: SELECT * FROM Users;
+getUserById(:userId AS TEXT): SELECT * FROM Users WHERE userId = :userId;
 getUsersNameMatching(:match AS TEXT): SELECT * FROM Users WHERE LOWER(name) LIKE '%' || :match || '%';
 
 -------------

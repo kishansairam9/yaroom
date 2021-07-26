@@ -13,6 +13,16 @@ class HomePageArguments {
       {this.index, this.roomId, this.roomName, this.channelId, this.roomIcon});
 }
 
+class RoomArguments extends HomePageArguments {
+  RoomArguments({roomId, roomName, channelId, roomIcon})
+      : super(
+            index: 0,
+            roomId: roomId,
+            roomName: roomName,
+            channelId: channelId,
+            roomIcon: roomIcon);
+}
+
 class ChatPageArguments {
   late final String userId, name;
   late final String? image;

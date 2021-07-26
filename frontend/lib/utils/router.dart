@@ -18,6 +18,9 @@ class ContentRouter {
       case '/chat':
         final args = settings.arguments as ChatPageArguments;
         return MaterialPageRoute(builder: (_) => ChatPage(args));
+      case '/room':
+        final args = settings.arguments as RoomArguments;
+        return MaterialPageRoute(builder: (_) => HomePage(args));
       default:
         return MaterialPageRoute(builder: (_) => ErrorPage());
     }

@@ -7,7 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:yaroom/fakegen.dart';
 import '../components/contactView.dart';
 import 'package:provider/provider.dart';
-import '../../utils/websocket.dart';
+import '../../utils/messageExchange.dart';
 import '../../utils/types.dart';
 import '../../blocs/groupChats.dart';
 
@@ -164,7 +164,8 @@ class GroupChatPageState extends State<GroupChatPage> {
     if (media == null && content == null) {
       return;
     }
-    Provider.of<WebSocketWrapper>(context, listen: false).add(jsonEncode({
+    Provider.of<MessageExchangeStream>(context, listen: false)
+        .sendWSMessage(jsonEncode({
       'type': 'GroupChatMessage',
       'groupId': widget.groupId,
       'fromUser': Provider.of<UserId>(context, listen: false),
@@ -254,11 +255,11 @@ class GroupChatPageState extends State<GroupChatPage> {
                           var cubit = GroupChatCubit(
                               groupId: widget.groupId,
                               initialState: groupChatSnapshot.data!);
-                          webSocketSubscription = Provider.of<WebSocketWrapper>(
-                                  context,
-                                  listen: false)
-                              .stream
-                              .where((encodedData) {
+                          webSocketSubscription =
+                              Provider.of<MessageExchangeStream>(context,
+                                      listen: false)
+                                  .stream
+                                  .where((encodedData) {
                             var data = jsonDecode(encodedData);
                             return data['groupId'] == widget.groupId;
                           }).listen((encodedData) {
