@@ -5,9 +5,7 @@ import 'package:yaroom/utils/authorizationService.dart';
 import 'chatsView.dart';
 import 'groupsView.dart';
 import '../components/roomsList.dart';
-import '../../utils/inner_drawer.dart';
 import '../../utils/types.dart';
-import 'package:moor/moor.dart';
 
 class TabView extends StatefulWidget {
   static TabViewState? of(BuildContext context) =>
@@ -18,153 +16,95 @@ class TabView extends StatefulWidget {
 }
 
 class TabViewState extends State<TabView> {
-  //  Current State of InnerDrawerState
-  final GlobalKey<InnerDrawerState> _innerDrawerKey =
-      GlobalKey<InnerDrawerState>();
   double cumSum = 0;
   int counter = 0;
   bool startedLeftOpen = false;
 
-  void toggle() {
-    _innerDrawerKey.currentState!.toggle();
-  }
-
-  void open() {
-    _innerDrawerKey.currentState!.open();
-  }
-
-  void close() {
-    _innerDrawerKey.currentState!.close();
-  }
-
-  void dragUpdate(var details) {
-    _innerDrawerKey.currentState!.dragUpdate(details);
-  }
-
-  void dragEnd(var details) {
-    _innerDrawerKey.currentState!.dragEnd(details);
-  }
-
   @override
   Widget build(BuildContext context) {
-    return InnerDrawer(
-      key: _innerDrawerKey,
-      leftChild: RoomsList(
-        animateInsteadOfNavigateHome: true,
-      ),
-      scaffold: Builder(builder: (BuildContext context) {
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('yaroom'),
-            bottomOpacity: 0.0,
-            elevation: 0.0,
-            leading: IconButton(
-              icon: Icon(Icons.radar),
-              onPressed: () => {TabView.of(context)?.toggle()},
-            ),
-            actions: <Widget>[
-              IconButton(
-                onPressed: () => {},
-                icon: Icon(Icons.settings_applications),
-                tooltip: 'Settings',
-              ),
-              IconButton(
-                icon: Icon(Icons.search),
-                onPressed: () {
-                  showSearch(
-                    context: context,
-                    // TODO: Currently using only chats for ChatView, replace with contact list or something like that
-                    delegate: TabViewSearchDelegate(),
-                  );
-                },
-                tooltip: 'Search',
-              ),
-              Builder(
-                builder: (context) => IconButton(
-                  onPressed: () async {
-                    await Provider.of<AuthorizationService>(context,
-                            listen: false)
-                        .logout(context);
-                    await Navigator.of(context)
-                        .pushNamedAndRemoveUntil('/signin', (_) => false);
-                  },
-                  icon: Icon(Icons.logout),
-                  tooltip: 'Log Out',
-                ),
-              ),
-            ],
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('yaroom'),
+        bottomOpacity: 0.0,
+        elevation: 0.0,
+        leading: Builder(
+          builder: (context) {
+            return IconButton(
+                icon: Image.asset("assets/yaroom.png"),
+                onPressed: () => {Scaffold.of(context).openDrawer()});
+          },
+        ),
+        actions: <Widget>[
+          IconButton(
+            onPressed: () => {},
+            icon: Icon(Icons.settings_applications),
+            tooltip: 'Settings',
           ),
-          body: DefaultTabController(
-            initialIndex: 0,
-            length: 2,
-            child: Scaffold(
-              appBar: AppBar(
-                automaticallyImplyLeading: false,
-                title: const TabBar(
-                  tabs: <Widget>[
-                    Tab(
-                      icon: Icon(Icons.message_rounded),
-                    ),
-                    Tab(
-                      icon: Icon(Icons.groups_rounded),
-                    ),
-                  ],
-                ),
-              ),
-              body: TabBarView(
-                children: <Widget>[
-                  Builder(
-                      builder: (context) => GestureDetector(
-                            behavior: HitTestBehavior.translucent,
-                            child: ChatView(),
-                            onHorizontalDragEnd: (details) {
-                              if (startedLeftOpen) startedLeftOpen = false;
-                              dragEnd(details);
-                            },
-                            onHorizontalDragUpdate: (details) {
-                              cumSum += details.delta.dx;
-                              counter += 1;
-                              if (counter < 4) return;
-                              if (cumSum / counter > 0.5 &&
-                                  details.delta.dx > 0) {
-                                startedLeftOpen = true;
-                                for (int i = 0;
-                                    i < (counter.toDouble() * 0.75).round();
-                                    i++) dragUpdate(details);
-                                counter = 0;
-                                cumSum = 0;
-                              } else if (cumSum / counter < -0.5) {
-                                if (startedLeftOpen) {
-                                  close();
-                                  counter = 0;
-                                  cumSum = 0;
-                                  return;
-                                }
-                                final TabController tabController =
-                                    DefaultTabController.of(context)!;
-                                if ((tabController.index + 1) <
-                                    tabController.length)
-                                  tabController
-                                      .animateTo((tabController.index + 1));
-                                counter = 0;
-                                cumSum = 0;
-                              }
-                              if (counter >= 6) {
-                                counter = 0;
-                                cumSum = 0;
-                              }
-                            },
-                          )),
-                  Center(
-                    child: GroupChatView(),
-                  ),
+          IconButton(
+            icon: Icon(Icons.search),
+            onPressed: () {
+              showSearch(
+                context: context,
+                // TODO: Currently using only chats for ChatView, replace with contact list or something like that
+                delegate: TabViewSearchDelegate(),
+              );
+            },
+            tooltip: 'Search',
+          ),
+        ],
+      ),
+      drawer: Container(
+          width: MediaQuery.of(context).size.width * 0.2,
+          // padding: new EdgeInsets.all(10.0),
+          child: Drawer(
+            // child: RoomListView(),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  IconButton(
+                      padding: EdgeInsets.all(4),
+                      icon: Icon(Icons.home, size: 30),
+                      onPressed: () => {}),
+                  Divider(),
+                  Expanded(child: RoomListView())
                 ],
               ),
             ),
+          )),
+      body: DefaultTabController(
+        initialIndex: 0,
+        length: 2,
+        child: Scaffold(
+          appBar: AppBar(
+            automaticallyImplyLeading: false,
+            title: const TabBar(
+              tabs: <Widget>[
+                Tab(
+                  icon: Icon(Icons.message_rounded),
+                ),
+                Tab(
+                  icon: Icon(Icons.groups_rounded),
+                ),
+              ],
+            ),
           ),
-        );
-      }),
+          body: TabBarView(
+            children: <Widget>[
+              Builder(
+                  builder: (context) => GestureDetector(
+                        behavior: HitTestBehavior.translucent,
+                        child: ChatView(),
+                      )),
+              Center(
+                child: GroupChatView(),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
+    //   }),
+    // );
   }
 }
 
@@ -258,8 +198,16 @@ class TabViewSearchDelegate extends SearchDelegate {
     var finalResults = [...chatResultsList, ...groupDMresultslist];
 
     return ListView(
-        children: ListTile.divideTiles(context: context, tiles: finalResults)
-            .toList());
+        children: ListTile.divideTiles(
+            context: context,
+            tiles: results.map((SearchChatMessagesResult e) => ProfileTile(
+                userId: e.userId,
+                image: e.profileImg,
+                name: e.name,
+                unread: 0,
+                showText: e.content,
+                preShowChat: close,
+                preParams: [context, null]))).toList());
   }
 
   @override

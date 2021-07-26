@@ -1,7 +1,11 @@
 import 'dart:math';
 
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:yaroom/auth.dart';
+import 'package:flutter/services.dart';
+import 'package:hydrated_bloc/hydrated_bloc.dart';
+import 'package:path_provider/path_provider.dart';
 import 'utils/router.dart';
 import 'moor/db.dart';
 import 'fakegen.dart';
@@ -77,15 +81,61 @@ void fakeInsert(AppDb db, UserId userId) {
           content: exchange[0][j]);
     }
   }
+
+  for (var i = 0; i < 15; i++) {
+    String rid = getRoomId();
+    db.createRoom(
+        roomId: rid,
+        name: getCompanyName(),
+        description: getAbout(),
+        roomIcon: getGroupImage());
+    int roomSize = getRandomInt(5, 20);
+    var roomMembers = new List.generate(
+        roomSize, (_) => others[Random().nextInt(others.length)]);
+    roomMembers.add(userId);
+    roomMembers = roomMembers.toSet().toList();
+    roomSize = roomMembers.length;
+    for (var j = 0; j < roomSize; j++) {
+      db.addUserToRoom(roomsId: rid, userId: roomMembers[j]);
+    }
+    int randomNo = Random().nextInt(10) + 1;
+    for (var j = 0; j < randomNo; j++) {
+      db.addChannelsToRoom(
+          roomId: rid,
+          channelId: j.toString(),
+          channelName: getRandomString(5));
+      var exchange = getExchange();
+      for (var k = 0; k < exchange[0].length; k++) {
+        db.insertRoomsChannelMessage(
+            msgId: getMsgId(),
+            roomId: rid,
+            channelId: j.toString(),
+            fromUser: roomMembers[Random().nextInt(roomMembers.length)],
+            time: DateTime.fromMicrosecondsSinceEpoch(j * 1000 * 62),
+            content: exchange[0][k]);
+      }
+    }
+  }
 }
 
 void main() async {
+  LicenseRegistry.addLicense(() async* {
+    final license = await rootBundle.loadString('fonts/OFL.txt');
+    yield LicenseEntryWithLineBreaks(['google_fonts'], license);
+  });
+
   WidgetsFlutterBinding.ensureInitialized();
+  HydratedBloc.storage = await HydratedStorage.build(
+    storageDirectory: kIsWeb
+        ? HydratedStorage.webStorageDirectory
+        : await getTemporaryDirectory(),
+  );
   final removeExistingDB = true;
   AppDb db = constructDb(logStatements: true, removeExisting: removeExistingDB);
   // Fake app user
   // LATER MOVE THIS TO HYDRATED BLOC FOR PERSISTENT STORAGE
   String userId = "0";
+
   const FlutterSecureStorage secureStorage = FlutterSecureStorage();
   final SecureStorageService secureStorageService =
       SecureStorageService(secureStorage);
@@ -96,6 +146,7 @@ void main() async {
     loggedIn = true;
     userId = parseIdToken(idToken)['https://yaroom.com/userId'];
   }
+
   if (removeExistingDB) {
     fakeInsert(db, userId);
   }
@@ -125,6 +176,7 @@ class MyApp extends StatelessWidget {
   late final bool loggedIn;
 
   MyApp(AppDb database, String uid, bool loginStatus) {
+
     db = database;
     userId = uid;
     loggedIn = loginStatus;
@@ -147,7 +199,7 @@ class MyApp extends StatelessWidget {
                   print("WS stream returned error ${data['error']}");
                   return;
                 }
-                data['time'] = DateTime.parse(data['time']);
+                data['time'] = DateTime.parse(data['time']).toLocal();
                 if (data['type'] == 'ChatMessage') {
                   await db
                       .insertMessage(
@@ -170,6 +222,7 @@ class MyApp extends StatelessWidget {
                       .catchError((e) {
                     print("Database insert failed with error $e");
                   });
+
                 } else if (data['type'] == 'GroupChatMessage') {
                   await db
                       .insertGroupChatMessage(
@@ -188,6 +241,18 @@ class MyApp extends StatelessWidget {
                         !data.containsKey('replyTo') || data['replyTo'] == ''
                             ? null
                             : data['replyTo'],
+
+                } else if (data['type'] == 'RoomsMessage') {
+                  await db
+                      .insertRoomsChannelMessage(
+                    msgId: data['msgId'],
+                    roomId: data['roomId'],
+                    channelId: data['channelId'],
+                    fromUser: data['fromUser'],
+                    time: data['time'],
+                    content: data['content'] == '' ? null : data['content'],
+                    media: data['media'] == '' ? null : data['media'],
+                    replyTo: data['replyTo'] == '' ? null : data['replyTo'],
                   )
                       .catchError((e) {
                     print("Database insert failed with error $e");

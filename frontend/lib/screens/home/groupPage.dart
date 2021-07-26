@@ -70,6 +70,7 @@ class GroupChatPageState extends State<GroupChatPage> {
                                   ? null
                                   : NetworkImage(
                                       '${Provider.of<List<User>>(context, listen: false).where((element) => element.userId == msg.fromUser).toList()[0].profileImg}'),
+
                               backgroundImage:
                                   AssetImage('assets/no-profile.png'),
                               radius: 20.0,

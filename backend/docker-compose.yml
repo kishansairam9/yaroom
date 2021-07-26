@@ -1,13 +1,13 @@
 version: '3'
 services:
 
-  yaroom-rabbitmq:
+
+  rabbitmq:
     container_name: yaroom-rabbitmq
     image: rabbitmq:3.8.19-management
     ports:
       - "5672:5672"
       - "15672:15672"
-    restart: always
     volumes:
       - type: bind
         source: ~/containerVolumes/rabbitmq
@@ -15,30 +15,67 @@ services:
     networks:
       - yaroom-testing
 
-  yaroom-redis:
+
+  redis:
     container_name: yaroom-redis
     image: redis:6.2.4
     ports:
       - "6379:6379"
-    restart: always
     networks:
       - yaroom-testing
 
-  yaroom-mongodb:
-    container_name: yaroom-mongodb
-    image: mongo:5.0.0
-    restart: always
+  minio:
+    container_name: yaroom-minio
+    image: minio/minio:RELEASE.2021-07-15T22-27-34Z
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: password
-      MONGO_DATA_DIR: /data/db
-      MONGO_LOG_DIR: /data/db
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio123
     volumes:
       - type: bind
-        source: ~/containerVolumes/mongodb
-        target: /data/db
+        source: ~/containerVolumes/minio
+        target: /data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - yaroom-testing
+
+    
+  els_node:
+    container_name: yaroom-elassandra
+    image: "docker.io/strapdata/elassandra:6.8.4.3"
+    environment:
+      - "JVM_OPTS=-Dcassandra.custom_query_handler_class=org.elassandra.index.ElasticQueryHandler"
+      - "MAX_HEAP_SIZE=1200m"
+      - "HEAP_NEWSIZE=300m"
+      - "CASSANDRA_CGROUP_MEMORY_LIMIT=true"
+      - "DEBUG=true"
+    volumes:
+      - type: bind
+        source: ~/containerVolumes/elassandra
+        target: /var/lib/cassandra
+      - type: bind
+        source: ~/containerVolumes/logs/elassandra
+        target: /var/log/cassandra
     ports:
-      - "27017:27017"
+      - "9042:9042"
+      - "9200:9200"
+    networks:
+      - yaroom-testing
+
+  kibana:
+    container_name: yaroom-kibana
+    image: docker.elastic.co/kibana/kibana-oss:6.8.4
+    environment:
+      - "ELASTICSEARCH_URL=http://els_node:9200"
+    ports:
+      - "5601:5601"
     networks:
       - yaroom-testing
 

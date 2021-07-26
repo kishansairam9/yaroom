@@ -1,95 +1,123 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"sort"
 	"time"
 
+	"github.com/minio/minio-go/v7"
+	"github.com/rs/xid"
 	"github.com/rs/zerolog/log"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/x/bsonx"
+	"github.com/scylladb/gocqlx/v2"
+	"github.com/scylladb/gocqlx/v2/table"
 )
 
-// Note: If we use primitive object ID as type then we need to limit to 12 char strings
-// But our user ID is longer hence, we use type as string. Note that however
-// though type is string, if it refers to `_id` then it is still created as an index
-// And references to other objects we are creating indexes manually in db
+var ChatMessageMetadata = table.Metadata{
+	Name:    "messages.chat_messages",
+	Columns: []string{"exchange_id", "msgid", "fromuser", "touser", "msgtime", "content", "mediaid", "replyto", "es_query", "es_options"},
+	PartKey: []string{"exchange_id"},
+	SortKey: []string{"msgid"},
+}
 
-type User struct {
-	UserId     string   `bson:"_id"`
-	Name       string   `bson:"name"`
-	About      string   `bson:"about,omitempty"`
-	ProfileImg string   `bson:"profileImg,omitempty"`
-	Friends    []string `bson:"friends"`
-	Groups     []string `bson:"groups"`
+var ChatMessageTable *table.Table
+
+var InsertChatMessage *gocqlx.Queryx
+
+func setupDB() {
+	ChatMessageTable = table.New(ChatMessageMetadata)
+	InsertChatMessage = ChatMessageTable.InsertQuery(dbSession)
 }
 
 type ChatMessage struct {
-	MsgId    string    `bson:"_id,omitempty"` // NOTE: Remember while querying, msgId is stored as _id
-	FromUser string    `bson:"fromUser"`
-	ToUser   string    `bson:"toUser"`
-	Time     time.Time `bson:"time"`
-	Content  string    `bson:"content,omitempty"`
-	Media    string    `bson:"media,omitempty"`
-	ReplyTo  string    `bson:"replyTo,omitempty"`
+	Exchange_id string    `json:"exchange_id,omitempty"`
+	Msgid       string    `json:"msgId,omitempty"`
+	Fromuser    string    `json:"fromUser"`
+	Touser      string    `json:"toUser"`
+	Msgtime     time.Time `json:"time"`
+	Content     string    `json:"content,omitempty"`
+	Mediaid     string    `json:"media,omitempty"`
+	Replyto     string    `json:"replyTo,omitempty"`
+	Es_query    string    `json:"es_query,omitempty"`
+	Es_options  string    `json:"es_options,omitempty"`
 }
 
-var chatMsgIndexModels = []mongo.IndexModel{
-	{Keys: bsonx.Doc{{Key: "fromUser", Value: bsonx.Int32(-1)}}},
-	{Keys: bsonx.Doc{{Key: "toUser", Value: bsonx.Int32(-1)}}},
+func getExchangeId(msg *WSMessage) (string, error) {
+	switch msg.Type {
+	case "ChatMessage":
+		uids := []string{msg.FromUser, msg.ToUser}
+		sort.Strings(uids)
+		return uids[0] + ":" + uids[1], nil
+	default:
+		return "", errors.New("unknown message type")
+	}
 }
 
-var chatMsgCol *mongo.Collection
-
-func createIndexes(ctx context.Context) {
-	opts := options.CreateIndexes().SetMaxTime(10 * time.Second)
-
-	_, err := chatMsgCol.Indexes().CreateMany(ctx, chatMsgIndexModels, opts)
+func addMessage(msg *WSMessage) error {
+	// Get exchange id
+	exchange_id, err := getExchangeId(msg)
 	if err != nil {
-		log.Fatal().Str("where", "create indexes").Str("type", "Indexes Create Many chatMsgCol").Msg(err.Error())
+		return err
 	}
 
-	// TODO: Similarly for Group and Rooms messages
+	// Handle media content
+	if msg.MediaData != nil {
+		if msg.MediaData.Name == "" || len(msg.MediaData.Bytes) == 0 {
+			return errors.New("invalid media file, check non empty name, bytes > 0")
+		}
+		// TODO: COMPRESS AND STORE TO SAVE STORAGE SPACE (LATER)
+		mediaBytes, _ := json.Marshal(msg.MediaData)
+		mediaId := xid.New().String()
 
-	log.Info().Msg("Database indexes ensured")
-}
+		if _, err := minioClient.PutObject(context.Background(), miniobucket, mediaId, bytes.NewReader(mediaBytes), -1, minio.PutObjectOptions{ContentType: "application/json", UserMetadata: map[string]string{"x-amz-meta-key": exchange_id}}); err != nil {
+			log.Error().Str("where", "ws read routine").Str("type", "uploading to minio failed at put object").Msg(err.Error())
+			return errors.New("internal server error")
+		}
+		msg.Media = mediaId
+		msg.MediaData = nil
+	}
 
-func addMessage(msg WSMessage) (WSMessage, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
+	// Use current time of server // We don't care about user sending time, we use receiving time
+	msg.Time = time.Now()
 	jsonBytes, _ := json.Marshal(msg)
 
-	var msgId string
+	msgId := xid.New().String()
 
+	// Handle different message types
 	switch msg.Type {
 	case "ChatMessage":
 		var data ChatMessage
-		if err := bson.UnmarshalExtJSON(jsonBytes, true, &data); err != nil {
-			return msg, err
+		if err := json.Unmarshal(jsonBytes, &data); err != nil {
+			return err
 		}
-		res, err := chatMsgCol.InsertOne(ctx, data)
-		if err != nil {
-			return msg, err
+		data.Exchange_id = exchange_id
+		data.Msgid = msgId
+		data.Msgtime = time.Now()
+		if q := InsertChatMessage.BindStruct(data); q.Err() != nil {
+			log.Error().Str("where", "insert chat message").Str("type", "failed to bind struct").Msg(q.Err().Error())
+			return errors.New("internal server error")
 		}
-		msgId = res.InsertedID.(primitive.ObjectID).Hex()
+		if err := InsertChatMessage.Exec(); err != nil {
+			log.Error().Str("where", "insert chat message").Str("type", "failed to execute query").Msg(err.Error())
+			return errors.New("internal server error")
+		}
 	default:
-		return msg, errors.New("unknown message type")
+		return errors.New("unknown message type")
 	}
 
 	msg.MsgId = msgId
-	return msg, nil
+	return nil
 }
 
 func dbInsertRoutine(inChannel <-chan interface{}, outChannel chan<- interface{}, quit <-chan bool) {
 	var err error
 	for {
 		select {
-		case msg := <-inChannel:
-			msg, err = addMessage(msg.(WSMessage))
+		case data := <-inChannel:
+			msg, _ := data.(WSMessage)
+			err = addMessage(&msg)
 			if err != nil {
 				var emsg string
 				if err.Error() == "unknown message type" {

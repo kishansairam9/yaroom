@@ -2,8 +2,16 @@
 
 ### Docker compose
 - Create required directories for binding
-  - `mkdir -p ~/containerVolumes && cd ~/containerVolumes && mkdir mongodb rabbitmq && cd -`
+  - `mkdir -p ~/containerVolumes/elassandra ~/containerVolumes/logs/elassandra ~/containerVolumes/rabbitmq ~/containerVolumes/minio`
+- Inrease vm.max_map_count for elastic search to work - to 1048575
+  - Follow this https://stackoverflow.com/a/50371108 and change amt to 1048575
 - `docker-compose up` to start conatiners
+
+### Setup Database
+- Create Cassandra tables
+  - `docker exec -i yaroom-elassandra cqlsh < tables.cql`
+- Create elastic search indexes
+  - Execute `create_elasticindexes.sh`
 
 ### Gin Server
 - For running server with hot reload use `gin` https://github.com/codegangsta/gin

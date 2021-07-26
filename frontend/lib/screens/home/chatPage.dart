@@ -1,9 +1,8 @@
+import 'package:bubble/bubble.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
-import 'dart:io' show Platform; // OS Detection
-import 'package:flutter/foundation.dart' show kIsWeb; // Web detection
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:yaroom/screens/components/msgBox.dart';
 import '../components/contactView.dart';
 import 'package:provider/provider.dart';
 import '../../utils/websocket.dart';
@@ -17,9 +16,6 @@ class ChatPage extends StatefulWidget {
 }
 
 class ChatPageState extends State<ChatPage> {
-  bool isShowSticker = false;
-
-  final inputController = TextEditingController();
   late final webSocketSubscription;
 
   @override
@@ -31,45 +27,70 @@ class ChatPageState extends State<ChatPage> {
   void dispose() {
     // Clean up the controller & subscription when the widget is disposed.
     webSocketSubscription.cancel();
-    inputController.dispose();
     super.dispose();
   }
 
-  // handling backPress when emoji keyboard is implemented
-  Future<bool> onBackPress() {
-    if (isShowSticker) {
-      setState(() {
-        isShowSticker = false;
-      });
-    } else {
-      Navigator.pop(context);
-    }
-
-    return Future.value(false);
-  }
-
-  _buildMessage(ChatMessage msg) {
+  _buildMessage(ChatMessage msg, bool prevIsSame, DateTime? prependDay) {
     final bool isMe = msg.fromUser == Provider.of<UserId>(context);
-    return Container(
-        padding: EdgeInsets.only(left: 14, right: 14, top: 10, bottom: 10),
-        child: Align(
-          alignment: isMe ? Alignment.bottomRight : Alignment.topLeft,
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 25.0, vertical: 15.0),
-            margin: isMe
-                ? EdgeInsets.only(top: 7.0, bottom: 7.0, left: 70.0)
-                : EdgeInsets.only(top: 7.0, bottom: 7.0, right: 70.0),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.all(Radius.circular(15.0)),
-              color: isMe ? Colors.blueAccent : Colors.blueGrey,
-            ),
-            child: Text(
-              msg.content!,
-              textAlign: isMe ? TextAlign.right : TextAlign.left,
-              style: TextStyle(color: Colors.white),
-            ),
+    final time = TimeOfDay.fromDateTime(msg.time.toLocal()).format(context);
+    final double msgSpacing = prevIsSame ? 5 : 11;
+    final double sideMargin = 60;
+    final msgContent = Bubble(
+      margin: isMe
+          ? BubbleEdges.only(top: msgSpacing, left: sideMargin)
+          : BubbleEdges.only(top: msgSpacing, right: sideMargin),
+      nip: isMe ? BubbleNip.rightTop : BubbleNip.leftTop,
+      showNip: !prevIsSame,
+      alignment: isMe ? Alignment.topRight : Alignment.topLeft,
+      color: isMe ? Colors.blueAccent : Colors.blueGrey,
+      padding: BubbleEdges.all(10),
+      child: Stack(
+        children: [
+          Padding(
+            padding: EdgeInsets.only(bottom: 18),
+            child: ConstrainedBox(
+                constraints: BoxConstraints(minWidth: 60),
+                child: Text(
+                  msg.content!, // Using unicode space is imp as flutter engine trims otherwise
+                  textAlign: isMe ? TextAlign.right : TextAlign.left,
+                  style: TextStyle(color: Colors.white),
+                )),
           ),
-        ));
+          Positioned(
+              bottom: 0,
+              right: 0,
+              child: Text(time,
+                  textAlign: TextAlign.end,
+                  style: TextStyle(color: Colors.grey)))
+        ],
+      ),
+    );
+    if (prependDay == null) {
+      return msgContent;
+    }
+    late final dateString;
+    if (DateTime.now().day == prependDay.day) {
+      dateString = "Today";
+    } else if (DateTime.now().difference(prependDay).inDays == -1) {
+      dateString = "Yesterday";
+    } else {
+      dateString =
+          "${prependDay.day.toString().padLeft(2, "0")}/${prependDay.month.toString().padLeft(2, "0")}/${prependDay.year.toString().substring(2)}";
+    }
+    return Column(
+      children: [
+        Bubble(
+          margin: BubbleEdges.only(top: msgSpacing),
+          alignment: Alignment.center,
+          color: Colors.amber[200],
+          child: Text(dateString,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  fontSize: Theme.of(context).textTheme.subtitle2!.fontSize)),
+        ),
+        msgContent
+      ],
+    );
   }
 
   // To display profile
@@ -91,10 +112,22 @@ class ChatPageState extends State<ChatPage> {
           Expanded(
               child: ListView.builder(
                   reverse: true,
-                  padding: EdgeInsets.only(top: 15.0),
+                  padding: EdgeInsets.only(bottom: 15.0),
                   itemCount: msgs.length,
                   itemBuilder: (BuildContext context, int index) {
-                    return _buildMessage(msgs[msgs.length - 1 - index]);
+                    final bool prevIsSame = msgs.length - 2 - index >= 0
+                        ? (msgs[msgs.length - 2 - index].fromUser ==
+                            msgs[msgs.length - 1 - index].fromUser)
+                        : false;
+                    final bool prependDayCond = msgs.length - 2 - index >= 0
+                        ? (msgs[msgs.length - 2 - index].time.day !=
+                            msgs[msgs.length - 1 - index].time.day)
+                        : true;
+                    DateTime? prependDay = prependDayCond
+                        ? msgs[msgs.length - 1 - index].time
+                        : null;
+                    return _buildMessage(msgs[msgs.length - 1 - index],
+                        prevIsSame && !prependDayCond, prependDay);
                   }))
         ],
       ),
@@ -146,7 +179,7 @@ class ChatPageState extends State<ChatPage> {
                   msgId: data['msgId'],
                   toUser: data['toUser'],
                   fromUser: data['fromUser'],
-                  time: DateTime.parse(data['time']),
+                  time: DateTime.parse(data['time']).toLocal(),
                   content: data['content'] == '' ? null : data['content'],
                   media: data['media'] == '' ? null : data['media'],
                   replyTo: data['replyTo'] == '' ? null : data['replyTo'],
@@ -159,111 +192,49 @@ class ChatPageState extends State<ChatPage> {
               });
               return cubit;
             }, child: Builder(builder: (context) {
-              return WillPopScope(
-                child: Stack(children: <Widget>[
-                  Scaffold(
-                      appBar: AppBar(
-                        titleSpacing: 0,
-                        title: ListTile(
-                          onTap: () => _showContact(context),
-                          contentPadding:
-                              EdgeInsets.only(left: 0.0, right: 0.0),
-                          tileColor: Colors.transparent,
-                          leading: CircleAvatar(
-                            backgroundColor: Colors.grey[350],
-                            foregroundImage: widget.image == null
-                                ? null
-                                : NetworkImage('${widget.image}'),
-                            backgroundImage:
-                                AssetImage('assets/no-profile.png'),
-                          ),
-                          title: Text(
-                            widget.name,
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                        actions: <Widget>[
-                          IconButton(
-                            onPressed: () => {},
-                            icon: Icon(Icons.phone),
-                            tooltip: 'Call',
-                          ),
-                          IconButton(
-                            onPressed: () => {},
-                            icon: Icon(Icons.more_vert),
-                            tooltip: 'More',
-                          )
-                        ],
+              return Scaffold(
+                  appBar: AppBar(
+                    titleSpacing: 0,
+                    title: ListTile(
+                      onTap: () => _showContact(context),
+                      contentPadding: EdgeInsets.only(left: 0.0, right: 0.0),
+                      tileColor: Colors.transparent,
+                      leading: CircleAvatar(
+                        backgroundColor: Colors.grey[350],
+                        foregroundImage: widget.image == null
+                            ? null
+                            : NetworkImage('${widget.image}'),
+                        backgroundImage: AssetImage('assets/no-profile.png'),
                       ),
-                      body: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.max,
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: <Widget>[
-                            BlocBuilder<UserChatCubit, List<ChatMessage>>(
-                                builder: (BuildContext context,
-                                        List<ChatMessage> state) =>
-                                    _buildMessagesView(state)),
-                            Row(
-                              children: [
-                                Expanded(
-                                    child: RawKeyboardListener(
-                                        focusNode: FocusNode(),
-                                        onKey: (RawKeyEvent event) {
-                                          if (kIsWeb ||
-                                              Platform.isMacOS ||
-                                              Platform.isLinux ||
-                                              Platform.isWindows) {
-                                            // Submit on Enter and new line on Shift + Enter only on desktop devices or Web
-                                            if (event.isKeyPressed(
-                                                    LogicalKeyboardKey.enter) &&
-                                                !event.isShiftPressed) {
-                                              String data =
-                                                  inputController.text;
-                                              inputController.clear();
-                                              // Bug fix for stray new line after Pressing Enter
-                                              Future.delayed(
-                                                  Duration(milliseconds: 100),
-                                                  () =>
-                                                      inputController.clear());
-                                              _sendMessage(
-                                                  context: context,
-                                                  content: data.trim());
-                                            }
-                                          }
-                                        },
-                                        child: TextField(
-                                          maxLines: null,
-                                          controller: inputController,
-                                          textCapitalization:
-                                              TextCapitalization.sentences,
-                                          onEditingComplete: () {
-                                            String data = inputController.text;
-                                            inputController.clear();
-                                            _sendMessage(
-                                                context: context,
-                                                content: data.trim());
-                                          },
-                                          decoration: InputDecoration(
-                                              border: OutlineInputBorder(),
-                                              hintText: 'Type a message'),
-                                        ))),
-                                IconButton(
-                                    onPressed: () {
-                                      String data = inputController.text;
-                                      inputController.clear();
-                                      _sendMessage(
-                                          context: context,
-                                          content: data.trim());
-                                    },
-                                    icon: Icon(Icons.send))
-                              ],
-                            ),
-                            (isShowSticker ? buildSticker() : Container())
-                          ]))
-                ]),
-                onWillPop: onBackPress,
-              );
+                      title: Text(
+                        widget.name,
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                    actions: <Widget>[
+                      IconButton(
+                        onPressed: () => {},
+                        icon: Icon(Icons.phone),
+                        tooltip: 'Call',
+                      ),
+                      IconButton(
+                        onPressed: () => {},
+                        icon: Icon(Icons.more_vert),
+                        tooltip: 'More',
+                      )
+                    ],
+                  ),
+                  body: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.max,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: <Widget>[
+                        BlocBuilder<UserChatCubit, List<ChatMessage>>(
+                            builder: (BuildContext context,
+                                    List<ChatMessage> state) =>
+                                _buildMessagesView(state)),
+                        MsgBox(sendMessage: _sendMessage)
+                      ]));
             }));
           } else if (snapshot.hasError) {
             print(snapshot.error);
@@ -272,15 +243,5 @@ class ChatPageState extends State<ChatPage> {
           }
           return CircularProgressIndicator();
         });
-  }
-
-  // create a emoji keyboard
-  Widget buildSticker() {
-    return Container(
-      margin: const EdgeInsets.all(10.0),
-      color: Colors.amber[600],
-      width: 100.0,
-      height: 5.0,
-    );
   }
 }
