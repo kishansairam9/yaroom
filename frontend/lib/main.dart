@@ -305,7 +305,7 @@ class MyApp extends StatelessWidget {
         ],
         child: Container(
           child: MaterialApp(
-            initialRoute: loggedIn ? '/tabs' : '/signin',
+            initialRoute: loggedIn ? '/' : '/signin',
             debugShowCheckedModeBanner: false,
             title: 'yaroom',
             theme: ThemeData(

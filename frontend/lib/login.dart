@@ -59,7 +59,7 @@ class LandingPage extends StatelessWidget {
   Future<void> signIn(BuildContext context) async {
     bool signedIn = await viewModel.signIn();
     if (signedIn) {
-      await Navigator.of(context).pushNamed('/tabs');
+      await Navigator.of(context).pushNamed('/');
     }
   }
 }

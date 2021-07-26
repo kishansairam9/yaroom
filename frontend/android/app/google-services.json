@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:202880325387:android:5dbef7cdedf1ffa795f40e",
+        "mobilesdk_app_id": "1:202880325387:android:27075601b487810895f40e",
         "android_client_info": {
-          "package_name": "com.example.yaroom"
+          "package_name": "com.auth0.yaroom"
         }
       },
       "oauth_client": [
