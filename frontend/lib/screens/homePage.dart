@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:bottom_navy_bar/bottom_navy_bar.dart';
+import 'package:provider/provider.dart';
 import 'package:yaroom/blocs/rooms.dart';
 import 'package:yaroom/utils/guidePages.dart';
 import 'package:yaroom/utils/types.dart';
@@ -9,8 +10,8 @@ import './rooms/channels.dart';
 import './rooms/room.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import './components/roomsList.dart';
-import '../../utils/animatedStack.dart';
-import 'package:firebase_core/firebase_core.dart';
+import '../utils/animatedStack.dart';
+import '../utils/authorizationService.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 class HomePage extends StatefulWidget {
@@ -179,7 +180,26 @@ class HomePageState extends State<HomePage> {
                     return _getRoomAppBar(context, roomId, channelId);
                   }),
                   preferredSize: Size.fromHeight(kToolbarHeight)))
-              : AppBar(),
+              : AppBar(
+                  automaticallyImplyLeading: false,
+                  actions: [
+                    Builder(
+                      builder: (context) => IconButton(
+                        onPressed: () async {
+                          await Provider.of<AuthorizationService>(context,
+                                  listen: false)
+                              .logout(context);
+                          await Navigator.of(context)
+                              .pushNamedAndRemoveUntil('/signin', (_) => false);
+                        },
+                        icon: Icon(Icons.logout),
+                        tooltip: 'Log Out',
+                      ),
+                    ),
+                    IconButton(
+                        onPressed: () => {}, icon: Icon(Icons.fingerprint))
+                  ],
+                ),
           drawer: currentIndex == 0
               ? Drawer(
                   child: (widget.roomId == null
