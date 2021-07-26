@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'dart:math';
+import 'package:yaroom/blocs/rooms.dart';
 import '../../utils/types.dart';
 
 class RoomListView extends StatefulWidget {
-  final _rooms = <RoomsList>[];
+  final _rooms = <RoomTile>[];
 
   get tiles => _rooms;
 
@@ -22,11 +22,21 @@ class RoomListViewState extends State<RoomListView> {
         builder: (BuildContext context,
             AsyncSnapshot<List<RoomsListData>> snapshot) {
           if (snapshot.hasData) {
-            return ListView(
-                children: snapshot.data!
-                    .map((e) => RoomsList(
-                        roomId: e.roomId, name: e.name, image: e.roomIcon))
-                    .toList());
+            return Column(
+              children: [
+                SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.75,
+                  child: ListView.builder(
+                    itemCount: snapshot.data!.length,
+                    itemBuilder: (context, index) {
+                      RoomsListData e = snapshot.data![index];
+                      return RoomTile(
+                          roomId: e.roomId, name: e.name, image: e.roomIcon);
+                    },
+                  ),
+                )
+              ],
+            );
           } else if (snapshot.hasError) {
             print(snapshot.error);
             return SnackBar(
@@ -37,34 +47,23 @@ class RoomListViewState extends State<RoomListView> {
   }
 }
 
-class RoomsList extends StatefulWidget {
+class RoomTile extends StatefulWidget {
   late final String roomId;
   late final String? image;
   late final String name;
 
-  late final int? _unread;
-
-  RoomsList({
+  RoomTile({
     required this.roomId,
     required this.name,
     this.image,
-    int? unread,
-  }) {
-    _unread = unread;
-  }
+  });
 
   @override
-  RoomsListState createState() => RoomsListState(unread: _unread);
+  RoomTileState createState() => RoomTileState();
 }
 
-class RoomsListState extends State<RoomsList> {
-  int _unread = 0;
-
-  RoomsListState({
-    int? unread,
-  }) {
-    _unread = unread ?? Random().nextInt(20);
-  }
+class RoomTileState extends State<RoomTile> {
+  RoomTileState();
 
   Widget build(BuildContext context) {
     return Column(children: [
@@ -74,9 +73,17 @@ class RoomsListState extends State<RoomsList> {
               widget.image == null ? null : NetworkImage('${widget.image}'),
           backgroundImage: AssetImage('assets/no-profile.png'),
           radius: 27.0,
-          child: GestureDetector(
-              onTap: () => Navigator.of(context).pushReplacementNamed('/rooms',
-                  arguments: RoomArguments(widget.roomId, widget.name)))),
+          child: GestureDetector(onTap: () {
+            BlocProvider.of<RoomsCubit>(context, listen: false)
+                .updateLastActive(
+                    RoomDetails(roomId: widget.roomId, roomName: widget.name));
+            Navigator.of(context).pushReplacementNamed('/',
+                arguments: HomePageArguments(
+                    index: 0,
+                    roomId: widget.roomId,
+                    roomName: widget.name,
+                    roomIcon: widget.image));
+          })),
       SizedBox(
         height: 6,
       )

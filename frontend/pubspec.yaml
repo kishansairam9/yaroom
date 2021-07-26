@@ -18,9 +18,13 @@ dependencies:
       url: https://github.com/kishansairam9/emoji_picker_flutter
   badges: ^2.0.1
   bloc: ^7.0.0
+  bottom_navy_bar: ^6.0.0
   bubble: ^1.2.1
   cupertino_icons: ^1.0.2
+  equatable: ^2.0.3
   faker: ^2.0.0
+  firebase_core: ^1.4.0
+  firebase_messaging: ^10.0.4
   flutter_bloc: ^7.0.1
   hydrated_bloc: ^7.0.1
   moor: ^4.4.0

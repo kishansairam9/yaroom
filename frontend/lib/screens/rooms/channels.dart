@@ -7,11 +7,13 @@ import 'dart:math';
 class ChannelsView extends StatefulWidget {
   final _channels = <ChannelsTile>[];
   late final String roomId;
+  late final String roomName;
   late final String currChannelID;
   get tiles => _channels;
 
   ChannelsView({
     required this.roomId,
+    required this.roomName,
   });
 
   @override
@@ -27,13 +29,21 @@ class ChannelsViewState extends State<ChannelsView> {
         builder:
             (BuildContext context, AsyncSnapshot<List<RoomsChannel>> snapshot) {
           if (snapshot.hasData) {
-            return ListView(
-                children: snapshot.data!
-                    .map((e) => ChannelsTile(
-                        roomId: widget.roomId,
-                        channelId: e.channelId,
-                        name: e.channelName))
-                    .toList());
+            return ListView.builder(
+                itemCount: snapshot.data!.length,
+                itemBuilder: (context, index) {
+                  RoomsChannel e = snapshot.data![index];
+                  ChannelsTile tile = ChannelsTile(
+                      roomId: widget.roomId,
+                      channelId: e.channelId,
+                      name: e.channelName);
+                  if (index == 0) {
+                    return Column(
+                      children: [Text(widget.roomName), tile],
+                    );
+                  }
+                  return tile;
+                });
           } else if (snapshot.hasError) {
             print(snapshot.error);
             return SnackBar(
@@ -76,10 +86,10 @@ class ChannelsTileState extends State<ChannelsTile> {
     return ListTile(
       minVerticalPadding: 5,
       // leading: Text("#"),
-      onTap: () => {
-        Navigator.of(context).pop(),
+      onTap: () {
+        Navigator.of(context).pop();
         BlocProvider.of<RoomsCubit>(context, listen: false)
-            .updateDefaultChannel(widget.roomId, widget.channelId)
+            .updateDefaultChannel(widget.roomId, widget.channelId);
       },
       title: Text("# " + widget.name),
       trailing: _unread

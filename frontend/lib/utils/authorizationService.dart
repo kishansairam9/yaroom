@@ -1,10 +1,7 @@
-import 'dart:io';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
-import 'package:yaroom/auth.dart';
 import 'secureStorageService.dart';
-import 'package:http/http.dart' as http;
 import 'package:auth0/auth0.dart';
 
 class AuthorizationService {
