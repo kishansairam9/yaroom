@@ -1,6 +1,7 @@
 version: '3'
 services:
 
+
   rabbitmq:
     container_name: yaroom-rabbitmq
     image: rabbitmq:3.8.19-management
@@ -13,6 +14,7 @@ services:
         target: /var/lib/rabbitmq/mnesia/
     networks:
       - yaroom-testing
+
 
   redis:
     container_name: yaroom-redis
@@ -76,7 +78,6 @@ services:
       - "5601:5601"
     networks:
       - yaroom-testing
-
 
 networks:
   yaroom-testing:

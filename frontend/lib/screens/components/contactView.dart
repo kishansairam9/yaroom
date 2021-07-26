@@ -27,21 +27,31 @@ class ViewContact extends StatelessWidget {
             children: [
               Column(
                 children: [
-                  IconButton(onPressed: () => {}, icon: Icon(Icons.call)),
+                  IconButton(
+                    onPressed: () => {},
+                    icon: Icon(Icons.call),
+                    tooltip: "Call",
+                  ),
                   Text("Call")
                 ],
               ),
               Column(
                 children: [
                   IconButton(
-                      onPressed: () => {}, icon: Icon(Icons.video_call_sharp)),
+                    onPressed: () => {},
+                    icon: Icon(Icons.video_call_sharp),
+                    tooltip: "Video Call",
+                  ),
                   Text("Video")
                 ],
               ),
               Column(
                 children: [
                   IconButton(
-                      onPressed: () => {}, icon: Icon(Icons.message_outlined)),
+                    onPressed: () => {},
+                    icon: Icon(Icons.message),
+                    tooltip: "Message",
+                  ),
                   Text("Message")
                 ],
               ),

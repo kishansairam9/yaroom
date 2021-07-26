@@ -25,11 +25,48 @@ CREATE TABLE ChatMessages (
     CONSTRAINT hasData CHECK (content IS NOT NULL OR media IS NOT NULL)
 ) AS ChatMessage;
 
+-------------
+-- Group Table
+-------------
+CREATE TABLE GroupDMs (
+    groupId TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    groupIcon TEXT
+);
+
+-------------
+-- User - Group Mapping Table
+-------------
+CREATE TABLE GroupUserMapping (
+    groupId TEXT NOT NULL REFERENCES GroupDMs(groupId),
+    userId TEXT NOT NULL REFERENCES Users(userId),
+    PRIMARY KEY(groupId, userId)
+);
+
+--------------
+-- Group Messages
+--------------
+CREATE TABLE GroupChatMessages (
+    msgId TEXT NOT NULL PRIMARY KEY,
+    groupId TEXT NOT NULL REFERENCES GroupDMs(groupId),
+    fromUser TEXT NOT NULL REFERENCES Users(userId),
+    time DATETIME NOT NULL,
+    content TEXT,
+    media TEXT,
+    replyTo TEXT,
+    CONSTRAINT hasData CHECK (content IS NOT NULL OR media IS NOT NULL)
+) AS GroupChatMessage;
+
 -- Indexes
 CREATE INDEX fromUserIndex ON ChatMessages(fromUser);
 CREATE INDEX toUserIndex ON ChatMessages(toUser);
+CREATE INDEX groupIndex ON GroupChatMessages(groupID);
 
 CREATE VIRTUAL TABLE ChatMessagesTextIndex USING fts5(msgId UNINDEXED, fromUser UNINDEXED, toUser UNINDEXED, time UNINDEXED, content, media UNINDEXED, replyTo UNINDEXED, content='ChatMessages', content_rowid='rowid', tokenize = 'porter unicode61');
+
+CREATE VIRTUAL TABLE GroupChatMessagesTextIndex USING fts5(msgId UNINDEXED, groupId UNINDEXED, fromUser UNINDEXED, time UNINDEXED, content, media UNINDEXED, replyTo UNINDEXED, content='GroupChatMessages', content_rowid='rowid', tokenize = 'porter unicode61');
+
 
 -- Triggers to keep index in sync
 CREATE TRIGGER ChatMessagesTextIndex_AI AFTER INSERT ON ChatMessages BEGIN
@@ -43,6 +80,21 @@ END;
 CREATE TRIGGER ChatMessagesTextIndex_AU AFTER UPDATE ON ChatMessages BEGIN
     INSERT INTO ChatMessagesTextIndex(ChatMessagesTextIndex, rowid, msgId, fromUser, toUser, time, content, media, replyTo) VALUES ('delete', old.rowid, old.msgId, old.fromUser, old.toUser, old.time, old.content, old.media, old.replyTo);
     INSERT INTO ChatMessagesTextIndex(rowid, msgId, fromUser, toUser, time, content, media, replyTo) VALUES (new.rowid, new.msgId, new.fromUser, new.toUser, new.time, new.content, new.media, new.replyTo);
+END;
+
+
+-- Group chat messages Indexes
+CREATE TRIGGER GroupChatMessagesTextIndex_AI AFTER INSERT ON GroupChatMessages BEGIN
+    INSERT INTO GroupChatMessagesTextIndex(rowid, msgId, groupId, fromUser, time, content, media, replyTo) VALUES (new.rowid, new.msgId, new.groupId, new.fromUser, new.time, new.content, new.media, new.replyTo);
+END;
+
+CREATE TRIGGER GroupChatMessagesTextIndex_AD AFTER DELETE ON GroupChatMessages BEGIN
+    INSERT INTO GroupChatMessagesTextIndex(GroupChatMessagesTextIndex, rowid, msgId, groupId, fromUser, time, content, media, replyTo) VALUES ('delete', old.rowid, old.msgId, old.groupId, old.fromUser, old.time, old.content, old.media, old.replyTo);
+END;
+
+CREATE TRIGGER GroupChatMessagesTextIndex_AU AFTER UPDATE ON GroupChatMessages BEGIN
+    INSERT INTO GroupChatMessagesTextIndex(GroupChatMessagesTextIndex, rowid, msgId, groupId, fromUser, time, content, media, replyTo) VALUES ('delete', old.rowid, old.msgId, old.groupId, old.fromUser, old.time, old.content, old.media, old.replyTo);
+    INSERT INTO GroupChatMessagesTextIndex(rowid, msgId, groupId, fromUser, time, content, media, replyTo) VALUES (new.rowid, new.msgId, new.groupId, new.fromUser, new.time, new.content, new.media, new.replyTo);
 END;
 
 -------------
@@ -93,39 +145,6 @@ CREATE TABLE RoomsMessages (
     CONSTRAINT hasData CHECK (content IS NOT NULL OR media IS NOT NULL)
 );
 
--------------
--- Group Table
--------------
-CREATE TABLE GroupDMs (
-    groupId TEXT NOT NULL PRIMARY KEY,
-    name TEXT NOT NULL,
-    description TEXT,
-    groupIcon TEXT
-);
-
--------------
--- User - Group Mapping Table
--------------
-CREATE TABLE GroupUserMapping (
-    groupId TEXT NOT NULL REFERENCES GroupDMs(groupId),
-    userId TEXT NOT NULL REFERENCES Users(userId),
-    PRIMARY KEY(groupId, userId)
-);
-
---------------
--- Group Messages
---------------
-CREATE TABLE GroupChatMessages (
-    msgId TEXT NOT NULL PRIMARY KEY,
-    groupId TEXT NOT NULL REFERENCES GroupDMs(groupId),
-    fromUser TEXT NOT NULL REFERENCES Users(userId),
-    time DATETIME NOT NULL,
-    content TEXT,
-    media TEXT,
-    replyTo TEXT,
-    CONSTRAINT hasData CHECK (content IS NOT NULL OR media IS NOT NULL)
-) AS GroupChatMessage;
-
 ----------
 ----------
 -- Queries
@@ -144,6 +163,8 @@ getUsersNameMatching(:match AS TEXT): SELECT * FROM Users WHERE LOWER(name) LIKE
 -- Groups Table
 -------------
 createGroup(:groupId AS TEXT, :name AS TEXT, :description AS TEXT OR NULL, :groupIcon AS TEXT OR NULL): INSERT into GroupDMs VALUES (:groupId, :name, :description, :groupIcon);
+getGroupsNameMatching(:match AS TEXT): SELECT * FROM GroupDMs WHERE LOWER(name) LIKE '%' || :match || '%';
+
 
 -------------
 -- Group-User Mapping Table
@@ -153,6 +174,7 @@ addUserToGroup(:groupId AS TEXT, :userId AS TEXT): INSERT into GroupUserMapping 
 
 getGroupsOfUser(:userID AS TEXT): SELECT DISTINCT G.groupId, G.name, G.description, G.groupIcon FROM GroupDMs AS G, GroupUserMapping as GM WHERE GM.userId = :userID;   
 getGroupMembers(:groupID AS TEXT): SELECT U.* FROM Users AS U, (SELECT DISTINCT userId FROM GroupUserMapping AS GM WHERE GM.groupId = :groupID) AS UID WHERE U.userId = UID.userId; 
+
 
 -------------
 -- Group Chat Messages Table
@@ -172,6 +194,7 @@ insertMessage(:msgId AS TEXT, :fromUser AS TEXT, :toUser AS TEXT, :time AS DATET
 -- Possible BUG! -> if 'uvw AND xyz' is search string then the query we execute searchs for match of both 'uvw' and 'xyz'
 -- Remove key words from search string if this happens
 searchChatMessages(:query AS TEXT, :limit AS INT OR NULL): SELECT c.content, u.* FROM Users u JOIN (SELECT fromUser, toUser, content FROM ChatMessagesTextIndex WHERE content MATCH :query ORDER BY rank LIMIT :limit) c ON c.fromUser = u.userId OR c.toUser = u.userId;
+searchGroupChatMessages(:query AS TEXT, :limit AS INT OR NULL): SELECT c.content, g.* FROM GroupDMs g JOIN (SELECT groupId, content FROM GroupChatMessagesTextIndex WHERE content MATCH :query ORDER BY rank LIMIT :limit) c ON c.groupId = g.groupId;
 
 --------
 -- Rooms

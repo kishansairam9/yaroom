@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
+import 'package:yaroom/utils/authorizationService.dart';
 import 'chatsView.dart';
 import 'groupsView.dart';
 import '../components/roomsList.dart';
@@ -141,6 +143,13 @@ class TabViewSearchDelegate extends SearchDelegate {
     var usersMatching = await RepositoryProvider.of<AppDb>(context)
         .getUsersNameMatching(match: query.toLowerCase())
         .get();
+
+    var groupTextResults = await RepositoryProvider.of<AppDb>(context)
+        .searchGroupChatMessages(query: query.toLowerCase(), limit: 50)
+        .get();
+    var groupsMatching = await RepositoryProvider.of<AppDb>(context)
+        .getGroupsNameMatching(match: query.toLowerCase())
+        .get();
     // print("Queried ${query.toLowerCase()}");
     List<SearchChatMessagesResult> userResults = usersMatching
         .map((e) => SearchChatMessagesResult(
@@ -149,14 +158,45 @@ class TabViewSearchDelegate extends SearchDelegate {
             name: e.name,
             profileImg: e.profileImg))
         .toList();
-    var results = userResults + textresults;
+    List<SearchGroupChatMessagesResult> groupResults = groupsMatching
+        .map((e) => SearchGroupChatMessagesResult(
+            content: '',
+            groupId: e.groupId,
+            name: e.name,
+            groupIcon: e.groupIcon))
+        .toList();
+    var chatResults = userResults + textresults;
+    var groupDMresults = groupResults + groupTextResults;
     // print(results.map((e) => e.name));
     // print(results.map((e) => e.content));
-    if (results.isEmpty) {
+    if (chatResults.isEmpty && groupDMresults.isEmpty) {
       return Center(
         child: Text("No matches"),
       );
     }
+    var chatResultsList = chatResults
+        .map((SearchChatMessagesResult e) => ProfileTile(
+            userId: e.userId,
+            image: e.profileImg,
+            name: e.name,
+            unread: 0,
+            showText: e.content,
+            preShowChat: close,
+            preParams: [context, null]))
+        .toList();
+    var groupDMresultslist = groupDMresults
+        .map((SearchGroupChatMessagesResult e) => GroupProfileTile(
+            groupId: e.groupId,
+            image: e.groupIcon,
+            name: e.name,
+            unread: 0,
+            showText: e.content,
+            preShowChat: close,
+            preParams: [context, null]))
+        .toList();
+
+    var finalResults = [...chatResultsList, ...groupDMresultslist];
+
     return ListView(
         children: ListTile.divideTiles(
             context: context,

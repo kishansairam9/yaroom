@@ -1,5 +1,6 @@
 import 'dart:math';
 
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,6 +14,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'utils/types.dart';
 import 'utils/websocket.dart';
 import 'dart:convert';
+import 'auth.dart';
+import 'login.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'utils/secureStorageService.dart';
+import 'package:flutter_appauth/flutter_appauth.dart';
+import 'utils/authorizationService.dart';
 
 void fakeInsert(AppDb db, UserId userId) {
   var others = [];
@@ -128,20 +135,51 @@ void main() async {
   // Fake app user
   // LATER MOVE THIS TO HYDRATED BLOC FOR PERSISTENT STORAGE
   String userId = "0";
+
+  const FlutterSecureStorage secureStorage = FlutterSecureStorage();
+  final SecureStorageService secureStorageService =
+      SecureStorageService(secureStorage);
+  final String? refreshToken = await secureStorageService.getRefreshToken();
+  final String? idToken = await secureStorageService.getIdToken();
+  bool loggedIn = !(refreshToken == null);
+  if (idToken != null && idToken.isNotEmpty) {
+    loggedIn = true;
+    userId = parseIdToken(idToken)['https://yaroom.com/userId'];
+  }
+
   if (removeExistingDB) {
     fakeInsert(db, userId);
   }
-  runApp(MyApp(db, userId));
+  runApp(MultiProvider(
+    providers: [
+      Provider<FlutterAppAuth>(
+        create: (_) => FlutterAppAuth(),
+      ),
+      ProxyProvider<FlutterAppAuth, AuthorizationService>(
+        update: (_, FlutterAppAuth appAuth, __) =>
+            AuthorizationService(appAuth, secureStorageService),
+      ),
+      ChangeNotifierProvider<LandingViewModel>(
+          create: (BuildContext context) => LandingViewModel(
+                Provider.of<AuthorizationService>(context, listen: false),
+              )),
+    ],
+    child: MyApp(db, userId, loggedIn),
+  ));
+  // runApp(MyApp(db, userId, loggedIn));
 }
 
 class MyApp extends StatelessWidget {
   final _contentRouter = ContentRouter();
   late final AppDb db;
   late final String userId;
+  late final bool loggedIn;
 
-  MyApp(AppDb database, String uid) {
+  MyApp(AppDb database, String uid, bool loginStatus) {
+
     db = database;
     userId = uid;
+    loggedIn = loginStatus;
   }
 
   @override
@@ -184,6 +222,26 @@ class MyApp extends StatelessWidget {
                       .catchError((e) {
                     print("Database insert failed with error $e");
                   });
+
+                } else if (data['type'] == 'GroupChatMessage') {
+                  await db
+                      .insertGroupChatMessage(
+                    msgId: data['msgId'],
+                    groupId: data['groupId'],
+                    fromUser: data['fromUser'],
+                    time: data['time'],
+                    content:
+                        !data.containsKey('content') || data['content'] == ''
+                            ? null
+                            : data['content'],
+                    media: !data.containsKey('media') || data['media'] == ''
+                        ? null
+                        : data['media'],
+                    replyTo:
+                        !data.containsKey('replyTo') || data['replyTo'] == ''
+                            ? null
+                            : data['replyTo'],
+
                 } else if (data['type'] == 'RoomsMessage') {
                   await db
                       .insertRoomsChannelMessage(
@@ -210,6 +268,8 @@ class MyApp extends StatelessWidget {
         ],
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
+          initialRoute: loggedIn ? '/tabs' : '/signin',
+          // initialRoute: '/signin',
           title: 'yaroom',
           theme: ThemeData(
             brightness: Brightness.light,
