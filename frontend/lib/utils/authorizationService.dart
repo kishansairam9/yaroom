@@ -58,10 +58,10 @@ class AuthorizationService {
   }
 
   Future<void> logout(BuildContext context) async {
-    String? access_token = await secureStorageService.getAccessToken();
-    String? refresh_token = await secureStorageService.getRefreshToken();
-    if (access_token != null) {
-      if (refresh_token != null) {
+    String? accessToken = await secureStorageService.getAccessToken();
+    String? refreshToken = await secureStorageService.getRefreshToken();
+    if (accessToken != null) {
+      if (refreshToken != null) {
         var client = Auth0Client(
             clientId: clientId,
             clientSecret: clientId,
@@ -70,11 +70,11 @@ class AuthorizationService {
             sendTimeout: 10000,
             receiveTimeout: 60000,
             useLoggerInterceptor: true,
-            accessToken: access_token);
+            accessToken: accessToken);
         // Auth0 client
 
         // Revoke previous refresh token
-        var params = {'refreshToken': refresh_token};
+        var params = {'refreshToken': refreshToken};
         client.revoke(params);
 
         // Logout client
@@ -82,7 +82,7 @@ class AuthorizationService {
 
         String logoutUrl = issuer + '/v2/logout';
         if (await canLaunch(logoutUrl)) {
-          launch(logoutUrl);
+          await launch(logoutUrl);
         }
       }
     }

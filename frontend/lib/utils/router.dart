@@ -3,7 +3,7 @@ import '../screens/homePage.dart';
 import '../screens/messaging/chatPage.dart';
 import 'guidePages.dart';
 import 'package:provider/provider.dart';
-import '../login.dart';
+import '../screens/login.dart';
 import './types.dart';
 
 // TODO: Currently visiting any random route on web crashes the app FIX THIS

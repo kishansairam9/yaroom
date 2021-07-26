@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'utils/authorizationService.dart';
+import '../utils/authorizationService.dart';
 
 class LandingViewModel extends ChangeNotifier {
   bool _signingIn = false;
@@ -59,7 +59,7 @@ class LandingPage extends StatelessWidget {
   Future<void> signIn(BuildContext context) async {
     bool signedIn = await viewModel.signIn();
     if (signedIn) {
-      await Navigator.of(context).pushNamed('/');
+      await Navigator.of(context).pushReplacementNamed('/');
     }
   }
 }

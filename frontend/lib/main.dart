@@ -16,7 +16,7 @@ import 'utils/messageExchange.dart';
 import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'login.dart';
+import 'screens/login.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'utils/secureStorageService.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
@@ -241,23 +241,7 @@ Future<void> main() async {
   if (removeExistingDB) {
     fakeInsert(db, userId);
   }
-  runApp(MultiProvider(
-    providers: [
-      Provider<FlutterAppAuth>(
-        create: (_) => FlutterAppAuth(),
-      ),
-      ProxyProvider<FlutterAppAuth, AuthorizationService>(
-        update: (_, FlutterAppAuth appAuth, __) =>
-            AuthorizationService(appAuth, secureStorageService),
-      ),
-      ChangeNotifierProvider<LandingViewModel>(
-          create: (BuildContext context) => LandingViewModel(
-                Provider.of<AuthorizationService>(context, listen: false),
-              )),
-    ],
-    child: MyApp(db, userId, loggedIn),
-  ));
-  // runApp(MyApp(db, userId, loggedIn));
+  runApp(MyApp(db, userId, loggedIn, secureStorageService));
 }
 
 class MyApp extends StatelessWidget {
@@ -265,17 +249,31 @@ class MyApp extends StatelessWidget {
   late final AppDb db;
   late final String userId;
   late final bool loggedIn;
+  late final SecureStorageService secureStorageService;
 
-  MyApp(AppDb database, String uid, bool loginStatus) {
+  MyApp(AppDb database, String uid, bool loginStatus,
+      SecureStorageService secureStorageService) {
     db = database;
     userId = uid;
     loggedIn = loginStatus;
+    this.secureStorageService = secureStorageService;
   }
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
         providers: [
+          Provider<FlutterAppAuth>(
+            create: (_) => FlutterAppAuth(),
+          ),
+          ProxyProvider<FlutterAppAuth, AuthorizationService>(
+            update: (_, FlutterAppAuth appAuth, __) =>
+                AuthorizationService(appAuth, secureStorageService),
+          ),
+          ChangeNotifierProvider<LandingViewModel>(
+              create: (BuildContext context) => LandingViewModel(
+                    Provider.of<AuthorizationService>(context, listen: false),
+                  )),
           BlocProvider<RoomsCubit>(create: (_) => RoomsCubit()),
           Provider<UserId>(
             create: (_) => userId,
