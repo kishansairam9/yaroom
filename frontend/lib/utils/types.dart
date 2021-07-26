@@ -8,4 +8,3 @@ class RoomArguments {
 
   RoomArguments(this.roomId, this.roomName);
 }
-

@@ -127,7 +127,6 @@ func main() {
 				g.AbortWithStatusJSON(400, gin.H{"error": "Request sender and msg fromUser don't match"})
 				return
 			}
-
 			err := addMessage(&msg)
 			if err != nil {
 				if err.Error() == "unknown message type" {

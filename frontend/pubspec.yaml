@@ -28,11 +28,6 @@ dependencies:
   path_provider: ^2.0.2
   provider: ^5.0.0
   sqlite3_flutter_libs: ^0.5.0
-  http: ^0.13.3
-  flutter_appauth: ^1.1.0
-  flutter_secure_storage: ^4.2.0
-  auth0: ^2.0.1
-  url_launcher: ^6.0.9
 
 dev_dependencies:
   flutter_test:

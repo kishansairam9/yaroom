@@ -75,7 +75,6 @@ func wsHandler(g *gin.Context) {
 				ch <- WSError{Error: "Error parsing message contents"}
 				continue
 			}
-
 			// Validate fromUser with userId in JWT to prevent
 			if msg.FromUser != userId {
 				ch <- WSError{Error: "Invalid fromUser! Identifications spoofing"}
@@ -93,7 +92,6 @@ func wsHandler(g *gin.Context) {
 
 	// Message queue read routine
 	msgQueueReadQuit := make(chan bool)
-
 	go msgQueueReadRoutine(userId, dbOutChannel, msgQueueReadQuit)
 
 	gotQuitFromRead, gotQuitFromMsgReadQueue := false, false
