@@ -16,6 +16,11 @@ import 'utils/messageExchange.dart';
 import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'login.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'utils/secureStorageService.dart';
+import 'package:flutter_appauth/flutter_appauth.dart';
+import 'utils/authorizationService.dart';
 
 void fakeInsert(AppDb db, UserId userId) {
   var others = [];
@@ -136,6 +141,22 @@ Future<void> updateDb(AppDb db, Map<dynamic, dynamic> data) async {
         .catchError((e) {
       print("Database insert failed with error $e");
     });
+  } else if (data['type'] == 'GroupChatMessage') {
+    await db.insertGroupChatMessage(
+      msgId: data['msgId'],
+      groupId: data['groupId'],
+      fromUser: data['fromUser'],
+      time: data['time'],
+      content: !data.containsKey('content') || data['content'] == ''
+          ? null
+          : data['content'],
+      media: !data.containsKey('media') || data['media'] == ''
+          ? null
+          : data['media'],
+      replyTo: !data.containsKey('replyTo') || data['replyTo'] == ''
+          ? null
+          : data['replyTo'],
+    );
   } else if (data['type'] == 'RoomsMessage') {
     await db
         .insertRoomsChannelMessage(
@@ -159,6 +180,14 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   AppDb db = constructDb(logStatements: true, removeExisting: false);
   Map<String, dynamic> data = message.data;
   await updateDb(db, data);
+}
+
+Map<String?, dynamic> parseIdToken(String? idToken) {
+  final parts = idToken?.split(r'.');
+  assert(parts?.length == 3);
+
+  return jsonDecode(
+      utf8.decode(base64Url.decode(base64Url.normalize(parts![1]))));
 }
 
 Future<void> main() async {
@@ -197,20 +226,50 @@ Future<void> main() async {
   // Fake app user
   // LATER MOVE THIS TO HYDRATED BLOC FOR PERSISTENT STORAGE
   String userId = "0";
+
+  const FlutterSecureStorage secureStorage = FlutterSecureStorage();
+  final SecureStorageService secureStorageService =
+      SecureStorageService(secureStorage);
+  final String? refreshToken = await secureStorageService.getRefreshToken();
+  final String? idToken = await secureStorageService.getIdToken();
+  bool loggedIn = !(refreshToken == null);
+  if (idToken != null && idToken.isNotEmpty) {
+    loggedIn = true;
+    userId = parseIdToken(idToken)['https://yaroom.com/userId'];
+  }
+
   if (removeExistingDB) {
     fakeInsert(db, userId);
   }
-  runApp(MyApp(db, userId));
+  runApp(MultiProvider(
+    providers: [
+      Provider<FlutterAppAuth>(
+        create: (_) => FlutterAppAuth(),
+      ),
+      ProxyProvider<FlutterAppAuth, AuthorizationService>(
+        update: (_, FlutterAppAuth appAuth, __) =>
+            AuthorizationService(appAuth, secureStorageService),
+      ),
+      ChangeNotifierProvider<LandingViewModel>(
+          create: (BuildContext context) => LandingViewModel(
+                Provider.of<AuthorizationService>(context, listen: false),
+              )),
+    ],
+    child: MyApp(db, userId, loggedIn),
+  ));
+  // runApp(MyApp(db, userId, loggedIn));
 }
 
 class MyApp extends StatelessWidget {
   final _contentRouter = ContentRouter();
   late final AppDb db;
   late final String userId;
+  late final bool loggedIn;
 
-  MyApp(AppDb database, String uid) {
+  MyApp(AppDb database, String uid, bool loginStatus) {
     db = database;
     userId = uid;
+    loggedIn = loginStatus;
   }
 
   @override
@@ -246,6 +305,7 @@ class MyApp extends StatelessWidget {
         ],
         child: Container(
           child: MaterialApp(
+            initialRoute: loggedIn ? '/tabs' : '/signin',
             debugShowCheckedModeBanner: false,
             title: 'yaroom',
             theme: ThemeData(
