@@ -22,7 +22,7 @@ type WSMessage struct {
 	MediaData *WSMediaFile `json:"mediaData,omitempty"`
 	Media     string       `json:"media,omitempty"`
 	ReplyTo   string       `json:"replyTo,omitempty"`
-  RoomId    string       `json:"roomId,omitempty"`
+	RoomId    string       `json:"roomId,omitempty"`
 	ChannelId string       `json:"channelId,omitempty"`
 }
 
@@ -30,7 +30,6 @@ type WSMediaFile struct {
 	Name  string `json:"name"`
 	Bytes []byte `json:"bytes"`
 }
-
 
 type WSError struct {
 	Error string `json:"error"`
@@ -46,10 +45,8 @@ func wsHandler(g *gin.Context) {
 
 	rawUserId, exists := g.Get("userId")
 	if !exists {
-		// TODO: REMOVE DUMMY USER ID AFTER SECURING ROUTE AND THROW ERROR
-		rawUserId = "0"
-		// g.AbortWithStatusJSON(400, gin.H{"error": "user not authenticated"})
-		// return
+		g.AbortWithStatusJSON(400, gin.H{"error": "user not authenticated"})
+		return
 	}
 	userId := rawUserId.(string)
 
@@ -81,7 +78,7 @@ func wsHandler(g *gin.Context) {
 				ch <- WSError{Error: "Invalid fromUser! Identifications spoofing"}
 				continue
 			}
-      
+
 			ch <- msg
 			select {
 			case <-quit:
@@ -123,9 +120,12 @@ func wsHandler(g *gin.Context) {
 			}
 			data, isMsg := out.(WSMessage)
 			if isMsg && data.FromUser == userId {
-				if err = msgQueueSendToUser(out.(WSMessage).ToUser, out.(WSMessage)); err != nil {
-					log.Error().Str("where", "msgQueue send to user").Str("type", "failed to write to user queue").Msg(err.Error())
+				if err = sendMessageNotification(out.(WSMessage).ToUser, out.(WSMessage)); err != nil {
+					log.Error().Str("where", "fcm send to user").Str("type", "failed to send push notification").Msg(err.Error())
 				}
+				// if err = msgQueueSendToUser(out.(WSMessage).ToUser, out.(WSMessage)); err != nil {
+				// 	log.Error().Str("where", "msgQueue send to user").Str("type", "failed to write to user queue").Msg(err.Error())
+				// }
 			}
 
 		case <-readQuit:

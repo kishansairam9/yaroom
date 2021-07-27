@@ -1,5 +1,6 @@
 import 'package:faker/faker.dart';
 import 'dart:math';
+import 'utils/types.dart';
 
 Function counterClosure(int start) {
   return () {
@@ -42,4 +43,101 @@ dynamic getExchange() {
     msgs.add(getRandomString(Random().nextInt(100) + 1));
   }
   return [msgs, sender];
+}
+
+void fakeInsert(AppDb db, UserId userId) {
+  var others = [];
+  // Generate fake data
+  db.addUser(
+      userId: userId,
+      name: getName(),
+      about: getAbout(),
+      profileImg: getImage());
+  for (var i = 0; i < 30; i++) {
+    String uid = getUserId();
+    others.add(uid);
+    db.addUser(
+        userId: uid,
+        name: getName(),
+        about: getAbout(),
+        profileImg: getImage());
+    var exchange = getExchange();
+    for (var j = 0; j < exchange[0].length; j++) {
+      late String fromId, toId;
+      if (exchange[1][j] == 0) {
+        fromId = userId;
+        toId = uid;
+      } else {
+        fromId = uid;
+        toId = userId;
+      }
+      db.insertMessage(
+          msgId: getMsgId(),
+          fromUser: fromId,
+          toUser: toId,
+          time: DateTime.fromMillisecondsSinceEpoch(j * 1000 * 62),
+          content: exchange[0][j]);
+    }
+  }
+  for (var i = 0; i < 30; i++) {
+    String gid = getGroupId();
+    db.createGroup(
+        groupId: gid,
+        name: getCompanyName(),
+        description: getAbout(),
+        groupIcon: getGroupImage());
+    int groupSize = getRandomInt(5, 20);
+    var groupMembers = new List.generate(
+        groupSize, (_) => others[Random().nextInt(others.length)]);
+    groupMembers.add(userId);
+    groupMembers = groupMembers.toSet().toList();
+    groupSize = groupMembers.length;
+    for (var j = 0; j < groupSize; j++) {
+      db.addUserToGroup(groupId: gid, userId: groupMembers[j]);
+    }
+    var exchange = getExchange();
+    for (var j = 0; j < exchange[0].length; j++) {
+      db.insertGroupChatMessage(
+          msgId: getMsgId(),
+          groupId: gid,
+          fromUser: groupMembers[Random().nextInt(groupMembers.length)],
+          time: DateTime.fromMillisecondsSinceEpoch(j * 1000 * 62),
+          content: exchange[0][j]);
+    }
+  }
+
+  for (var i = 0; i < 15; i++) {
+    String rid = getRoomId();
+    db.createRoom(
+        roomId: rid,
+        name: getCompanyName(),
+        description: getAbout(),
+        roomIcon: getGroupImage());
+    int roomSize = getRandomInt(5, 20);
+    var roomMembers = new List.generate(
+        roomSize, (_) => others[Random().nextInt(others.length)]);
+    roomMembers.add(userId);
+    roomMembers = roomMembers.toSet().toList();
+    roomSize = roomMembers.length;
+    for (var j = 0; j < roomSize; j++) {
+      db.addUserToRoom(roomsId: rid, userId: roomMembers[j]);
+    }
+    int randomNo = Random().nextInt(10) + 1;
+    for (var j = 0; j < randomNo; j++) {
+      db.addChannelsToRoom(
+          roomId: rid,
+          channelId: j.toString(),
+          channelName: getRandomString(5));
+      var exchange = getExchange();
+      for (var k = 0; k < exchange[0].length; k++) {
+        db.insertRoomsChannelMessage(
+            msgId: getMsgId(),
+            roomId: rid,
+            channelId: j.toString(),
+            fromUser: roomMembers[Random().nextInt(roomMembers.length)],
+            time: DateTime.fromMicrosecondsSinceEpoch(j * 1000 * 62),
+            content: exchange[0][k]);
+      }
+    }
+  }
 }
