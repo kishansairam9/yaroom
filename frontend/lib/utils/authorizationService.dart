@@ -22,12 +22,16 @@ class AuthorizationService {
           await appAuth.authorizeAndExchangeCode(AuthorizationTokenRequest(
               clientId, redirectUrl,
               issuer: 'https://$domain',
+              additionalParameters: {
+                'audience'  : issuer + '/api/v2/'
+              },
               scopes: ['openid', 'profile', 'offline_access', 'app_metadata']));
       await secureStorageService.saveIdToken(response?.idToken);
       await secureStorageService.saveAccessToken(response?.accessToken);
       await secureStorageService
           .saveAccessTokenExpiresIn(response?.accessTokenExpirationDateTime);
       await secureStorageService.saveRefreshToken(response?.refreshToken);
+
       return true;
     } catch (e) {
       print(e.toString());
