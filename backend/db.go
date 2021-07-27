@@ -11,9 +11,24 @@ import (
 	"github.com/minio/minio-go/v7"
 	"github.com/rs/xid"
 	"github.com/rs/zerolog/log"
+	"github.com/scylladb/gocqlx/qb"
 	"github.com/scylladb/gocqlx/v2"
 	"github.com/scylladb/gocqlx/v2/table"
 )
+
+var UserMetadataMetadata = table.Metadata{
+	Name:    "users.metadata",
+	Columns: []string{"userid", "name", "image", "username", "tokens"},
+	PartKey: []string{"userid"},
+}
+
+var UserMetadataTable *table.Table
+var UpdateUserMetadata *gocqlx.Queryx
+var SelectUserMetadata *gocqlx.Queryx
+
+var AddUserFCMToken *gocqlx.Queryx
+var DeleteUserFCMToken *gocqlx.Queryx
+var SelectUserFCMToken *gocqlx.Queryx
 
 var ChatMessageMetadata = table.Metadata{
 	Name:    "messages.chat_messages",
@@ -23,12 +38,82 @@ var ChatMessageMetadata = table.Metadata{
 }
 
 var ChatMessageTable *table.Table
-
 var InsertChatMessage *gocqlx.Queryx
 
 func setupDB() {
+	UserMetadataTable = table.New(UserMetadataMetadata)
+	SelectUserMetadata = UserMetadataTable.SelectQuery(dbSession)
+	UpdateUserMetadata = UserMetadataTable.UpdateQuery(dbSession)
+	AddUserFCMToken = UserMetadataTable.UpdateBuilder().Add("tokens").Query(dbSession)
+	DeleteUserFCMToken = UserMetadataTable.UpdateBuilder().Remove("tokens").Query(dbSession)
+
 	ChatMessageTable = table.New(ChatMessageMetadata)
 	InsertChatMessage = ChatMessageTable.InsertQuery(dbSession)
+}
+
+type UserMetadata struct {
+	Userid   *string
+	Name     *string
+	Username *string
+	Image    *string
+	Tokens   []string
+}
+
+func updateUserMetadata(data *UserMetadata) error {
+	if q := UpdateUserMetadata.BindStruct(data); q.Err() != nil {
+		log.Error().Str("where", "update user metadata").Str("type", "failed to bind struct").Msg(q.Err().Error())
+		return errors.New("internal server error")
+	}
+	if err := UpdateUserMetadata.Exec(); err != nil {
+		log.Error().Str("where", "update user metadata").Str("type", "failed to execute query").Msg(err.Error())
+		return errors.New("internal server error")
+	}
+	return nil
+}
+
+func getUserMetadata(userId string) (*UserMetadata, error) {
+	if q := SelectUserMetadata.BindMap(qb.M{"userid": userId}); q.Err() != nil {
+		log.Error().Str("where", "get user metadata").Str("type", "failed to bind struct").Msg(q.Err().Error())
+		return nil, errors.New("internal server error")
+	}
+	rows := make([]*UserMetadata, 1)
+	if err := SelectUserMetadata.Select(&rows); err != nil {
+		log.Error().Str("where", "get user metadata").Str("type", "failed to execute query").Msg(err.Error())
+		return nil, errors.New("internal server error")
+	}
+	return rows[0], nil
+}
+
+// TODO: Remove receiving name and image, backend should have it already
+type UserFCMTokenUpdate struct {
+	Userid string
+	Tokens []string
+	Image  string
+	Name   string
+}
+
+func addFCMToken(tok *UserFCMTokenUpdate) error {
+	if q := AddUserFCMToken.BindStruct(tok); q.Err() != nil {
+		log.Error().Str("where", "add fcm token").Str("type", "failed to bind struct").Msg(q.Err().Error())
+		return errors.New("internal server error")
+	}
+	if err := AddUserFCMToken.Exec(); err != nil {
+		log.Error().Str("where", "add fcm token").Str("type", "failed to execute query").Msg(err.Error())
+		return errors.New("internal server error")
+	}
+	return nil
+}
+
+func removeFCMToken(tok *UserFCMTokenUpdate) error {
+	if q := DeleteUserFCMToken.BindStruct(tok); q.Err() != nil {
+		log.Error().Str("where", "delete fcm token").Str("type", "failed to bind struct").Msg(q.Err().Error())
+		return errors.New("internal server error")
+	}
+	if err := DeleteUserFCMToken.Exec(); err != nil {
+		log.Error().Str("where", "delete fcm token").Str("type", "failed to execute query").Msg(err.Error())
+		return errors.New("internal server error")
+	}
+	return nil
 }
 
 type ChatMessage struct {

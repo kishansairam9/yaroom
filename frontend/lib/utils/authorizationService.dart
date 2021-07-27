@@ -3,6 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 import 'secureStorageService.dart';
 import 'package:auth0/auth0.dart';
+import 'dart:convert';
+
+Map<String?, dynamic> parseIdToken(String? idToken) {
+  final parts = idToken?.split(r'.');
+  assert(parts?.length == 3);
+
+  return jsonDecode(
+      utf8.decode(base64Url.decode(base64Url.normalize(parts![1]))));
+}
 
 class AuthorizationService {
   static const String clientId = 'L7aNin6XYZtN603FYGEOUQ0yEktThELX';
@@ -22,21 +31,28 @@ class AuthorizationService {
           await appAuth.authorizeAndExchangeCode(AuthorizationTokenRequest(
               clientId, redirectUrl,
               issuer: 'https://$domain',
-              additionalParameters: {
-                'audience'  : issuer + '/api/v2/'
-              },
+              additionalParameters: {'audience': issuer + '/api/v2/'},
               scopes: ['openid', 'profile', 'offline_access', 'app_metadata']));
       await secureStorageService.saveIdToken(response?.idToken);
       await secureStorageService.saveAccessToken(response?.accessToken);
       await secureStorageService
           .saveAccessTokenExpiresIn(response?.accessTokenExpirationDateTime);
       await secureStorageService.saveRefreshToken(response?.refreshToken);
-
       return true;
     } catch (e) {
       print(e.toString());
       return false;
     }
+  }
+
+  Future<String> getUserId() async {
+    final String? idToken = await secureStorageService.getIdToken();
+
+    while (!(idToken != null && idToken.isNotEmpty)) {
+      await Future.delayed(Duration(seconds: 2));
+    }
+    String userId = parseIdToken(idToken)['https://yaroom.com/userId'];
+    return userId;
   }
 
   Future<String?> getValidAccessToken() async {
@@ -51,14 +67,20 @@ class AuthorizationService {
 
   Future<String?> _refreshAccessToken() async {
     final String? refreshToken = await secureStorageService.getRefreshToken();
-    final TokenResponse? response = await appAuth.token(TokenRequest(
-        clientId, redirectUrl,
-        issuer: issuer, refreshToken: refreshToken));
-    await secureStorageService.saveAccessToken(response?.accessToken);
-    await secureStorageService
-        .saveAccessTokenExpiresIn(response?.accessTokenExpirationDateTime);
-    await secureStorageService.saveRefreshToken(response?.refreshToken);
-    return response?.accessToken;
+    print(refreshToken);
+    try {
+      final TokenResponse? response = await appAuth.token(TokenRequest(
+          clientId, redirectUrl,
+          issuer: issuer, refreshToken: refreshToken));
+      await secureStorageService.saveAccessToken(response?.accessToken);
+      await secureStorageService
+          .saveAccessTokenExpiresIn(response?.accessTokenExpirationDateTime);
+      await secureStorageService.saveRefreshToken(response?.refreshToken);
+      return response?.accessToken;
+    } catch (e) {
+      print(e);
+      return null;
+    }
   }
 
   Future<void> logout(BuildContext context) async {
