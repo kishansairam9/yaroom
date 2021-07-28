@@ -52,6 +52,21 @@ CREATE TABLE messages.chat_messages (
     PRIMARY KEY (exchange_id, msgid)
 ) WITH CLUSTERING ORDER BY (msgid DESC);
 
+CREATE TABLE messages.rooms_messages (
+    exchange_id text,
+    msgid text,
+    fromuser text,
+    roomid text,
+    channelid text,
+    msgtime timestamp,
+    content text,
+    mediaid text,
+    replyto text,
+    es_query text,
+    es_options text,
+    PRIMARY KEY (exchange_id, msgid)
+) WITH CLUSTERING ORDER BY (msgid DESC);
+
 CREATE INDEX chat_messages_from_index ON messages.chat_messages (fromuser);
 CREATE INDEX chat_messages_to_index ON messages.chat_messages (touser);
 
