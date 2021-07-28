@@ -22,20 +22,13 @@ class RoomListViewState extends State<RoomListView> {
         builder: (BuildContext context,
             AsyncSnapshot<List<RoomsListData>> snapshot) {
           if (snapshot.hasData) {
-            return Column(
-              children: [
-                SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.75,
-                  child: ListView.builder(
-                    itemCount: snapshot.data!.length,
-                    itemBuilder: (context, index) {
-                      RoomsListData e = snapshot.data![index];
-                      return RoomTile(
-                          roomId: e.roomId, name: e.name, image: e.roomIcon);
-                    },
-                  ),
-                )
-              ],
+            return ListView.builder(
+              itemCount: snapshot.data!.length,
+              itemBuilder: (context, index) {
+                RoomsListData e = snapshot.data![index];
+                return RoomTile(
+                    roomId: e.roomId, name: e.name, image: e.roomIcon);
+              },
             );
           } else if (snapshot.hasError) {
             print(snapshot.error);

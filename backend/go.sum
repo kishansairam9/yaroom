@@ -1,3 +1,5 @@
+github.com/appleboy/go-fcm v0.1.5 h1:fKbcZf/7vwGsvDkcop8a+kCHnK+tt4wXX0X7uEzwI6E=
+github.com/appleboy/go-fcm v0.1.5/go.mod h1:MSxZ4LqGRsnywOjnlXJXMqbjZrG4vf+0oHitfC9HRH0=
 github.com/auth0/go-jwt-middleware v1.0.1 h1:/fsQ4vRr4zod1wKReUH+0A3ySRjGiT9G34kypO/EKwI=
 github.com/auth0/go-jwt-middleware v1.0.1/go.mod h1:YSeUX3z6+TF2H+7padiEqNJ73Zy9vXW72U//IgN0BIM=
 github.com/bitly/go-hostpool v0.0.0-20171023180738-a3a6125de932 h1:mXoPYz/Ul5HYEDvkta6I8/rnYM5gSdSV2tJ6XbZuEtY=
@@ -41,6 +43,7 @@ github.com/golang/snappy v0.0.0-20170215233205-553a64147049/go.mod h1:/XxbfmMg8l
 github.com/golang/snappy v0.0.1/go.mod h1:/XxbfmMg8lxefKM7IXC3fBNl/7bRcc72aCRzEWrmP2Q=
 github.com/golang/snappy v0.0.3 h1:fHPg5GQYlCeLIPB9BZqMVR5nR9A+IM5zcgeTdjMYmLA=
 github.com/golang/snappy v0.0.3/go.mod h1:/XxbfmMg8lxefKM7IXC3fBNl/7bRcc72aCRzEWrmP2Q=
+github.com/google/go-cmp v0.2.0/go.mod h1:oXzfMopK8JAjlY9xF4vHSVASa0yLyX7SntLO5aqRK0M=
 github.com/google/go-cmp v0.5.4 h1:L8R9j+yAqZuZjsqh/z+F1NCffTKKLShY6zXTItVIZ8M=
 github.com/google/go-cmp v0.5.4/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
 github.com/google/gofuzz v1.0.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/M65Eg=
@@ -99,6 +102,8 @@ github.com/rs/zerolog v1.23.0 h1:UskrK+saS9P9Y789yNNulYKdARjPZuS35B8gJF2x60g=
 github.com/rs/zerolog v1.23.0/go.mod h1:6c7hFfxPOy7TacJc4Fcdi24/J0NKYGzjG8FWRI916Qo=
 github.com/scylladb/go-reflectx v1.0.1 h1:b917wZM7189pZdlND9PbIJ6NQxfDPfBvUaQ7cjj1iZQ=
 github.com/scylladb/go-reflectx v1.0.1/go.mod h1:rWnOfDIRWBGN0miMLIcoPt/Dhi2doCMZqwMCJ3KupFc=
+github.com/scylladb/gocqlx v1.5.0 h1:p7NEqRaCMAtW2nvq62iyUNXmIYP29373YOC7D2Xd7Qg=
+github.com/scylladb/gocqlx v1.5.0/go.mod h1:QarZcw5kpYh31MXfxiN2JWWvF1cgZbYqfTfXwmwhpEQ=
 github.com/scylladb/gocqlx/v2 v2.4.0 h1:XkmIf3F++iP8jWCqZuabcF5Vw2bqD7VRpyTVmPFQnks=
 github.com/scylladb/gocqlx/v2 v2.4.0/go.mod h1:rb1rAYGkQjkUrpBgsEovkULiX8ik0QQSwdIs+YrgKbs=
 github.com/sirupsen/logrus v1.8.1 h1:dJKuHgqk1NNQlqoA6BTlM1Wf9DOH3NBjQyu0h9+AZZE=

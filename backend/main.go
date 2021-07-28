@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/appleboy/go-fcm"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/gocql/gocql"
@@ -21,6 +22,7 @@ import (
 var rmqConn *amqp.Connection
 var dbSession gocqlx.Session
 var minioClient *minio.Client
+var fcmClient *fcm.Client
 
 const miniobucket = "yaroom-test"
 
@@ -73,27 +75,32 @@ func main() {
 		}
 	}
 
+	// FCM Client
+	fcmClient, err = fcm.NewClient("AAAALzycFws:APA91bGVejj4KK3TmZDUmzR7GO89nJc_l_-OlJ-PzupG6KlQ0p5dlMJZHajbWGgPQmQEtk80wQQkYueTaAO9B8eDfUwUGi76zOMnCwJDCvggs9zO8FZuB-MUxVwrOHPthHr72h8l0YR_")
+	if err != nil {
+		log.Fatal().Str("where", "fcm create client").Str("type", "failed to create fcm client").Msg(err.Error())
+		return
+	}
+
 	// Server
 	r := gin.Default()
 	r.Use(cors.Default())
 	wsUpgrader.CheckOrigin = func(r *http.Request) bool { return true }
 
-	// Dummy route
-	r.GET("/ping", func(g *gin.Context) {
-		g.JSON(200, gin.H{"text": "Hello from public"})
-	})
-
-	// Websocket mock
-	r.GET("/", wsHandler)
-
-	// Protected routes // TODO: Protect all at later stage, currently only testing
-	secured := r.Group("/secured", jwtHandler)
+	// Protected routes
+	secured := r.Group("/v1", jwtHandler)
 	{
 		secured.GET("/ping", func(g *gin.Context) {
 			rawUserId, _ := g.Get("userId")
 			userId := rawUserId.(string)
 			g.JSON(200, gin.H{"text": "Hello from private " + userId})
 		})
+
+		// Web socket
+		secured.GET("/ws", wsHandler)
+
+		// FCM Token Update
+		secured.POST("/fcmToken", fcmTokenHandler)
 	}
 
 	// Testing routes. Take user id from url (instead of jwt)
@@ -138,9 +145,12 @@ func main() {
 				g.AbortWithStatus(500)
 				return
 			}
-			if err = msgQueueSendToUser(msg.ToUser, msg); err != nil {
-				log.Error().Str("where", "msgQueue send to user").Str("type", "failed to write to user queue").Msg(err.Error())
+			if err = sendMessageNotification(msg.ToUser, msg); err != nil {
+				log.Error().Str("where", "fcm send to user").Str("type", "failed to send push notification").Msg(err.Error())
 			}
+			// if err = msgQueueSendToUser(msg.ToUser, msg); err != nil {
+			// 	log.Error().Str("where", "msgQueue send to user").Str("type", "failed to write to user queue").Msg(err.Error())
+			// }
 			g.JSON(200, msg)
 		})
 	}

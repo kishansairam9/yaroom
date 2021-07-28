@@ -45,10 +45,8 @@ func wsHandler(g *gin.Context) {
 
 	rawUserId, exists := g.Get("userId")
 	if !exists {
-		// TODO: REMOVE DUMMY USER ID AFTER SECURING ROUTE AND THROW ERROR
-		rawUserId = "0"
-		// g.AbortWithStatusJSON(400, gin.H{"error": "user not authenticated"})
-		// return
+		g.AbortWithStatusJSON(400, gin.H{"error": "user not authenticated"})
+		return
 	}
 	userId := rawUserId.(string)
 
@@ -76,11 +74,10 @@ func wsHandler(g *gin.Context) {
 			}
 
 			// Validate fromUser with userId in JWT to prevent
-			// if msg.FromUser != userId {
-			// 	ch <- WSError{Error: "Invalid fromUser! Identifications spoofing msg.FromUser " + msg.FromUser + " userId " + userId}
-
-			// 	continue
-			// }
+			if msg.FromUser != userId {
+				ch <- WSError{Error: "Invalid fromUser! Identifications spoofing"}
+				continue
+			}
 
 			ch <- msg
 			select {
@@ -123,9 +120,12 @@ func wsHandler(g *gin.Context) {
 			}
 			data, isMsg := out.(WSMessage)
 			if isMsg && data.FromUser == userId {
-				if err = msgQueueSendToUser(out.(WSMessage).ToUser, out.(WSMessage)); err != nil {
-					log.Error().Str("where", "msgQueue send to user").Str("type", "failed to write to user queue").Msg(err.Error())
+				if err = sendMessageNotification(out.(WSMessage).ToUser, out.(WSMessage)); err != nil {
+					log.Error().Str("where", "fcm send to user").Str("type", "failed to send push notification").Msg(err.Error())
 				}
+				// if err = msgQueueSendToUser(out.(WSMessage).ToUser, out.(WSMessage)); err != nil {
+				// 	log.Error().Str("where", "msgQueue send to user").Str("type", "failed to write to user queue").Msg(err.Error())
+				// }
 			}
 
 		case <-readQuit:

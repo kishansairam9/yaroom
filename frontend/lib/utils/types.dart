@@ -1,6 +1,7 @@
 export '../moor/db.dart';
 
 typedef UserId = String;
+typedef FCMTokenStream = Stream<String>;
 
 class HomePageArguments {
   late final int? index;
