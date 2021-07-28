@@ -220,7 +220,7 @@ class GroupChatPageState extends State<GroupChatPage>
     }
     Provider.of<MessageExchangeStream>(context, listen: false)
         .sendWSMessage(jsonEncode({
-      'type': 'GroupChatMessage',
+      'type': 'GroupsMessage',
       'groupId': widget.groupId,
       'fromUser': Provider.of<UserId>(context, listen: false),
       'content': content,

@@ -15,6 +15,7 @@ var wsUpgrader = websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024}
 type WSMessage struct {
 	Type      string       `json:"type"`
 	MsgId     string       `json:"msgId,omitempty"`
+	GroupId   string       `json:"groupId,omitempty"`
 	FromUser  string       `json:"fromUser"`
 	ToUser    string       `json:"toUser,omitempty"`
 	Time      time.Time    `json:"time,omitempty"`
