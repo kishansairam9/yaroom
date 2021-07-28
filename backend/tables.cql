@@ -1,6 +1,6 @@
 -- cql is case insensitive by default, need to add quotations around each to force case
 -- don't unless necessary, just use all lower case 
-
+-- DROP KEYSPACE messages;
 CREATE KEYSPACE messages WITH replication = 
     {'class': 'NetworkTopologyStrategy', 'DC1': 1};
 
@@ -23,6 +23,21 @@ CREATE TABLE messages.chat_messages (
     msgid text,
     fromuser text,
     touser text,
+    msgtime timestamp,
+    content text,
+    mediaid text,
+    replyto text,
+    es_query text,
+    es_options text,
+    PRIMARY KEY (exchange_id, msgid)
+) WITH CLUSTERING ORDER BY (msgid DESC);
+
+CREATE TABLE messages.rooms_messages (
+    exchange_id text,
+    msgid text,
+    fromuser text,
+    roomid text,
+    channelid text,
     msgtime timestamp,
     content text,
     mediaid text,

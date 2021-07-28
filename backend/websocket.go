@@ -22,7 +22,7 @@ type WSMessage struct {
 	MediaData *WSMediaFile `json:"mediaData,omitempty"`
 	Media     string       `json:"media,omitempty"`
 	ReplyTo   string       `json:"replyTo,omitempty"`
-  RoomId    string       `json:"roomId,omitempty"`
+	RoomId    string       `json:"roomId,omitempty"`
 	ChannelId string       `json:"channelId,omitempty"`
 }
 
@@ -30,7 +30,6 @@ type WSMediaFile struct {
 	Name  string `json:"name"`
 	Bytes []byte `json:"bytes"`
 }
-
 
 type WSError struct {
 	Error string `json:"error"`
@@ -77,11 +76,12 @@ func wsHandler(g *gin.Context) {
 			}
 
 			// Validate fromUser with userId in JWT to prevent
-			if msg.FromUser != userId {
-				ch <- WSError{Error: "Invalid fromUser! Identifications spoofing"}
-				continue
-			}
-      
+			// if msg.FromUser != userId {
+			// 	ch <- WSError{Error: "Invalid fromUser! Identifications spoofing msg.FromUser " + msg.FromUser + " userId " + userId}
+
+			// 	continue
+			// }
+
 			ch <- msg
 			select {
 			case <-quit:
