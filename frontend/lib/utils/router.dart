@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../screens/homePage.dart';
 import '../screens/messaging/chatPage.dart';
+import '../screens/messaging/groupPage.dart';
 import 'guidePages.dart';
 import 'package:provider/provider.dart';
 import '../screens/login.dart';
@@ -35,6 +36,10 @@ class ContentRouter {
         final args = settings.arguments as ChatPageArguments;
         return MaterialPageRoute(
             builder: (context) => wrapWithUserId(context, ChatPage(args)));
+      case '/groupchat':
+        final args = settings.arguments as GroupChatPageArguments;
+        return MaterialPageRoute(
+            builder: (context) => wrapWithUserId(context, GroupChatPage(args)));
       case '/signin':
         return MaterialPageRoute(
             builder: (_) => Consumer<LandingViewModel>(

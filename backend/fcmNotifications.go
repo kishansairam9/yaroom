@@ -53,7 +53,7 @@ func sendMessageNotification(userId string, msg WSMessage) error {
 	// 	return err
 	// }
 	dummy := "dmmy"
-	fromUserData = &UserMetadata{Name: &dummy}
+	fromUserData = &UserMetadata{Name: dummy}
 	toUserData, err := getUserMetadata(userId)
 	if err != nil {
 		return err
@@ -64,7 +64,7 @@ func sendMessageNotification(userId string, msg WSMessage) error {
 	fmt.Println(fromUserData.Image)
 	fmt.Print("To user tokens -----  ")
 	fmt.Println(toUserData.Tokens)
-	if toUserData.Userid == nil || len(toUserData.Tokens) == 0 {
+	if len(toUserData.Tokens) == 0 {
 		return errors.New("user doesn't exits or token for notification not present")
 	}
 
@@ -80,7 +80,7 @@ func sendMessageNotification(userId string, msg WSMessage) error {
 				To:   token,
 				Data: data,
 				Notification: &fcm.Notification{
-					Title: *fromUserData.Name,
+					Title: fromUserData.Name,
 					Body:  trimLength(msg.Content, 150),
 					Image: *fromUserData.Image,
 				},

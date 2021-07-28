@@ -92,12 +92,9 @@ class GroupProfileTileState extends State<GroupProfileTile> {
     if (widget._preShowChat != null) {
       Function.apply(widget._preShowChat!, widget._preParams);
     }
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (BuildContext context) {
-      return GroupChatPage(
-          groupId: widget.groupId, name: widget.name, image: widget.image);
-      // return Container();
-    }));
+    Navigator.of(context).pushNamed('/groupchat',
+        arguments: GroupChatPageArguments(
+            groupId: widget.groupId, name: widget.name, image: widget.image));
   }
 
   @override

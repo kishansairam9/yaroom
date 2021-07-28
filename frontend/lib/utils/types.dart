@@ -30,3 +30,10 @@ class ChatPageArguments {
 
   ChatPageArguments({required this.userId, required this.name, this.image});
 }
+
+class GroupChatPageArguments {
+  late final String groupId, name;
+  late final String? image;
+
+  GroupChatPageArguments({required this.groupId, required this.name, this.image});
+}
