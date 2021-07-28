@@ -3,7 +3,6 @@ import 'package:bubble/bubble.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:yaroom/blocs/rooms.dart';
-import '../components/contactView.dart';
 import '../components/msgBox.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../utils/messageExchange.dart';

@@ -3,6 +3,7 @@ import 'package:bottom_navy_bar/bottom_navy_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:yaroom/blocs/rooms.dart';
 import 'package:yaroom/utils/guidePages.dart';
+import 'package:yaroom/utils/messageExchange.dart';
 import 'package:yaroom/utils/types.dart';
 import './messaging/chatsView.dart';
 import './messaging/groupsView.dart';
@@ -10,7 +11,6 @@ import './rooms/channels.dart';
 import './rooms/room.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import './components/roomsList.dart';
-import '../utils/animatedStack.dart';
 import '../utils/authorizationService.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
@@ -156,113 +156,113 @@ class HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: AnimatedStack(
-        backgroundColor: Colors.white54,
-        fabBackgroundColor: Colors.lightGreen,
-        bottomWidget: Text("Hello testing"),
-        columnWidget: RoomListView(),
-        scaleWidth: 50,
-        foregroundWidget: Scaffold(
-          appBar: currentIndex == 0
-              ? (PreferredSize(
-                  child: BlocBuilder<RoomsCubit, RoomsState>(
-                      builder: (BuildContext context, RoomsState state) {
-                    String? roomId = widget.roomId;
-                    if (roomId == null) {
-                      if (state.lastActive == null) {
-                        return AppBar(title: Text("Pick a room"));
-                      }
-                      roomId = state.lastActive!.roomId;
-                    }
-                    String? channelId = state.lastOpened.containsKey(roomId)
-                        ? state.lastOpened[roomId]
-                        : null;
-                    return _getRoomAppBar(context, roomId, channelId);
-                  }),
-                  preferredSize: Size.fromHeight(kToolbarHeight)))
-              : AppBar(
-                  automaticallyImplyLeading: false,
-                  actions: [
-                    Builder(
-                      builder: (context) => IconButton(
-                        onPressed: () async {
-                          await Provider.of<AuthorizationService>(context,
-                                  listen: false)
-                              .logout(context);
-                          await Navigator.of(context)
-                              .pushNamedAndRemoveUntil('/signin', (_) => false);
-                        },
-                        icon: Icon(Icons.logout),
-                        tooltip: 'Log Out',
-                      ),
-                    ),
-                    IconButton(
-                        onPressed: () => {}, icon: Icon(Icons.fingerprint))
-                  ],
-                ),
-          drawer: currentIndex == 0
-              ? Drawer(
-                  child: (widget.roomId == null
-                      ? SelectRoomPage()
-                      : ChannelsView(
-                          roomName: widget.roomName!,
-                          roomId: widget.roomId!,
-                        )),
-                )
-              : null,
-          body: SizedBox.expand(
-            child: PageView(
-              controller: _pageController,
-              onPageChanged: (index) {
-                setState(() => currentIndex = index);
-              },
-              children: <Widget>[
-                (BlocBuilder<RoomsCubit, RoomsState>(
+      child: Scaffold(
+        appBar: currentIndex == 0
+            ? (PreferredSize(
+                child: BlocBuilder<RoomsCubit, RoomsState>(
                     builder: (BuildContext context, RoomsState state) {
                   String? roomId = widget.roomId;
                   if (roomId == null) {
                     if (state.lastActive == null) {
-                      return SelectRoomPage();
+                      return AppBar(title: Text("Pick a room"));
                     }
                     roomId = state.lastActive!.roomId;
                   }
                   String? channelId = state.lastOpened.containsKey(roomId)
                       ? state.lastOpened[roomId]
                       : null;
-                  return Room(
-                      roomId: roomId,
-                      roomName: widget.roomId == null
-                          ? state.lastActive!.roomName
-                          : widget.roomName!,
-                      channelId: channelId);
-                })),
-                ChatView(),
-                GroupChatView(),
-                Container(
-                  color: Colors.blue,
+                  return _getRoomAppBar(context, roomId, channelId);
+                }),
+                preferredSize: Size.fromHeight(kToolbarHeight)))
+            : AppBar(
+                automaticallyImplyLeading: false,
+                actions: [
+                  Builder(
+                    builder: (context) => IconButton(
+                      onPressed: () async {
+                        await Provider.of<AuthorizationService>(context,
+                                listen: false)
+                            .logout(context);
+                        Provider.of<MessageExchangeStream>(context,
+                                listen: false)
+                            .close();
+                        await Navigator.of(context)
+                            .pushNamedAndRemoveUntil('/signin', (_) => false);
+                      },
+                      icon: Icon(Icons.logout),
+                      tooltip: 'Log Out',
+                    ),
+                  ),
+                  IconButton(onPressed: () => {}, icon: Icon(Icons.fingerprint))
+                ],
+              ),
+        drawer: currentIndex == 0
+            ? Drawer(
+                child: Row(
+                  children: [
+                    RoomListView(),
+                    (widget.roomId == null
+                        ? SelectRoomPage()
+                        : ChannelsView(
+                            roomName: widget.roomName!,
+                            roomId: widget.roomId!,
+                          )),
+                  ],
                 ),
-              ],
-            ),
-          ),
-          bottomNavigationBar: BottomNavyBar(
-            selectedIndex: currentIndex,
-            onItemSelected: (index) {
+              )
+            : null,
+        body: SizedBox.expand(
+          child: PageView(
+            controller: _pageController,
+            onPageChanged: (index) {
               setState(() => currentIndex = index);
-              _pageController.jumpToPage(index);
             },
-            items: <BottomNavyBarItem>[
-              BottomNavyBarItem(
-                  title: Text('Rooms'),
-                  icon: CircleAvatar(
-                      radius: 15,
-                      foregroundImage: AssetImage("assets/yaroom.png"))),
-              BottomNavyBarItem(
-                  title: Text('Messages'), icon: Icon(Icons.chat_bubble)),
-              BottomNavyBarItem(title: Text('Groups'), icon: Icon(Icons.group)),
-              BottomNavyBarItem(
-                  title: Text('Settings'), icon: Icon(Icons.settings)),
+            children: <Widget>[
+              (BlocBuilder<RoomsCubit, RoomsState>(
+                  builder: (BuildContext context, RoomsState state) {
+                String? roomId = widget.roomId;
+                if (roomId == null) {
+                  if (state.lastActive == null) {
+                    return SelectRoomPage();
+                  }
+                  roomId = state.lastActive!.roomId;
+                }
+                String? channelId = state.lastOpened.containsKey(roomId)
+                    ? state.lastOpened[roomId]
+                    : null;
+                return Room(
+                    roomId: roomId,
+                    roomName: widget.roomId == null
+                        ? state.lastActive!.roomName
+                        : widget.roomName!,
+                    channelId: channelId);
+              })),
+              ChatView(),
+              GroupChatView(),
+              Container(
+                color: Colors.blue,
+              ),
             ],
           ),
+        ),
+        bottomNavigationBar: BottomNavyBar(
+          selectedIndex: currentIndex,
+          onItemSelected: (index) {
+            setState(() => currentIndex = index);
+            _pageController.jumpToPage(index);
+          },
+          items: <BottomNavyBarItem>[
+            BottomNavyBarItem(
+                title: Text('Rooms'),
+                icon: CircleAvatar(
+                    radius: 15,
+                    foregroundImage: AssetImage("assets/yaroom.png"))),
+            BottomNavyBarItem(
+                title: Text('Messages'), icon: Icon(Icons.chat_bubble)),
+            BottomNavyBarItem(title: Text('Groups'), icon: Icon(Icons.group)),
+            BottomNavyBarItem(
+                title: Text('Settings'), icon: Icon(Icons.settings)),
+          ],
         ),
       ),
     );

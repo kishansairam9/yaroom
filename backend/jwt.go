@@ -61,7 +61,7 @@ func getPemCert(token *jwt.Token) (string, error) {
 var jwtMiddleware = jwtmiddleware.New(jwtmiddleware.Options{
 	ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
 		// Verify 'aud' claim
-		aud := "https://yaroom.com/auth"
+		aud := "https://dev-x6unbtjj.us.auth0.com/api/v2/"
 		checkAud := token.Claims.(jwt.MapClaims).VerifyAudience(aud, false)
 		if !checkAud {
 			return token, errors.New("invalid audience")
@@ -86,11 +86,13 @@ var jwtMiddleware = jwtmiddleware.New(jwtmiddleware.Options{
 
 func jwtHandler(g *gin.Context) {
 	if err := jwtMiddleware.CheckJWT(g.Writer, g.Request); err != nil {
+		log.Info().Msg("Invald Jwt")
 		g.AbortWithStatus(401)
+		return
 	}
 	tokContext := g.Request.Context().Value("user")
 	claims := tokContext.(*jwt.Token).Claims.(jwt.MapClaims)
-	userId, ok := claims["userId"].(string)
+	userId, ok := claims["https://yaroom.com/userId"].(string)
 	if !ok {
 		log.Info().Str("where", "post JWT verify, userID extraction").Str("type", "token missing fields").Msg("Field userID not found in recieved JWT")
 		g.AbortWithStatusJSON(400, gin.H{"error": "Invalid token format, missing fields"})
