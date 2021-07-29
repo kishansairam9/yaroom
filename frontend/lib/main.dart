@@ -151,6 +151,10 @@ class MyApp extends StatelessWidget {
         RepositoryProvider<AppDb>.value(value: db),
         Provider<MessageExchangeStream>.value(value: msgExchangeStream),
         BlocProvider<FcmTokenCubit>.value(value: fcmTokenCubit),
+        BlocProvider(create: (context) {
+          return FilePickerCubit(
+              initialState: FilePickerDetails(media: Map(), filesAttached: 0)); 
+        })
       ],
       child: Builder(
         builder: (context) {
