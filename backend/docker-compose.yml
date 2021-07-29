@@ -2,25 +2,13 @@ version: '3'
 services:
 
 
-  rabbitmq:
-    container_name: yaroom-rabbitmq
-    image: rabbitmq:3.8.19-management
+  nats-js:
+    container_name: yaroom-nats-js
+    image: nats:2.3.2
     ports:
-      - "5672:5672"
-      - "15672:15672"
-    volumes:
-      - type: bind
-        source: ~/containerVolumes/rabbitmq
-        target: /var/lib/rabbitmq/mnesia/
-    networks:
-      - yaroom-testing
-
-
-  redis:
-    container_name: yaroom-redis
-    image: redis:6.2.4
-    ports:
-      - "6379:6379"
+      - "4222:4222"
+      - "8222:8222"
+    command: -js
     networks:
       - yaroom-testing
 

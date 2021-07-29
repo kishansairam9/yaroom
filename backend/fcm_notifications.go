@@ -11,7 +11,7 @@ import (
 )
 
 // TODO: Remove receiving name and image, backend should have it already
-func fcmTokenHandler(g *gin.Context) {
+func fcmTokenUpdateHandler(g *gin.Context) {
 	var req fcmTokenUpdate
 	if err := g.BindJSON(&req); err != nil {
 		log.Info().Str("where", "bind json").Str("type", "failed to parse body to json").Msg(err.Error())
@@ -27,6 +27,28 @@ func fcmTokenHandler(g *gin.Context) {
 	userId := rawUserId.(string)
 
 	if err := addFCMToken(&UserFCMTokenUpdate{Userid: userId, Tokens: []string{req.Token}, Name: req.Name, Image: req.Image}); err != nil {
+		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
+		return
+	}
+}
+
+// TODO: Remove receiving name and image, backend should have it already
+func fcmTokenInvalidateHandler(g *gin.Context) {
+	var req fcmTokenUpdate
+	if err := g.BindJSON(&req); err != nil {
+		log.Info().Str("where", "bind json").Str("type", "failed to parse body to json").Msg(err.Error())
+		return
+	}
+
+	rawUserId, exists := g.Get("userId")
+	if !exists {
+		print("what?")
+		g.AbortWithStatusJSON(400, gin.H{"error": "not authenticated"})
+		return
+	}
+	userId := rawUserId.(string)
+
+	if err := removeFCMToken(&UserFCMTokenUpdate{Userid: userId, Tokens: []string{req.Token}, Name: req.Name, Image: req.Image}); err != nil {
 		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
 		return
 	}
@@ -53,20 +75,22 @@ func sendMessageNotification(userId string, msg WSMessage) error {
 	// 	return err
 	// }
 	dummy := "dmmy"
-	fromUserData = &UserMetadata{Name: &dummy}
+	fromUserData = &UserMetadata{Name: dummy}
 	toUserData, err := getUserMetadata(userId)
 	if err != nil {
 		return err
 	}
+
+	if toUserData.Userid == "" || len(toUserData.Tokens) == 0 {
+		return errors.New("user doesn't exits or token for notification not present")
+	}
+
 	// TODO Remove debug statements
 	fmt.Println(toUserData.Name)
 	fmt.Println(toUserData.Userid)
 	fmt.Println(fromUserData.Image)
 	fmt.Print("To user tokens -----  ")
 	fmt.Println(toUserData.Tokens)
-	if toUserData.Userid == nil || len(toUserData.Tokens) == 0 {
-		return errors.New("user doesn't exits or token for notification not present")
-	}
 
 	switch msg.Type {
 	case "ChatMessage":
@@ -80,7 +104,7 @@ func sendMessageNotification(userId string, msg WSMessage) error {
 				To:   token,
 				Data: data,
 				Notification: &fcm.Notification{
-					Title: *fromUserData.Name,
+					Title: fromUserData.Name,
 					Body:  trimLength(msg.Content, 150),
 					Image: *fromUserData.Image,
 				},

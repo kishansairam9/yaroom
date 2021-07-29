@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -15,6 +16,7 @@ var wsUpgrader = websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024}
 type WSMessage struct {
 	Type      string       `json:"type"`
 	MsgId     string       `json:"msgId,omitempty"`
+	GroupId   string       `json:"groupId,omitempty"`
 	FromUser  string       `json:"fromUser"`
 	ToUser    string       `json:"toUser,omitempty"`
 	Time      time.Time    `json:"time,omitempty"`
@@ -50,6 +52,52 @@ func wsHandler(g *gin.Context) {
 	}
 	userId := rawUserId.(string)
 
+	// Get metadata for active status handlers
+	userMeta, err := getUserMetadata(userId)
+	if err != nil {
+		log.Error().Str("where", "get user metadata").Str("type", "error occured in retrieving data").Msg(err.Error())
+		g.AbortWithStatus(500)
+		return
+	}
+	if userMeta == nil {
+		log.Error().Str("where", "get user metadata").Str("type", "no metadata in user tables").Msg(err.Error())
+		g.AbortWithStatus(500)
+		return
+	}
+
+	activeStatusStreams := make([]string, 0)
+	activeStatusStreams = append(activeStatusStreams, "USER:15")
+	if userMeta.Friendslist != nil {
+		for _, friend := range userMeta.Friendslist {
+			activeStatusStreams = append(activeStatusStreams, fmt.Sprintf("USER:%v", friend))
+		}
+	}
+	if userMeta.Groupslist != nil {
+		for _, group := range userMeta.Groupslist {
+			activeStatusStreams = append(activeStatusStreams, fmt.Sprintf("GROUP:%v", group))
+		}
+	}
+	if userMeta.Roomslist != nil {
+		for _, room := range userMeta.Roomslist {
+			activeStatusStreams = append(activeStatusStreams, fmt.Sprintf("ROOM:%v", room))
+		}
+	}
+	err = ensureActiveStatusStreamsExist(activeStatusStreams)
+	if err != nil {
+		log.Error().Str("where", "ensure active status streams").Str("type", "error occured in adding streams").Msg(err.Error())
+		g.AbortWithStatus(500)
+		return
+	}
+
+	// Active status routine
+	activeStatusQuit := make(chan bool)
+	activeStatusOutChannel := make(chan interface{}, 30)
+	go subscribeToActiveStatus(activeStatusStreams, activeStatusOutChannel, activeStatusQuit)
+	activityMonitorChannelQuit := make(chan bool)
+	activityMonitorChannel := make(chan bool, 3)
+	// Activity monitor routine
+	go monitorActivity(userId, activeStatusStreams, activityMonitorChannel, activityMonitorChannelQuit)
+
 	// Database insert routine
 	dbInChannel := make(chan interface{}, 50)
 	dbOutChannel := make(chan interface{}, 50)
@@ -59,7 +107,7 @@ func wsHandler(g *gin.Context) {
 	// WS Read routine
 	readChannel := make(chan interface{}, 10)
 	readQuit := make(chan bool)
-	go func(ch chan<- interface{}, quit chan bool) {
+	go func(msgChannel chan<- interface{}, activityChannel chan<- bool, quit chan bool) {
 		for {
 			_, rawMsg, err := conn.ReadMessage()
 			if err != nil {
@@ -69,32 +117,31 @@ func wsHandler(g *gin.Context) {
 			}
 			var msg WSMessage
 			if err := json.Unmarshal(rawMsg, &msg); err != nil {
-				ch <- WSError{Error: "Error parsing message contents"}
+				msgChannel <- WSError{Error: "Error parsing message contents"}
 				continue
 			}
 
-			// Validate fromUser with userId in JWT to prevent
-			if msg.FromUser != userId {
-				ch <- WSError{Error: "Invalid fromUser! Identifications spoofing"}
-				continue
+			if msg.Type == "Active" {
+				activityChannel <- true
+			} else {
+				// Validate fromUser with userId in JWT to prevent invalid msgs
+				if msg.FromUser != userId {
+					msgChannel <- WSError{Error: "Invalid fromUser! Identifications spoofing"}
+					continue
+				}
+				msgChannel <- msg
 			}
 
-			ch <- msg
 			select {
 			case <-quit:
 				return
 			default:
 			}
 		}
-	}(readChannel, readQuit)
+	}(readChannel, activityMonitorChannel, readQuit)
 
-	// Message queue read routine
-	msgQueueReadQuit := make(chan bool)
-
-	go msgQueueReadRoutine(userId, dbOutChannel, msgQueueReadQuit)
-
-	gotQuitFromRead, gotQuitFromMsgReadQueue := false, false
-
+	// Write loop
+	gotQuitFromRead := false
 	for {
 		var msg interface{}
 		connFailed := false
@@ -123,33 +170,28 @@ func wsHandler(g *gin.Context) {
 				if err = sendMessageNotification(out.(WSMessage).ToUser, out.(WSMessage)); err != nil {
 					log.Error().Str("where", "fcm send to user").Str("type", "failed to send push notification").Msg(err.Error())
 				}
-				// if err = msgQueueSendToUser(out.(WSMessage).ToUser, out.(WSMessage)); err != nil {
-				// 	log.Error().Str("where", "msgQueue send to user").Str("type", "failed to write to user queue").Msg(err.Error())
-				// }
 			}
 
-		case <-readQuit:
-			gotQuitFromRead = true
-
-		case <-msgQueueReadQuit:
-			gotQuitFromMsgReadQueue = true
-			err = conn.WriteJSON(WSError{Error: "Server Error, report to support"})
+		case activity := <-activeStatusOutChannel:
+			err = conn.WriteJSON(activity)
 			if err != nil {
 				log.Info().Str("where", "wsHandler").Str("type", "writing message").Msg(err.Error())
 				connFailed = true
 			}
+
+		case <-readQuit:
+			gotQuitFromRead = true
 		}
 
-		if gotQuitFromRead || gotQuitFromMsgReadQueue || connFailed {
+		if gotQuitFromRead || connFailed {
 			break
 		}
 
 	}
 	dbQuit <- true
+	activeStatusQuit <- true
+	activityMonitorChannelQuit <- true
 	if !gotQuitFromRead {
 		readQuit <- true
-	}
-	if !gotQuitFromMsgReadQueue {
-		msgQueueReadQuit <- true
 	}
 }

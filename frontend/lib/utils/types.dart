@@ -63,4 +63,9 @@ class FilePickerCubit extends Cubit<FilePickerDetails> {
     print(media);
     emit(FilePickerDetails(media: media, filesAttached: i));
   }
+class GroupChatPageArguments {
+  late final String groupId, name;
+  late final String? image;
+
+  GroupChatPageArguments({required this.groupId, required this.name, this.image});
 }
