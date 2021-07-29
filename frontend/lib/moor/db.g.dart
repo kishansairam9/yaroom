@@ -2023,6 +2023,223 @@ class GroupChatMessagesTextIndex extends Table
       'fts5(msgId UNINDEXED, groupId UNINDEXED, fromUser UNINDEXED, time UNINDEXED, content, media UNINDEXED, replyTo UNINDEXED, content=\'GroupChatMessages\', content_rowid=\'rowid\', tokenize = \'porter unicode61\')';
 }
 
+class Friend extends DataClass implements Insertable<Friend> {
+  final String userId1;
+  final String userId2;
+  final int status;
+  Friend({required this.userId1, required this.userId2, required this.status});
+  factory Friend.fromData(Map<String, dynamic> data, GeneratedDatabase db,
+      {String? prefix}) {
+    final effectivePrefix = prefix ?? '';
+    return Friend(
+      userId1: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}userId_1'])!,
+      userId2: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}userId_2'])!,
+      status: const IntType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}status'])!,
+    );
+  }
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['userId_1'] = Variable<String>(userId1);
+    map['userId_2'] = Variable<String>(userId2);
+    map['status'] = Variable<int>(status);
+    return map;
+  }
+
+  FriendsCompanion toCompanion(bool nullToAbsent) {
+    return FriendsCompanion(
+      userId1: Value(userId1),
+      userId2: Value(userId2),
+      status: Value(status),
+    );
+  }
+
+  factory Friend.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= moorRuntimeOptions.defaultSerializer;
+    return Friend(
+      userId1: serializer.fromJson<String>(json['userId_1']),
+      userId2: serializer.fromJson<String>(json['userId_2']),
+      status: serializer.fromJson<int>(json['status']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= moorRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'userId_1': serializer.toJson<String>(userId1),
+      'userId_2': serializer.toJson<String>(userId2),
+      'status': serializer.toJson<int>(status),
+    };
+  }
+
+  Friend copyWith({String? userId1, String? userId2, int? status}) => Friend(
+        userId1: userId1 ?? this.userId1,
+        userId2: userId2 ?? this.userId2,
+        status: status ?? this.status,
+      );
+  @override
+  String toString() {
+    return (StringBuffer('Friend(')
+          ..write('userId1: $userId1, ')
+          ..write('userId2: $userId2, ')
+          ..write('status: $status')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      $mrjf($mrjc(userId1.hashCode, $mrjc(userId2.hashCode, status.hashCode)));
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Friend &&
+          other.userId1 == this.userId1 &&
+          other.userId2 == this.userId2 &&
+          other.status == this.status);
+}
+
+class FriendsCompanion extends UpdateCompanion<Friend> {
+  final Value<String> userId1;
+  final Value<String> userId2;
+  final Value<int> status;
+  const FriendsCompanion({
+    this.userId1 = const Value.absent(),
+    this.userId2 = const Value.absent(),
+    this.status = const Value.absent(),
+  });
+  FriendsCompanion.insert({
+    required String userId1,
+    required String userId2,
+    required int status,
+  })  : userId1 = Value(userId1),
+        userId2 = Value(userId2),
+        status = Value(status);
+  static Insertable<Friend> custom({
+    Expression<String>? userId1,
+    Expression<String>? userId2,
+    Expression<int>? status,
+  }) {
+    return RawValuesInsertable({
+      if (userId1 != null) 'userId_1': userId1,
+      if (userId2 != null) 'userId_2': userId2,
+      if (status != null) 'status': status,
+    });
+  }
+
+  FriendsCompanion copyWith(
+      {Value<String>? userId1, Value<String>? userId2, Value<int>? status}) {
+    return FriendsCompanion(
+      userId1: userId1 ?? this.userId1,
+      userId2: userId2 ?? this.userId2,
+      status: status ?? this.status,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (userId1.present) {
+      map['userId_1'] = Variable<String>(userId1.value);
+    }
+    if (userId2.present) {
+      map['userId_2'] = Variable<String>(userId2.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<int>(status.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FriendsCompanion(')
+          ..write('userId1: $userId1, ')
+          ..write('userId2: $userId2, ')
+          ..write('status: $status')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class Friends extends Table with TableInfo<Friends, Friend> {
+  final GeneratedDatabase _db;
+  final String? _alias;
+  Friends(this._db, [this._alias]);
+  final VerificationMeta _userId1Meta = const VerificationMeta('userId1');
+  late final GeneratedColumn<String?> userId1 = GeneratedColumn<String?>(
+      'userId_1', aliasedName, false,
+      typeName: 'TEXT',
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL REFERENCES Users(userId)');
+  final VerificationMeta _userId2Meta = const VerificationMeta('userId2');
+  late final GeneratedColumn<String?> userId2 = GeneratedColumn<String?>(
+      'userId_2', aliasedName, false,
+      typeName: 'TEXT',
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL REFERENCES Users(userId)');
+  final VerificationMeta _statusMeta = const VerificationMeta('status');
+  late final GeneratedColumn<int?> status = GeneratedColumn<int?>(
+      'status', aliasedName, false,
+      typeName: 'INTEGER',
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL');
+  @override
+  List<GeneratedColumn> get $columns => [userId1, userId2, status];
+  @override
+  String get aliasedName => _alias ?? 'Friends';
+  @override
+  String get actualTableName => 'Friends';
+  @override
+  VerificationContext validateIntegrity(Insertable<Friend> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('userId_1')) {
+      context.handle(_userId1Meta,
+          userId1.isAcceptableOrUnknown(data['userId_1']!, _userId1Meta));
+    } else if (isInserting) {
+      context.missing(_userId1Meta);
+    }
+    if (data.containsKey('userId_2')) {
+      context.handle(_userId2Meta,
+          userId2.isAcceptableOrUnknown(data['userId_2']!, _userId2Meta));
+    } else if (isInserting) {
+      context.missing(_userId2Meta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(_statusMeta,
+          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {userId1, userId2};
+  @override
+  Friend map(Map<String, dynamic> data, {String? tablePrefix}) {
+    return Friend.fromData(data, _db,
+        prefix: tablePrefix != null ? '$tablePrefix.' : null);
+  }
+
+  @override
+  Friends createAlias(String alias) {
+    return Friends(_db, alias);
+  }
+
+  @override
+  List<String> get customConstraints =>
+      const ['PRIMARY KEY(userId_1, userId_2)'];
+  @override
+  bool get dontWriteConstraints => true;
+}
+
 class GroupUserMappingData extends DataClass
     implements Insertable<GroupUserMappingData> {
   final String groupId;
@@ -3334,6 +3551,7 @@ abstract class _$AppDb extends GeneratedDatabase {
   late final Trigger groupChatMessagesTextIndexAU = Trigger(
       'CREATE TRIGGER GroupChatMessagesTextIndex_AU AFTER UPDATE ON GroupChatMessages BEGIN INSERT INTO GroupChatMessagesTextIndex (GroupChatMessagesTextIndex, "rowid", msgId, groupId, fromUser, time, content, media, replyTo) VALUES (\'delete\', old."rowid", old.msgId, old.groupId, old.fromUser, old.time, old.content, old.media, old.replyTo);INSERT INTO GroupChatMessagesTextIndex ("rowid", msgId, groupId, fromUser, time, content, media, replyTo) VALUES (new."rowid", new.msgId, new.groupId, new.fromUser, new.time, new.content, new.media, new.replyTo);END',
       'GroupChatMessagesTextIndex_AU');
+  late final Friends friends = Friends(this);
   late final GroupUserMapping groupUserMapping = GroupUserMapping(this);
   late final RoomsList roomsList = RoomsList(this);
   late final RoomsUserMapping roomsUserMapping = RoomsUserMapping(this);
@@ -3345,7 +3563,7 @@ abstract class _$AppDb extends GeneratedDatabase {
       String? about,
       String? profileImg}) {
     return customInsert(
-      'INSERT INTO Users VALUES (:userId, :name, :about, :profileImg)',
+      'INSERT INTO Users VALUES (?1, ?2, ?3, ?4)',
       variables: [
         Variable<String>(userId),
         Variable<String>(name),
@@ -3363,18 +3581,16 @@ abstract class _$AppDb extends GeneratedDatabase {
   }
 
   Selectable<User> getUserById({required String userId}) {
-    return customSelect('SELECT * FROM Users WHERE userId = :userId',
-        variables: [
-          Variable<String>(userId)
-        ],
-        readsFrom: {
-          users,
-        }).map(users.mapFromRow);
+    return customSelect('SELECT * FROM Users WHERE userId = ?1', variables: [
+      Variable<String>(userId)
+    ], readsFrom: {
+      users,
+    }).map(users.mapFromRow);
   }
 
   Selectable<User> getUsersNameMatching({required String match}) {
     return customSelect(
-        'SELECT * FROM Users WHERE LOWER(name) LIKE \'%\' || :match || \'%\'',
+        'SELECT * FROM Users WHERE LOWER(name) LIKE \'%\' || ?1 || \'%\'',
         variables: [
           Variable<String>(match)
         ],
@@ -3383,13 +3599,40 @@ abstract class _$AppDb extends GeneratedDatabase {
         }).map(users.mapFromRow);
   }
 
+  Selectable<User> getFriends({required String userId}) {
+    return customSelect(
+        'SELECT U.* FROM Users AS U,(SELECT userId_1 AS id FROM Friends WHERE(userId_2 = ?1)AND(status = 2)UNION SELECT userId_2 AS id FROM Friends WHERE(userId_1 = ?1)AND(status = 2)) AS F WHERE(U.userId = F.id)',
+        variables: [
+          Variable<String>(userId)
+        ],
+        readsFrom: {
+          users,
+          friends,
+        }).map(users.mapFromRow);
+  }
+
+  Future<int> addNewFriend(
+      {required String userId_1,
+      required String userId_2,
+      required int status}) {
+    return customInsert(
+      'INSERT INTO Friends VALUES (?1, ?2, ?3)',
+      variables: [
+        Variable<String>(userId_1),
+        Variable<String>(userId_2),
+        Variable<int>(status)
+      ],
+      updates: {friends},
+    );
+  }
+
   Future<int> createGroup(
       {required String groupId,
       required String name,
       String? description,
       String? groupIcon}) {
     return customInsert(
-      'INSERT INTO GroupDMs VALUES (:groupId, :name, :description, :groupIcon)',
+      'INSERT INTO GroupDMs VALUES (?1, ?2, ?3, ?4)',
       variables: [
         Variable<String>(groupId),
         Variable<String>(name),
@@ -3402,7 +3645,7 @@ abstract class _$AppDb extends GeneratedDatabase {
 
   Selectable<GroupDM> getGroupsNameMatching({required String match}) {
     return customSelect(
-        'SELECT * FROM GroupDMs WHERE LOWER(name) LIKE \'%\' || :match || \'%\'',
+        'SELECT * FROM GroupDMs WHERE LOWER(name) LIKE \'%\' || ?1 || \'%\'',
         variables: [
           Variable<String>(match)
         ],
@@ -3414,7 +3657,7 @@ abstract class _$AppDb extends GeneratedDatabase {
   Future<int> addUserToGroup(
       {required String groupId, required String userId}) {
     return customInsert(
-      'INSERT INTO GroupUserMapping VALUES (:groupId, :userId)',
+      'INSERT INTO GroupUserMapping VALUES (?1, ?2)',
       variables: [Variable<String>(groupId), Variable<String>(userId)],
       updates: {groupUserMapping},
     );
@@ -3422,7 +3665,7 @@ abstract class _$AppDb extends GeneratedDatabase {
 
   Selectable<GroupDM> getGroupsOfUser({required String userID}) {
     return customSelect(
-        'SELECT DISTINCT G.groupId, G.name, G.description, G.groupIcon FROM GroupDMs AS G,GroupUserMapping AS GM WHERE GM.userId = :userID',
+        'SELECT DISTINCT G.groupId, G.name, G.description, G.groupIcon FROM GroupDMs AS G,GroupUserMapping AS GM WHERE GM.userId = ?1',
         variables: [
           Variable<String>(userID)
         ],
@@ -3434,7 +3677,7 @@ abstract class _$AppDb extends GeneratedDatabase {
 
   Selectable<User> getGroupMembers({required String groupID}) {
     return customSelect(
-        'SELECT U.* FROM Users AS U,(SELECT DISTINCT userId FROM GroupUserMapping AS GM WHERE GM.groupId = :groupID) AS UID WHERE U.userId = UID.userId',
+        'SELECT U.* FROM Users AS U,(SELECT DISTINCT userId FROM GroupUserMapping AS GM WHERE GM.groupId = ?1) AS UID WHERE U.userId = UID.userId',
         variables: [
           Variable<String>(groupID)
         ],
@@ -3446,7 +3689,7 @@ abstract class _$AppDb extends GeneratedDatabase {
 
   Selectable<GroupChatMessage> getGroupChat({required String groupId}) {
     return customSelect(
-        'SELECT * FROM GroupChatMessages WHERE groupId = :groupId ORDER BY msgId',
+        'SELECT * FROM GroupChatMessages WHERE groupId = ?1 ORDER BY msgId',
         variables: [
           Variable<String>(groupId)
         ],
@@ -3464,7 +3707,7 @@ abstract class _$AppDb extends GeneratedDatabase {
       String? media,
       String? replyTo}) {
     return customInsert(
-      'INSERT INTO GroupChatMessages VALUES (:msgId, :groupId, :fromUser, :time, :content, :media, :replyTo)',
+      'INSERT INTO GroupChatMessages VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)',
       variables: [
         Variable<String>(msgId),
         Variable<String>(groupId),
@@ -3480,7 +3723,7 @@ abstract class _$AppDb extends GeneratedDatabase {
 
   Selectable<ChatMessage> getUserChat({required String otherUser}) {
     return customSelect(
-        'SELECT * FROM ChatMessages WHERE fromUser = :otherUser OR toUser = :otherUser ORDER BY msgId',
+        'SELECT * FROM ChatMessages WHERE fromUser = ?1 OR toUser = ?1 ORDER BY msgId',
         variables: [
           Variable<String>(otherUser)
         ],
@@ -3498,7 +3741,7 @@ abstract class _$AppDb extends GeneratedDatabase {
       String? media,
       String? replyTo}) {
     return customInsert(
-      'INSERT INTO ChatMessages VALUES (:msgId, :fromUser, :toUser, :time, :content, :media, :replyTo)',
+      'INSERT INTO ChatMessages VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)',
       variables: [
         Variable<String>(msgId),
         Variable<String>(fromUser),
@@ -3515,7 +3758,7 @@ abstract class _$AppDb extends GeneratedDatabase {
   Selectable<SearchChatMessagesResult> searchChatMessages(
       {required String query, int? limit}) {
     return customSelect(
-        'SELECT c.content, u.* FROM Users AS u JOIN (SELECT fromUser, toUser, content FROM ChatMessagesTextIndex WHERE content MATCH :query ORDER BY rank LIMIT :limit) AS c ON c.fromUser = u.userId OR c.toUser = u.userId',
+        'SELECT c.content, u.* FROM Users AS u JOIN (SELECT fromUser, toUser, content FROM ChatMessagesTextIndex WHERE content MATCH ?1 ORDER BY rank LIMIT ?2) AS c ON c.fromUser = u.userId OR c.toUser = u.userId',
         variables: [
           Variable<String>(query),
           Variable<int?>(limit)
@@ -3537,7 +3780,7 @@ abstract class _$AppDb extends GeneratedDatabase {
   Selectable<SearchGroupChatMessagesResult> searchGroupChatMessages(
       {required String query, int? limit}) {
     return customSelect(
-        'SELECT c.content, g.* FROM GroupDMs AS g JOIN (SELECT groupId, content FROM GroupChatMessagesTextIndex WHERE content MATCH :query ORDER BY rank LIMIT :limit) AS c ON c.groupId = g.groupId',
+        'SELECT c.content, g.* FROM GroupDMs AS g JOIN (SELECT groupId, content FROM GroupChatMessagesTextIndex WHERE content MATCH ?1 ORDER BY rank LIMIT ?2) AS c ON c.groupId = g.groupId',
         variables: [
           Variable<String>(query),
           Variable<int?>(limit)
@@ -3562,7 +3805,7 @@ abstract class _$AppDb extends GeneratedDatabase {
       String? description,
       String? roomIcon}) {
     return customInsert(
-      'INSERT INTO RoomsList VALUES (:roomId, :name, :description, :roomIcon)',
+      'INSERT INTO RoomsList VALUES (?1, ?2, ?3, ?4)',
       variables: [
         Variable<String>(roomId),
         Variable<String>(name),
@@ -3574,7 +3817,7 @@ abstract class _$AppDb extends GeneratedDatabase {
   }
 
   Selectable<RoomsListData> getRoomDetails({required String roomId}) {
-    return customSelect('SELECT * FROM RoomsList WHERE roomId = :roomId',
+    return customSelect('SELECT * FROM RoomsList WHERE roomId = ?1',
         variables: [
           Variable<String>(roomId)
         ],
@@ -3585,7 +3828,7 @@ abstract class _$AppDb extends GeneratedDatabase {
 
   Future<int> addUserToRoom({required String roomsId, required String userId}) {
     return customInsert(
-      'INSERT INTO RoomsUserMapping VALUES (:roomsId, :userId)',
+      'INSERT INTO RoomsUserMapping VALUES (?1, ?2)',
       variables: [Variable<String>(roomsId), Variable<String>(userId)],
       updates: {roomsUserMapping},
     );
@@ -3593,7 +3836,7 @@ abstract class _$AppDb extends GeneratedDatabase {
 
   Selectable<RoomsListData> getRoomsOfUser({required String userID}) {
     return customSelect(
-        'SELECT DISTINCT R.roomId, R.name, R.description, R.roomIcon FROM RoomsList AS R,RoomsUserMapping AS RM WHERE RM.userId = :userID',
+        'SELECT DISTINCT R.roomId, R.name, R.description, R.roomIcon FROM RoomsList AS R,RoomsUserMapping AS RM WHERE RM.userId = ?1',
         variables: [
           Variable<String>(userID)
         ],
@@ -3605,7 +3848,7 @@ abstract class _$AppDb extends GeneratedDatabase {
 
   Selectable<User> getRoomMembers({required String roomID}) {
     return customSelect(
-        'SELECT U.* FROM Users AS U,(SELECT DISTINCT userId FROM RoomsUserMapping AS RM WHERE RM.roomId = :roomID) AS UID WHERE U.userId = UID.userId',
+        'SELECT U.* FROM Users AS U,(SELECT DISTINCT userId FROM RoomsUserMapping AS RM WHERE RM.roomId = ?1) AS UID WHERE U.userId = UID.userId',
         variables: [
           Variable<String>(roomID)
         ],
@@ -3620,7 +3863,7 @@ abstract class _$AppDb extends GeneratedDatabase {
       required String channelId,
       required String channelName}) {
     return customInsert(
-      'INSERT INTO RoomsChannels VALUES (:roomId, :channelId, :channelName)',
+      'INSERT INTO RoomsChannels VALUES (?1, ?2, ?3)',
       variables: [
         Variable<String>(roomId),
         Variable<String>(channelId),
@@ -3632,7 +3875,7 @@ abstract class _$AppDb extends GeneratedDatabase {
 
   Selectable<RoomsChannel> getChannelsOfRoom({required String roomID}) {
     return customSelect(
-        'SELECT RC.* FROM RoomsChannels AS RC WHERE RC.roomId = :roomID',
+        'SELECT RC.* FROM RoomsChannels AS RC WHERE RC.roomId = ?1',
         variables: [
           Variable<String>(roomID)
         ],
@@ -3644,7 +3887,7 @@ abstract class _$AppDb extends GeneratedDatabase {
   Selectable<RoomsChannel> getChannelName(
       {required String roomId, required String channelId}) {
     return customSelect(
-        'SELECT * FROM RoomsChannels WHERE roomId = :roomId AND channelId = :channelId',
+        'SELECT * FROM RoomsChannels WHERE roomId = ?1 AND channelId = ?2',
         variables: [
           Variable<String>(roomId),
           Variable<String>(channelId)
@@ -3664,7 +3907,7 @@ abstract class _$AppDb extends GeneratedDatabase {
       String? media,
       String? replyTo}) {
     return customInsert(
-      'INSERT INTO RoomsMessages VALUES (:msgId, :roomId, :channelId, :fromUser, :time, :content, :media, :replyTo)',
+      'INSERT INTO RoomsMessages VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)',
       variables: [
         Variable<String>(msgId),
         Variable<String>(roomId),
@@ -3682,7 +3925,7 @@ abstract class _$AppDb extends GeneratedDatabase {
   Selectable<RoomsMessage> getRoomChannelChat(
       {required String roomId, required String channelId}) {
     return customSelect(
-        'SELECT * FROM RoomsMessages WHERE roomId = :roomId AND channelId = :channelId ORDER BY msgId',
+        'SELECT * FROM RoomsMessages WHERE roomId = ?1 AND channelId = ?2 ORDER BY msgId',
         variables: [
           Variable<String>(roomId),
           Variable<String>(channelId)
@@ -3711,6 +3954,7 @@ abstract class _$AppDb extends GeneratedDatabase {
         groupChatMessagesTextIndexAI,
         groupChatMessagesTextIndexAD,
         groupChatMessagesTextIndexAU,
+        friends,
         groupUserMapping,
         roomsList,
         roomsUserMapping,

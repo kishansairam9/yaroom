@@ -13,6 +13,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import './components/roomsList.dart';
 import '../utils/authorizationService.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import '../screens/components/friendsView.dart';
 
 class HomePage extends StatefulWidget {
   late final int initIndex;
@@ -239,6 +240,7 @@ class HomePageState extends State<HomePage> {
               })),
               ChatView(),
               GroupChatView(),
+              FriendsView(),
               Container(
                 color: Colors.blue,
               ),
@@ -260,6 +262,7 @@ class HomePageState extends State<HomePage> {
             BottomNavyBarItem(
                 title: Text('Messages'), icon: Icon(Icons.chat_bubble)),
             BottomNavyBarItem(title: Text('Groups'), icon: Icon(Icons.group)),
+            BottomNavyBarItem(title: Text('Friends'), icon: Icon(Icons.person)),
             BottomNavyBarItem(
                 title: Text('Settings'), icon: Icon(Icons.settings)),
           ],
