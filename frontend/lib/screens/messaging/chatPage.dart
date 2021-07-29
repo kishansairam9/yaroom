@@ -52,6 +52,40 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     }
   }
 
+  Widget _buildSingleMessage(ChatMessage msg, bool isMe) {
+    if (msg.media != null && msg.content != null) {
+      return Column(
+        children: [
+          Text(
+            msg.media!, // Using unicode space is imp as flutter engine trims otherwise
+            textAlign: isMe ? TextAlign.right : TextAlign.left,
+            style: TextStyle(color: Colors.white),
+          ),
+          Text(
+            msg.content!, // Using unicode space is imp as flutter engine trims otherwise
+            textAlign: isMe ? TextAlign.right : TextAlign.left,
+            style: TextStyle(color: Colors.white),
+          ),
+        ],
+      );
+    }
+    if (msg.media != null && msg.content == null) {
+      return Text(
+        msg.media!, // Using unicode space is imp as flutter engine trims otherwise
+        textAlign: isMe ? TextAlign.right : TextAlign.left,
+        style: TextStyle(color: Colors.white),
+      );
+    }
+    if (msg.media == null && msg.content != null) {
+      return Text(
+        msg.content!, // Using unicode space is imp as flutter engine trims otherwise
+        textAlign: isMe ? TextAlign.right : TextAlign.left,
+        style: TextStyle(color: Colors.white),
+      );
+    }
+    return Container();
+  }
+
   _buildMessage(ChatMessage msg, bool prevIsSame, DateTime? prependDay) {
     final bool isMe = msg.fromUser == Provider.of<UserId>(context);
     final time = TimeOfDay.fromDateTime(msg.time.toLocal()).format(context);
@@ -72,11 +106,7 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
             padding: EdgeInsets.only(bottom: 18),
             child: ConstrainedBox(
                 constraints: BoxConstraints(minWidth: 60),
-                child: Text(
-                  msg.content!, // Using unicode space is imp as flutter engine trims otherwise
-                  textAlign: isMe ? TextAlign.right : TextAlign.left,
-                  style: TextStyle(color: Colors.white),
-                )),
+                child: _buildSingleMessage(msg, isMe)),
           ),
           Positioned(
               bottom: 0,
@@ -159,13 +189,18 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   void _sendMessage(
       {required BuildContext context,
       String? content,
-      String? media,
+      Map? media,
       int? replyTo}) {
-    if (media == '') media = null;
+    // print("hi");
+    // print(Provider.of<FilePickerDetails>(context, listen: false).getMedia());
+    // print(media);
+    // print(BlocProvider.of<FilePickerCubit>(context).state.filesAttached);
+    if (media != null && media.keys.length == 0) media = null;
     if (content == '') content = null;
     if (media == null && content == null) {
       return;
     }
+    print(media);
     Provider.of<MessageExchangeStream>(context, listen: false)
         .sendWSMessage(jsonEncode({
       'type': 'ChatMessage',
@@ -173,9 +208,13 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
       'fromUser': Provider.of<UserId>(context, listen: false),
       'content': content,
       'time': DateTime.now().toUtc().toIso8601String(),
-      'media': media,
+      'mediaData': media,
       'replyTo': replyTo,
     }));
+    // Provider.of<FilePickerDetails>(context, listen: false)
+    //     .updateState(Map(), 0);
+    BlocProvider.of<FilePickerCubit>(context, listen: false)
+        .updateFilePicker(media: Map(), i: 0);
   }
 
   Future<bool> onBackPress() {

@@ -200,13 +200,16 @@ class HomePageState extends State<HomePage> {
             ? Drawer(
                 child: Row(
                   children: [
-                    RoomListView(),
-                    (widget.roomId == null
-                        ? SelectRoomPage()
-                        : ChannelsView(
-                            roomName: widget.roomName!,
-                            roomId: widget.roomId!,
-                          )),
+                    Expanded(flex: 15, child: RoomListView()),
+                    Expanded(
+                      flex: 90,
+                      child: (widget.roomId == null
+                          ? SelectRoomPage()
+                          : ChannelsView(
+                              roomName: widget.roomName!,
+                              roomId: widget.roomId!,
+                            )),
+                    ),
                   ],
                 ),
               )
