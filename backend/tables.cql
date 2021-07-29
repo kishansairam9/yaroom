@@ -17,6 +17,7 @@ CREATE TABLE yaroom.users (
     username text,
     image text,
     tokens set<text>,
+    friendslist set<text>,
     groupslist set<text>,
     roomslist set<text>,
     PRIMARY KEY (userid)
@@ -76,7 +77,7 @@ CREATE TABLE yaroom.chat_messages (
     PRIMARY KEY (exchange_id, msgid)
 ) WITH CLUSTERING ORDER BY (msgid DESC);
 
-CREATE TABLE yaroom.groups_messages (
+CREATE TABLE yaroom.group_messages (
     exchange_id text,
     msgid text,
     fromuser text,
@@ -90,7 +91,7 @@ CREATE TABLE yaroom.groups_messages (
     PRIMARY KEY (exchange_id, msgid)
 ) WITH CLUSTERING ORDER BY (msgid DESC);
 
-CREATE TABLE yaroom.rooms_messages (
+CREATE TABLE yaroom.room_messages (
     exchange_id text,
     msgid text,
     fromuser text,
@@ -108,6 +109,6 @@ CREATE TABLE yaroom.rooms_messages (
 CREATE INDEX chat_messages_from_index ON yaroom.chat_messages (fromuser);
 CREATE INDEX chat_messages_to_index ON yaroom.chat_messages (touser);
 CREATE INDEX group_messages_index ON yaroom.group_messages (groupid);
-CREATE INDEX rooms_messages_room_index ON yaroom.rooms_messages (roomid);
-CREATE INDEX rooms_messages_channel_index ON yaroom.rooms_messages (channelid);
+CREATE INDEX room_messages_room_index ON yaroom.room_messages (roomid);
+CREATE INDEX room_messages_channel_index ON yaroom.room_messages (channelid);
 

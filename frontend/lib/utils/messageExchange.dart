@@ -15,6 +15,7 @@ class MessageExchangeStream {
   late String wsUrl;
   late String token;
   late WebSocketChannel channel;
+  bool initalized = false;
 
   Stream get stream => streamController.stream;
   void addStreamMessage(Map<String, dynamic> data) =>
@@ -26,14 +27,13 @@ class MessageExchangeStream {
   start(wsUrl, token) {
     this.wsUrl = wsUrl;
     this.token = token;
-    print("JWT Token::::::::: ${this.token}");
     initWebSocketConnection();
   }
 
   initWebSocketConnection() async {
     if (onCallInit) return;
     onCallInit = true;
-    print("trying to conect...");
+    print("trying to connect...");
     WebSocketChannel? ret = await connectWs();
     if (ret == null) {
       onCallInit = false;
@@ -43,6 +43,7 @@ class MessageExchangeStream {
     this.channel = ret;
     print("socket connection initializied");
     this.channel.sink.done.then((dynamic _) => _onDisconnected());
+    initalized = true;
     broadcastNotifications();
     onCallInit = false;
   }
@@ -85,6 +86,7 @@ class MessageExchangeStream {
   }
 
   void close() {
+    initalized = false;
     channel.sink.close();
   }
 }

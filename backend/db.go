@@ -13,19 +13,19 @@ import (
 
 var UsersTableMetadata = table.Metadata{
 	Name:    "yaroom.users",
-	Columns: []string{"userid", "name", "image", "username", "tokens", "groups"},
+	Columns: []string{"userid", "name", "image", "username", "tokens", "groupslist", "roomslist", "friendslist"},
 	PartKey: []string{"userid"},
 }
 
 var GroupsTableMetadata = table.Metadata{
 	Name:    "yaroom.groups",
-	Columns: []string{"groupid", "name", "image", "description", "users"},
+	Columns: []string{"groupid", "name", "image", "description", "userslist"},
 	PartKey: []string{"groupid"},
 }
 
 var RoomsTableMetadata = table.Metadata{
 	Name:    "yaroom.rooms",
-	Columns: []string{"rooomid", "name", "image", "description", "users", "channels"},
+	Columns: []string{"rooomid", "name", "image", "description", "userslist", "channelslist"},
 	PartKey: []string{"roomid"},
 }
 
@@ -87,13 +87,14 @@ func (u *User_udt) UnmarshalUDT(name string, info gocql.TypeInfo, data []byte) e
 }
 
 type UserMetadata struct {
-	Userid     string
-	Name       string
-	Username   *string
-	Image      *string
-	Tokens     []string
-	Groupslist []string
-	Roomslist  []string
+	Userid      string
+	Name        string
+	Username    *string
+	Image       *string
+	Tokens      []string
+	Groupslist  []string
+	Roomslist   []string
+	Friendslist []string
 }
 
 type GroupMetadata struct {

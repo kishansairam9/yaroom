@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:bottom_navy_bar/bottom_navy_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:yaroom/blocs/rooms.dart';
+import 'package:yaroom/blocs/fcmToken.dart';
 import 'package:yaroom/utils/guidePages.dart';
 import 'package:yaroom/utils/messageExchange.dart';
 import 'package:yaroom/utils/types.dart';
@@ -12,6 +13,7 @@ import './rooms/room.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import './components/roomsList.dart';
 import '../utils/authorizationService.dart';
+import '../utils/fcmToken.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 class HomePage extends StatefulWidget {
@@ -180,12 +182,25 @@ class HomePageState extends State<HomePage> {
                   Builder(
                     builder: (context) => IconButton(
                       onPressed: () async {
-                        await Provider.of<AuthorizationService>(context,
-                                listen: false)
-                            .logout(context);
+                        // Invalidate fcm token
+                        final String? accessToken =
+                            await Provider.of<AuthorizationService>(context,
+                                    listen: false)
+                                .getValidAccessToken();
+                        await invalidateFCMToken(
+                            BlocProvider.of<FcmTokenCubit>(context,
+                                listen: false),
+                            accessToken!);
+                        // Close websocket
                         Provider.of<MessageExchangeStream>(context,
                                 listen: false)
                             .close();
+
+                        // Logout
+                        await Provider.of<AuthorizationService>(context,
+                                listen: false)
+                            .logout(context);
+
                         await Navigator.of(context)
                             .pushNamedAndRemoveUntil('/signin', (_) => false);
                       },

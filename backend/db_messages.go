@@ -23,14 +23,14 @@ var ChatMessageMetadata = table.Metadata{
 }
 
 var GroupsMessageMetadata = table.Metadata{
-	Name:    "yaroom.groups_messages",
+	Name:    "yaroom.group_messages",
 	Columns: []string{"exchange_id", "msgid", "fromuser", "groupid", "msgtime", "content", "mediaid", "replyto", "es_query", "es_options"},
 	PartKey: []string{"exchange_id"},
 	SortKey: []string{"msgid"},
 }
 
 var RoomsMessageMetadata = table.Metadata{
-	Name:    "yaroom.rooms_messages",
+	Name:    "yaroom.room_messages",
 	Columns: []string{"exchange_id", "msgid", "fromuser", "roomid", "channelid", "msgtime", "content", "mediaid", "replyto", "es_query", "es_options"},
 	PartKey: []string{"exchange_id"},
 	SortKey: []string{"msgid"},
