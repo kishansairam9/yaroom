@@ -5,6 +5,7 @@ import 'dart:io' show Platform; // OS Detection
 import 'package:flutter/foundation.dart' show kIsWeb; // Web detection
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:yaroom/screens/components/msgBox.dart';
 import '../components/contactView.dart';
 import 'package:provider/provider.dart';
 import '../../utils/messageExchange.dart';
@@ -65,6 +66,48 @@ class GroupChatPageState extends State<GroupChatPage>
     return Future.value(false);
   }
 
+  Widget buildSingleMsg(msg) {
+    if (msg.media != null && msg.content != null) {
+      return Column(
+        children: [
+          Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                msg.media!,
+                textAlign: TextAlign.left,
+                style: TextStyle(color: Colors.white),
+              )),
+          Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                msg.content!,
+                textAlign: TextAlign.left,
+                style: TextStyle(color: Colors.white),
+              )),
+        ],
+      );
+    }
+    if (msg.media != null && msg.content == null) {
+      return Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            msg.media!,
+            textAlign: TextAlign.left,
+            style: TextStyle(color: Colors.white),
+          ));
+    }
+    if (msg.media == null && msg.content != null) {
+      return Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            msg.content!,
+            textAlign: TextAlign.left,
+            style: TextStyle(color: Colors.white),
+          ));
+    }
+    return Container();
+  }
+
   _buildMessage(BuildContext context, GroupChatMessage msg, bool prevIsSame,
       DateTime? prependDay) {
     var curUser = Provider.of<List<User>>(context, listen: false)
@@ -110,13 +153,7 @@ class GroupChatPageState extends State<GroupChatPage>
                         SizedBox(
                           height: 10,
                         ),
-                        Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              msg.content!,
-                              textAlign: TextAlign.left,
-                              style: TextStyle(color: Colors.white),
-                            )),
+                        buildSingleMsg(msg),
                         Align(
                             alignment: Alignment.bottomRight,
                             child: Text(time,
@@ -179,6 +216,8 @@ class GroupChatPageState extends State<GroupChatPage>
         });
   }
 
+  final GlobalKey<ScaffoldState> _scaffoldkey = new GlobalKey();
+
   Widget _buildMessagesView(List<GroupChatMessage> msgs) {
     return Expanded(
       child: Column(
@@ -211,9 +250,9 @@ class GroupChatPageState extends State<GroupChatPage>
   void _sendMessage(
       {required BuildContext context,
       String? content,
-      String? media,
+      Map? media,
       int? replyTo}) {
-    if (media == '') media = null;
+    if (media != null && media.keys.length == 0) media = null;
     if (content == '') content = null;
     if (media == null && content == null) {
       return;
@@ -225,9 +264,11 @@ class GroupChatPageState extends State<GroupChatPage>
       'fromUser': Provider.of<UserId>(context, listen: false),
       'content': content,
       'time': DateTime.now().toUtc().toIso8601String(),
-      'media': media,
+      'mediaData': media,
       'replyTo': replyTo,
     }));
+    BlocProvider.of<FilePickerCubit>(context, listen: false)
+        .updateFilePicker(media: Map(), i: 0);
   }
 
   DrawerHeader _getDrawerHeader() {
@@ -342,156 +383,85 @@ class GroupChatPageState extends State<GroupChatPage>
                         })
                       ],
                       child: Builder(builder: (context) {
-                        return WillPopScope(
-                          child: Stack(children: <Widget>[
-                            Scaffold(
-                                endDrawer: Drawer(
-                                    child: ListView(
-                                  padding: EdgeInsets.zero,
-                                  children: [
-                                    _getDrawerHeader(),
-                                    ...groupMembersSnapshot.data!.map((User
-                                            e) =>
-                                        // for (var i = 0; i < widget.memberCount; i++)
-                                        ListTile(
-                                            onTap: () =>
-                                                _showContact(context, e),
-                                            tileColor: Colors.transparent,
-                                            leading: CircleAvatar(
-                                              backgroundColor: Colors.grey[350],
-                                              foregroundImage: NetworkImage(
-                                                  '${e.profileImg}'),
-                                              backgroundImage: AssetImage(
-                                                  'assets/no-profile.png'),
-                                            ),
-                                            title: Text(
-                                              e.name,
-                                            )))
-                                  ],
-                                )),
-                                appBar: AppBar(
-                                  leading: Builder(
-                                      builder: (context) => IconButton(
-                                          onPressed: () =>
-                                              Navigator.pop(context),
-                                          icon: Icon(Icons.arrow_back))),
-                                  titleSpacing: 0,
-                                  title: Builder(
-                                      builder: (context) => ListTile(
-                                            onTap: () => Scaffold.of(context)
-                                                .openEndDrawer(),
-                                            contentPadding: EdgeInsets.only(
-                                                left: 0.0, right: 0.0),
-                                            tileColor: Colors.transparent,
-                                            leading: CircleAvatar(
-                                              backgroundColor: Colors.grey[350],
-                                              foregroundImage: NetworkImage(
-                                                  '${widget.image}'),
-                                              backgroundImage: AssetImage(
-                                                  'assets/no-profile.png'),
-                                            ),
-                                            title: Text(
-                                              widget.name,
-                                              style: TextStyle(
-                                                  color: Colors.white),
-                                            ),
-                                          )),
-                                  actions: <Widget>[
-                                    IconButton(
-                                      onPressed: () => {},
-                                      icon: Icon(Icons.phone),
-                                      tooltip: 'Call',
-                                    ),
-                                    IconButton(
-                                      onPressed: () => {},
-                                      icon: Icon(Icons.more_vert),
-                                      tooltip: 'More',
-                                    )
-                                  ],
+                        return Scaffold(
+                            key: _scaffoldkey,
+                            endDrawer: Drawer(
+                                child: ListView(
+                              padding: EdgeInsets.zero,
+                              children: [
+                                _getDrawerHeader(),
+                                ...groupMembersSnapshot.data!.map((User e) =>
+                                    // for (var i = 0; i < widget.memberCount; i++)
+                                    ListTile(
+                                        onTap: () => _showContact(context, e),
+                                        tileColor: Colors.transparent,
+                                        leading: CircleAvatar(
+                                          backgroundColor: Colors.grey[350],
+                                          foregroundImage:
+                                              NetworkImage('${e.profileImg}'),
+                                          backgroundImage: AssetImage(
+                                              'assets/no-profile.png'),
+                                        ),
+                                        title: Text(
+                                          e.name,
+                                        )))
+                              ],
+                            )),
+                            appBar: AppBar(
+                              leading: Builder(
+                                  builder: (context) => IconButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      icon: Icon(Icons.arrow_back))),
+                              titleSpacing: 0,
+                              title: Builder(
+                                  builder: (context) => ListTile(
+                                        onTap: () => Scaffold.of(context)
+                                            .openEndDrawer(),
+                                        contentPadding: EdgeInsets.only(
+                                            left: 0.0, right: 0.0),
+                                        tileColor: Colors.transparent,
+                                        leading: CircleAvatar(
+                                          backgroundColor: Colors.grey[350],
+                                          foregroundImage:
+                                              NetworkImage('${widget.image}'),
+                                          backgroundImage: AssetImage(
+                                              'assets/no-profile.png'),
+                                        ),
+                                        title: Text(
+                                          widget.name,
+                                          style: TextStyle(color: Colors.white),
+                                        ),
+                                      )),
+                              actions: <Widget>[
+                                IconButton(
+                                  onPressed: () => {},
+                                  icon: Icon(Icons.phone),
+                                  tooltip: 'Call',
                                 ),
-                                body: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    mainAxisSize: MainAxisSize.max,
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: <Widget>[
-                                      BlocBuilder<GroupChatCubit,
-                                              List<GroupChatMessage>>(
-                                          builder: (BuildContext context,
-                                                  List<GroupChatMessage>
-                                                      state) =>
-                                              _buildMessagesView(state)),
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                              child: RawKeyboardListener(
-                                                  focusNode: FocusNode(),
-                                                  onKey: (RawKeyEvent event) {
-                                                    if (kIsWeb ||
-                                                        Platform.isMacOS ||
-                                                        Platform.isLinux ||
-                                                        Platform.isWindows) {
-                                                      // Submit on Enter and new line on Shift + Enter only on desktop devices or Web
-                                                      if (event.isKeyPressed(
-                                                              LogicalKeyboardKey
-                                                                  .enter) &&
-                                                          !event
-                                                              .isShiftPressed) {
-                                                        String data =
-                                                            inputController
-                                                                .text;
-                                                        inputController.clear();
-                                                        // Bug fix for stray new line after Pressing Enter
-                                                        Future.delayed(
-                                                            Duration(
-                                                                milliseconds:
-                                                                    100),
-                                                            () =>
-                                                                inputController
-                                                                    .clear());
-                                                        _sendMessage(
-                                                            context: context,
-                                                            content:
-                                                                data.trim());
-                                                      }
-                                                    }
-                                                  },
-                                                  child: TextField(
-                                                    maxLines: null,
-                                                    controller: inputController,
-                                                    textCapitalization:
-                                                        TextCapitalization
-                                                            .sentences,
-                                                    onEditingComplete: () {
-                                                      String data =
-                                                          inputController.text;
-                                                      inputController.clear();
-                                                      _sendMessage(
-                                                          context: context,
-                                                          content: data.trim());
-                                                    },
-                                                    decoration: InputDecoration(
-                                                        border:
-                                                            OutlineInputBorder(),
-                                                        hintText:
-                                                            'Type a message'),
-                                                  ))),
-                                          IconButton(
-                                              onPressed: () {
-                                                String data =
-                                                    inputController.text;
-                                                inputController.clear();
-                                                _sendMessage(
-                                                    context: context,
-                                                    content: data.trim());
-                                              },
-                                              icon: Icon(Icons.send))
-                                        ],
-                                      ),
-                                    ]))
-                          ]),
-                          onWillPop: onBackPress,
-                        );
+                                IconButton(
+                                  onPressed: () => {
+                                    _scaffoldkey.currentState!.openEndDrawer()
+                                  },
+                                  icon: Icon(Icons.more_vert),
+                                  tooltip: 'More',
+                                )
+                              ],
+                            ),
+                            body: Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.max,
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: <Widget>[
+                                  BlocBuilder<GroupChatCubit,
+                                          List<GroupChatMessage>>(
+                                      builder: (BuildContext context,
+                                              List<GroupChatMessage> state) =>
+                                          _buildMessagesView(state)),
+                                  MsgBox(
+                                    sendMessage: _sendMessage,
+                                    callIfEmojiClosedAndBackPress: onBackPress,
+                                  )
+                                ]));
                       }),
                     );
                   } else if (groupChatSnapshot.hasError) {
@@ -509,15 +479,5 @@ class GroupChatPageState extends State<GroupChatPage>
           }
           return CircularProgressIndicator();
         });
-  }
-
-  // create a emoji keyboard
-  Widget buildSticker() {
-    return Container(
-      margin: const EdgeInsets.all(10.0),
-      color: Colors.amber[600],
-      width: 100.0,
-      height: 5.0,
-    );
   }
 }

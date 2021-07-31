@@ -165,12 +165,12 @@ func wsHandler(g *gin.Context) {
 				log.Info().Str("where", "wsHandler").Str("type", "writing message").Msg(err.Error())
 				connFailed = true
 			}
-			data, isMsg := out.(WSMessage)
-			if isMsg && data.FromUser == userId {
-				if err = sendMessageNotification(out.(WSMessage).ToUser, out.(WSMessage)); err != nil {
-					log.Error().Str("where", "fcm send to user").Str("type", "failed to send push notification").Msg(err.Error())
-				}
-			}
+			// data, isMsg := out.(WSMessage)
+			// if isMsg && data.FromUser == userId {
+			// 	if err = sendMessageNotification(out.(WSMessage).ToUser, out.(WSMessage)); err != nil {
+			// 		log.Error().Str("where", "fcm send to user").Str("type", "failed to send push notification").Msg(err.Error())
+			// 	}
+			// }
 
 		case activity := <-activeStatusOutChannel:
 			err = conn.WriteJSON(activity)

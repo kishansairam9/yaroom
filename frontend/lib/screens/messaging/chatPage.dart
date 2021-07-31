@@ -53,7 +53,10 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   }
 
   Widget _buildSingleMessage(ChatMessage msg, bool isMe) {
+    print(msg);
     if (msg.media != null && msg.content != null) {
+      print('hi');
+      // print(msg.media!);
       return Column(
         children: [
           Text(
@@ -70,6 +73,8 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
       );
     }
     if (msg.media != null && msg.content == null) {
+      print('hi');
+      // print(msg.media!);
       return Text(
         msg.media!, // Using unicode space is imp as flutter engine trims otherwise
         textAlign: isMe ? TextAlign.right : TextAlign.left,
@@ -77,6 +82,8 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
       );
     }
     if (msg.media == null && msg.content != null) {
+      print("hola");
+      print(msg.content!);
       return Text(
         msg.content!, // Using unicode space is imp as flutter engine trims otherwise
         textAlign: isMe ? TextAlign.right : TextAlign.left,
@@ -200,6 +207,7 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     if (media == null && content == null) {
       return;
     }
+    print("hello me here");
     print(media);
     Provider.of<MessageExchangeStream>(context, listen: false)
         .sendWSMessage(jsonEncode({

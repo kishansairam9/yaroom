@@ -209,7 +209,7 @@ getRoomDetails(:roomId AS TEXT): SELECT * FROM RoomsList WHERE roomId = :roomId;
 -------------
 addUserToRoom(:roomId AS TEXT, :userId AS TEXT): INSERT into RoomsUserMapping VALUES (:roomsId, :userId);
 
-getRoomsOfUser(:userID AS TEXT): SELECT DISTINCT R.roomId, R.name, R.description, R.roomIcon FROM RoomsList AS R, RoomsUserMapping as RM WHERE RM.userId = :userID;   
+getRoomsOfUser(:userID AS TEXT): SELECT DISTINCT R.roomId, R.name, R.description, R.roomIcon FROM RoomsList AS R, RoomsUserMapping as RM WHERE RM.userId = :userID AND RM.roomId = R.roomId;   
 
 getRoomMembers(:roomID AS TEXT): SELECT U.* FROM Users AS U, (SELECT DISTINCT userId FROM RoomsUserMapping AS RM WHERE RM.roomId = :roomID) AS UID WHERE U.userId = UID.userId; 
 
