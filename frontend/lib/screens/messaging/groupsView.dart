@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'dart:math';
 import 'groupPage.dart';
 import '../../utils/types.dart';
@@ -18,7 +19,8 @@ class GroupChatViewState extends State<GroupChatView> {
   Widget build(BuildContext context) {
     return StreamBuilder(
         stream: RepositoryProvider.of<AppDb>(context)
-            .getGroupsOfUser(userID: RepositoryProvider.of<UserId>(context))
+            .getGroupsOfUser(
+                userID: Provider.of<UserId>(context, listen: false))
             .watch(),
         builder: (BuildContext context, AsyncSnapshot<List<GroupDM>> snapshot) {
           if (snapshot.hasData) {

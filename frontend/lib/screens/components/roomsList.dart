@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'package:yaroom/blocs/rooms.dart';
 import '../../utils/types.dart';
 
@@ -17,11 +18,13 @@ class RoomListViewState extends State<RoomListView> {
   Widget build(BuildContext context) {
     return StreamBuilder(
         stream: RepositoryProvider.of<AppDb>(context)
-            .getRoomsOfUser(userID: RepositoryProvider.of<UserId>(context))
+            .getRoomsOfUser(userID: Provider.of<UserId>(context, listen: false))
             .watch(),
         builder: (BuildContext context,
             AsyncSnapshot<List<RoomsListData>> snapshot) {
           if (snapshot.hasData) {
+            print("roomslist");
+            print(snapshot.data!);
             return ListView.builder(
               itemCount: snapshot.data!.length,
               itemBuilder: (context, index) {
