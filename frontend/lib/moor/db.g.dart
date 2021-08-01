@@ -2023,15 +2023,17 @@ class GroupChatMessagesTextIndex extends Table
       'fts5(msgId UNINDEXED, groupId UNINDEXED, fromUser UNINDEXED, time UNINDEXED, content, media UNINDEXED, replyTo UNINDEXED, content=\'GroupChatMessages\', content_rowid=\'rowid\', tokenize = \'porter unicode61\')';
 }
 
-class Friend extends DataClass implements Insertable<Friend> {
+class FriendRequest extends DataClass implements Insertable<FriendRequest> {
   final String userId1;
   final String userId2;
   final int status;
-  Friend({required this.userId1, required this.userId2, required this.status});
-  factory Friend.fromData(Map<String, dynamic> data, GeneratedDatabase db,
+  FriendRequest(
+      {required this.userId1, required this.userId2, required this.status});
+  factory FriendRequest.fromData(
+      Map<String, dynamic> data, GeneratedDatabase db,
       {String? prefix}) {
     final effectivePrefix = prefix ?? '';
-    return Friend(
+    return FriendRequest(
       userId1: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}userId_1'])!,
       userId2: const StringType()
@@ -2049,18 +2051,18 @@ class Friend extends DataClass implements Insertable<Friend> {
     return map;
   }
 
-  FriendsCompanion toCompanion(bool nullToAbsent) {
-    return FriendsCompanion(
+  FriendRequestsCompanion toCompanion(bool nullToAbsent) {
+    return FriendRequestsCompanion(
       userId1: Value(userId1),
       userId2: Value(userId2),
       status: Value(status),
     );
   }
 
-  factory Friend.fromJson(Map<String, dynamic> json,
+  factory FriendRequest.fromJson(Map<String, dynamic> json,
       {ValueSerializer? serializer}) {
     serializer ??= moorRuntimeOptions.defaultSerializer;
-    return Friend(
+    return FriendRequest(
       userId1: serializer.fromJson<String>(json['userId_1']),
       userId2: serializer.fromJson<String>(json['userId_2']),
       status: serializer.fromJson<int>(json['status']),
@@ -2076,14 +2078,15 @@ class Friend extends DataClass implements Insertable<Friend> {
     };
   }
 
-  Friend copyWith({String? userId1, String? userId2, int? status}) => Friend(
+  FriendRequest copyWith({String? userId1, String? userId2, int? status}) =>
+      FriendRequest(
         userId1: userId1 ?? this.userId1,
         userId2: userId2 ?? this.userId2,
         status: status ?? this.status,
       );
   @override
   String toString() {
-    return (StringBuffer('Friend(')
+    return (StringBuffer('FriendRequest(')
           ..write('userId1: $userId1, ')
           ..write('userId2: $userId2, ')
           ..write('status: $status')
@@ -2097,29 +2100,29 @@ class Friend extends DataClass implements Insertable<Friend> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is Friend &&
+      (other is FriendRequest &&
           other.userId1 == this.userId1 &&
           other.userId2 == this.userId2 &&
           other.status == this.status);
 }
 
-class FriendsCompanion extends UpdateCompanion<Friend> {
+class FriendRequestsCompanion extends UpdateCompanion<FriendRequest> {
   final Value<String> userId1;
   final Value<String> userId2;
   final Value<int> status;
-  const FriendsCompanion({
+  const FriendRequestsCompanion({
     this.userId1 = const Value.absent(),
     this.userId2 = const Value.absent(),
     this.status = const Value.absent(),
   });
-  FriendsCompanion.insert({
+  FriendRequestsCompanion.insert({
     required String userId1,
     required String userId2,
     required int status,
   })  : userId1 = Value(userId1),
         userId2 = Value(userId2),
         status = Value(status);
-  static Insertable<Friend> custom({
+  static Insertable<FriendRequest> custom({
     Expression<String>? userId1,
     Expression<String>? userId2,
     Expression<int>? status,
@@ -2131,9 +2134,9 @@ class FriendsCompanion extends UpdateCompanion<Friend> {
     });
   }
 
-  FriendsCompanion copyWith(
+  FriendRequestsCompanion copyWith(
       {Value<String>? userId1, Value<String>? userId2, Value<int>? status}) {
-    return FriendsCompanion(
+    return FriendRequestsCompanion(
       userId1: userId1 ?? this.userId1,
       userId2: userId2 ?? this.userId2,
       status: status ?? this.status,
@@ -2157,7 +2160,7 @@ class FriendsCompanion extends UpdateCompanion<Friend> {
 
   @override
   String toString() {
-    return (StringBuffer('FriendsCompanion(')
+    return (StringBuffer('FriendRequestsCompanion(')
           ..write('userId1: $userId1, ')
           ..write('userId2: $userId2, ')
           ..write('status: $status')
@@ -2166,10 +2169,11 @@ class FriendsCompanion extends UpdateCompanion<Friend> {
   }
 }
 
-class Friends extends Table with TableInfo<Friends, Friend> {
+class FriendRequests extends Table
+    with TableInfo<FriendRequests, FriendRequest> {
   final GeneratedDatabase _db;
   final String? _alias;
-  Friends(this._db, [this._alias]);
+  FriendRequests(this._db, [this._alias]);
   final VerificationMeta _userId1Meta = const VerificationMeta('userId1');
   late final GeneratedColumn<String?> userId1 = GeneratedColumn<String?>(
       'userId_1', aliasedName, false,
@@ -2191,11 +2195,11 @@ class Friends extends Table with TableInfo<Friends, Friend> {
   @override
   List<GeneratedColumn> get $columns => [userId1, userId2, status];
   @override
-  String get aliasedName => _alias ?? 'Friends';
+  String get aliasedName => _alias ?? 'FriendRequests';
   @override
-  String get actualTableName => 'Friends';
+  String get actualTableName => 'FriendRequests';
   @override
-  VerificationContext validateIntegrity(Insertable<Friend> instance,
+  VerificationContext validateIntegrity(Insertable<FriendRequest> instance,
       {bool isInserting = false}) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
@@ -2223,14 +2227,14 @@ class Friends extends Table with TableInfo<Friends, Friend> {
   @override
   Set<GeneratedColumn> get $primaryKey => {userId1, userId2};
   @override
-  Friend map(Map<String, dynamic> data, {String? tablePrefix}) {
-    return Friend.fromData(data, _db,
+  FriendRequest map(Map<String, dynamic> data, {String? tablePrefix}) {
+    return FriendRequest.fromData(data, _db,
         prefix: tablePrefix != null ? '$tablePrefix.' : null);
   }
 
   @override
-  Friends createAlias(String alias) {
-    return Friends(_db, alias);
+  FriendRequests createAlias(String alias) {
+    return FriendRequests(_db, alias);
   }
 
   @override
@@ -3551,7 +3555,7 @@ abstract class _$AppDb extends GeneratedDatabase {
   late final Trigger groupChatMessagesTextIndexAU = Trigger(
       'CREATE TRIGGER GroupChatMessagesTextIndex_AU AFTER UPDATE ON GroupChatMessages BEGIN INSERT INTO GroupChatMessagesTextIndex (GroupChatMessagesTextIndex, "rowid", msgId, groupId, fromUser, time, content, media, replyTo) VALUES (\'delete\', old."rowid", old.msgId, old.groupId, old.fromUser, old.time, old.content, old.media, old.replyTo);INSERT INTO GroupChatMessagesTextIndex ("rowid", msgId, groupId, fromUser, time, content, media, replyTo) VALUES (new."rowid", new.msgId, new.groupId, new.fromUser, new.time, new.content, new.media, new.replyTo);END',
       'GroupChatMessagesTextIndex_AU');
-  late final Friends friends = Friends(this);
+  late final FriendRequests friendRequests = FriendRequests(this);
   late final GroupUserMapping groupUserMapping = GroupUserMapping(this);
   late final RoomsList roomsList = RoomsList(this);
   late final RoomsUserMapping roomsUserMapping = RoomsUserMapping(this);
@@ -3601,28 +3605,65 @@ abstract class _$AppDb extends GeneratedDatabase {
 
   Selectable<User> getFriends({required String userId}) {
     return customSelect(
-        'SELECT U.* FROM Users AS U,(SELECT userId_1 AS id FROM Friends WHERE(userId_2 = ?1)AND(status = 2)UNION SELECT userId_2 AS id FROM Friends WHERE(userId_1 = ?1)AND(status = 2)) AS F WHERE(U.userId = F.id)',
+        'SELECT U.* FROM Users AS U,(SELECT userId_1 AS id FROM FriendRequests WHERE(userId_2 = ?1)AND(status = 2)UNION SELECT userId_2 AS id FROM FriendRequests WHERE(userId_1 = ?1)AND(status = 2)) AS F WHERE(U.userId = F.id)',
         variables: [
           Variable<String>(userId)
         ],
         readsFrom: {
           users,
-          friends,
+          friendRequests,
         }).map(users.mapFromRow);
   }
 
-  Future<int> addNewFriend(
+  Selectable<GetFriendRequestsResult> getFriendRequests(
+      {required String userId}) {
+    return customSelect(
+        'SELECT U.*, F.st FROM Users AS U,(SELECT userId_2 AS id, status AS st FROM FriendRequests WHERE(userId_1 = ?1)) AS F WHERE(U.userId = F.id)',
+        variables: [
+          Variable<String>(userId)
+        ],
+        readsFrom: {
+          users,
+          friendRequests,
+        }).map((QueryRow row) {
+      return GetFriendRequestsResult(
+        userId: row.read<String>('userId'),
+        name: row.read<String>('name'),
+        about: row.read<String?>('about'),
+        profileImg: row.read<String?>('profileImg'),
+        st: row.read<int>('st'),
+      );
+    });
+  }
+
+  Future<int> addNewFriendRequest(
       {required String userId_1,
       required String userId_2,
       required int status}) {
     return customInsert(
-      'INSERT INTO Friends VALUES (?1, ?2, ?3)',
+      'INSERT INTO FriendRequests VALUES (?1, ?2, ?3)',
       variables: [
         Variable<String>(userId_1),
         Variable<String>(userId_2),
         Variable<int>(status)
       ],
-      updates: {friends},
+      updates: {friendRequests},
+    );
+  }
+
+  Future<int> updateFriendRequest(
+      {required int status,
+      required String userId_1,
+      required String userId_2}) {
+    return customUpdate(
+      'UPDATE FriendRequests SET status = ?1 WHERE(userId_1 = ?2)AND(userId_2 = ?3)',
+      variables: [
+        Variable<int>(status),
+        Variable<String>(userId_1),
+        Variable<String>(userId_2)
+      ],
+      updates: {friendRequests},
+      updateKind: UpdateKind.update,
     );
   }
 
@@ -3954,7 +3995,7 @@ abstract class _$AppDb extends GeneratedDatabase {
         groupChatMessagesTextIndexAI,
         groupChatMessagesTextIndexAD,
         groupChatMessagesTextIndexAU,
-        friends,
+        friendRequests,
         groupUserMapping,
         roomsList,
         roomsUserMapping,
@@ -4011,6 +4052,21 @@ abstract class _$AppDb extends GeneratedDatabase {
           ),
         ],
       );
+}
+
+class GetFriendRequestsResult {
+  final String userId;
+  final String name;
+  final String? about;
+  final String? profileImg;
+  final int st;
+  GetFriendRequestsResult({
+    required this.userId,
+    required this.name,
+    this.about,
+    this.profileImg,
+    required this.st,
+  });
 }
 
 class SearchChatMessagesResult {

@@ -176,6 +176,8 @@ class HomePageState extends State<HomePage> {
                 }),
                 preferredSize: Size.fromHeight(kToolbarHeight)))
             : AppBar(
+                bottomOpacity: 0.0,
+                elevation: 0.0,
                 automaticallyImplyLeading: false,
                 actions: [
                   Builder(

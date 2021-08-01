@@ -62,7 +62,7 @@ void fakeInsert(AppDb db, UserId userId) {
         about: getAbout(),
         profileImg: getImage());
     if (Random().nextBool()) {
-      db.addNewFriend(
+      db.addNewFriendRequest(
           userId_1: userId, userId_2: uid, status: getRandomInt(1, 3));
     }
     var exchange = getExchange();

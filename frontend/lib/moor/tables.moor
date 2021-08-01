@@ -12,10 +12,10 @@ CREATE TABLE Users (
 );
 
 -------------
--- Friends Table
+-- FriendRequests Table
 -- Status = 1 ( pending), 2 (Accepted), 3 (Rejected/Cancelled)
 -------------
-CREATE TABLE Friends(
+CREATE TABLE FriendRequests(
     userId_1 TEXT NOT NULL REFERENCES Users(userId),
     userId_2 TEXT NOT NULL REFERENCES Users(userId),
     status INT NOT NULL,
@@ -172,11 +172,12 @@ getUserById(:userId AS TEXT): SELECT * FROM Users WHERE userId = :userId;
 getUsersNameMatching(:match AS TEXT): SELECT * FROM Users WHERE LOWER(name) LIKE '%' || :match || '%';
 
 -------------
--- Friends Table
+-- FriendRequests Table
 -------------
--- getFriends(:userId as TEXT): SELECT * FROM Friends;
-getFriends(:userId as TEXT): SELECT U.* FROM Users AS U, (SELECT userId_1 AS id FROM Friends WHERE (userId_2 = :userId) AND (status = 2) UNION SELECT userId_2 AS id FROM Friends WHERE (userId_1 = :userId) AND (status = 2)) AS F WHERE (U.userId = F.id);  
-addNewFriend(:userId_1 as TEXT, :userId_2 as TEXT, :status as INT): INSERT INTO Friends VALUES(:userId_1, :userId_2, :status);
+getFriends(:userId as TEXT): SELECT U.* FROM Users AS U, (SELECT userId_1 AS id FROM FriendRequests WHERE (userId_2 = :userId) AND (status = 2) UNION SELECT userId_2 AS id FROM FriendRequests WHERE (userId_1 = :userId) AND (status = 2)) AS F WHERE (U.userId = F.id);  
+getFriendRequests(:userId as TEXT): SELECT U.*, F.st FROM Users AS U, (SELECT userId_2 AS id, status as st FROM FriendRequests WHERE (userId_1 = :userId)) AS F WHERE (U.userId = F.id);  
+addNewFriendRequest(:userId_1 as TEXT, :userId_2 as TEXT, :status as INT): INSERT INTO FriendRequests VALUES(:userId_1, :userId_2, :status);
+updateFriendRequest(:userId_1 as TEXT, :userId_2 as TEXT, :status as INT): UPDATE FriendRequests SET status = :status WHERE (userId_1 = :userId_1) AND (userId_2 = :userId_2);
 
 -------------
 -- Groups Table

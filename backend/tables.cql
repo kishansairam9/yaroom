@@ -19,7 +19,9 @@ CREATE TABLE yaroom.users (
     tokens set<text>,
     groupslist set<text>,
     roomslist set<text>,
-    PRIMARY KEY (userid)
+    pendinglist set<text>,
+    friendslist set<text>,
+    PRIMARY KEY (userid),
 );
 
 CREATE TYPE yaroom.user_udt (
