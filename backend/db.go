@@ -45,6 +45,48 @@ var AddUserFCMToken *gocqlx.Queryx
 var DeleteUserFCMToken *gocqlx.Queryx
 var SelectUserFCMToken *gocqlx.Queryx
 
+var AddUserPendingRequest *gocqlx.Queryx
+var DeleteUserPendingRequest *gocqlx.Queryx
+var SelectUserPendingRequest *gocqlx.Queryx
+
+var AddUserFriend *gocqlx.Queryx
+var DeleteUserFriend *gocqlx.Queryx
+var SelectUserFriend *gocqlx.Queryx
+
+var ChatMessageMetadata = table.Metadata{
+	Name:    "yaroom.chat_messages",
+	Columns: []string{"exchange_id", "msgid", "fromuser", "touser", "msgtime", "content", "mediaid", "replyto", "es_query", "es_options"},
+	PartKey: []string{"exchange_id"},
+	SortKey: []string{"msgid"},
+}
+
+var GroupsMessageMetadata = table.Metadata{
+	Name:    "yaroom.groups_messages",
+	Columns: []string{"exchange_id", "msgid", "fromuser", "groupid", "msgtime", "content", "mediaid", "replyto", "es_query", "es_options"},
+	PartKey: []string{"exchange_id"},
+	SortKey: []string{"msgid"},
+}
+
+var RoomsMessageMetadata = table.Metadata{
+	Name:    "yaroom.rooms_messages",
+	Columns: []string{"exchange_id", "msgid", "fromuser", "roomid", "channelid", "msgtime", "content", "mediaid", "replyto", "es_query", "es_options"},
+	PartKey: []string{"exchange_id"},
+	SortKey: []string{"msgid"},
+}
+
+var ChatMessageTable *table.Table
+
+var RoomsMessageTable *table.Table
+
+var GroupsMessageTable *table.Table
+
+var InsertChatMessage *gocqlx.Queryx
+
+var InsertGroupsMessage *gocqlx.Queryx
+
+var InsertRoomsMessage *gocqlx.Queryx
+
+
 func setupDB() {
 	UserMetadataTable = table.New(UsersTableMetadata)
 	SelectUserMetadata = UserMetadataTable.SelectQuery(dbSession)
@@ -58,6 +100,14 @@ func setupDB() {
 
 	AddUserFCMToken = UserMetadataTable.UpdateBuilder().Add("tokens").Query(dbSession)
 	DeleteUserFCMToken = UserMetadataTable.UpdateBuilder().Remove("tokens").Query(dbSession)
+
+	AddUserPendingRequest = UserMetadataTable.UpdateBuilder().Add("pendinglist").Query(dbSession)
+	DeleteUserPendingRequest = UserMetadataTable.UpdateBuilder().Remove("pendinglist").Query(dbSession)
+	SelectUserPendingRequest = UserMetadataTable.SelectBuilder("pendinglist").Query(dbSession)
+
+	AddUserFriend = UserMetadataTable.UpdateBuilder().Add("friendslist").Query(dbSession)
+	DeleteUserFriend = UserMetadataTable.UpdateBuilder().Remove("friendslist").Query(dbSession)
+	SelectUserFriend = UserMetadataTable.SelectBuilder("friendslist").Query(dbSession)
 
 	ChatMessageTable = table.New(ChatMessageMetadata)
 	InsertChatMessage = ChatMessageTable.InsertQuery(dbSession)
@@ -94,6 +144,7 @@ type UserMetadata struct {
 	Tokens      []string
 	Groupslist  []string
 	Roomslist   []string
+	Pendinglist []string
 	Friendslist []string
 }
 
@@ -163,6 +214,92 @@ func getRoomMetadata(roomId string) (*RoomMetadata, error) {
 		return nil, errors.New("internal server error")
 	}
 	return rows[0], nil
+}
+
+type UserPendingListUpdate struct {
+	Userid      string
+	Pendinglist []string
+}
+
+func addUserPendingRequest(user *UserPendingListUpdate) error {
+	if q := AddUserPendingRequest.BindStruct(user); q.Err() != nil {
+		log.Error().Str("where", "add pending friend request").Str("type", "failed to bind struct").Msg(q.Err().Error())
+		return errors.New("internal server error")
+	}
+	if err := AddUserPendingRequest.Exec(); err != nil {
+		log.Error().Str("where", "add pending friend request").Str("type", "failed to execute query").Msg(err.Error())
+		return errors.New("internal server error")
+	}
+	return nil
+}
+
+func removeUserPendingRequest(userId *UserPendingListUpdate) error {
+	if q := DeleteUserPendingRequest.BindStruct(userId); q.Err() != nil {
+		log.Error().Str("where", "delete pending friend request").Str("type", "failed to bind struct").Msg(q.Err().Error())
+		return errors.New("internal server error")
+	}
+	if err := DeleteUserPendingRequest.Exec(); err != nil {
+		log.Error().Str("where", "delete pending friend request").Str("type", "failed to execute query").Msg(err.Error())
+		return errors.New("internal server error")
+	}
+	return nil
+}
+
+func selectUserPendingRequest(userId string) ([]UserPendingListUpdate, error) {
+	if q := SelectUserPendingRequest.BindMap(qb.M{"userid": userId}); q.Err() != nil {
+		log.Error().Str("where", "get user metadata").Str("type", "failed to bind struct").Msg(q.Err().Error())
+		return nil, errors.New("internal server error")
+	}
+	rows := make([]UserPendingListUpdate, 1)
+	if err := SelectUserPendingRequest.Select(&rows); err != nil {
+		log.Error().Str("where", "get user metadata").Str("type", "failed to execute query").Msg(err.Error())
+		return nil, errors.New("internal server error")
+	}
+	return rows, nil
+}
+
+// Gotta remove user id somehow
+type UserFriendListUpdate struct {
+	Userid string
+	// Username    string
+	Friendslist []string
+}
+
+func addUserFriend(user *UserFriendListUpdate) error {
+	if q := AddUserFriend.BindStruct(user); q.Err() != nil {
+		log.Error().Str("where", "add friend").Str("type", "failed to bind struct").Msg(q.Err().Error())
+		return errors.New("internal server error")
+	}
+	if err := AddUserFriend.Exec(); err != nil {
+		log.Error().Str("where", "add friend").Str("type", "failed to execute query").Msg(err.Error())
+		return errors.New("internal server error")
+	}
+	return nil
+}
+
+func removeUserFriend(user *UserFriendListUpdate) error {
+	if q := DeleteUserFriend.BindStruct(user); q.Err() != nil {
+		log.Error().Str("where", "delete friend").Str("type", "failed to bind struct").Msg(q.Err().Error())
+		return errors.New("internal server error")
+	}
+	if err := DeleteUserFriend.Exec(); err != nil {
+		log.Error().Str("where", "delete friend").Str("type", "failed to execute query").Msg(err.Error())
+		return errors.New("internal server error")
+	}
+	return nil
+}
+
+func selectUserFriend(userid string) ([]UserFriendListUpdate, error) {
+	if q := SelectUserFriend.BindMap(qb.M{"userid": userid}); q.Err() != nil {
+		log.Error().Str("where", "get friends list").Str("type", "failed to bind struct").Msg(q.Err().Error())
+		return nil, errors.New("internal server error")
+	}
+	rows := make([]UserFriendListUpdate, 1)
+	if err := SelectUserFriend.Select(&rows); err != nil {
+		log.Error().Str("where", "get friends list").Str("type", "failed to execute query").Msg(err.Error())
+		return nil, errors.New("internal server error")
+	}
+	return rows, nil
 }
 
 // TODO: Remove receiving name and image, backend should have it already

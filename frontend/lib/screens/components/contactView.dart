@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../utils/types.dart';
 
 class ViewContact extends StatelessWidget {
   final contactData;
@@ -48,10 +49,12 @@ class ViewContact extends StatelessWidget {
               Column(
                 children: [
                   IconButton(
-                    onPressed: () => {},
-                    icon: Icon(Icons.message),
-                    tooltip: "Message",
-                  ),
+                      onPressed: () => Navigator.of(context).pushNamed('/chat',
+                          arguments: ChatPageArguments(
+                              userId: this.contactData.userId,
+                              name: this.contactData.name,
+                              image: this.contactData.profileImg)),
+                      icon: Icon(Icons.message_rounded)),
                   Text("Message")
                 ],
               ),
