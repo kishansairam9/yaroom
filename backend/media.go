@@ -35,11 +35,34 @@ func mediaServerHandler(g *gin.Context) {
 	split_exchange_id := strings.Split(stat.Metadata["X-Amz-Meta-Key"][0], ":")
 	switch len(split_exchange_id) {
 	case 1:
-		// TODO: Handle rooms and groups here
-		g.AbortWithStatusJSON(400, gin.H{"error": "not yet implemented"})
+		userMeta, err := getUserMetadata(userId)
+		if err != nil {
+			log.Error().Str("where", "media metadata check").Str("type", "error occured in retrieving data").Msg(err.Error())
+			g.AbortWithStatusJSON(500, gin.H{"error": "internal server error"})
+			return
+		}
+		hasAccess := false
+		for _, group := range userMeta.Groupslist {
+			if split_exchange_id[0] == group {
+				hasAccess = true
+				break
+			}
+		}
+		if hasAccess {
+			break
+		}
+		for _, room := range userMeta.Roomslist {
+			if split_exchange_id[0] == room {
+				hasAccess = true
+				break
+			}
+		}
+		if hasAccess {
+			break
+		}
+		g.AbortWithStatusJSON(400, gin.H{"error": "user doesn't have access"})
 		return
 	case 2:
-		// TODO uncomment after securing ws route
 		if !(split_exchange_id[0] == userId || split_exchange_id[1] == userId) {
 			g.AbortWithStatusJSON(400, gin.H{"error": "user doesn't have access"})
 			return

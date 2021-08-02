@@ -3,6 +3,10 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
+import 'package:yaroom/utils/types.dart';
 
 class MsgBox extends StatefulWidget {
   final Function sendMessage;
@@ -20,7 +24,7 @@ class MsgBox extends StatefulWidget {
 class MsgBoxState extends State<MsgBox> {
   final inputController = TextEditingController();
   bool emojiShowing = false;
-
+  var media = new Map();
   @override
   void initState() {
     super.initState();
@@ -57,11 +61,41 @@ class MsgBoxState extends State<MsgBox> {
           TextPosition(offset: inputController.text.length));
   }
 
+  void _openFileExplorer() async {
+    FilePickerResult? _paths =
+        await FilePicker.platform.pickFiles(withData: true);
+    if (_paths != null) {
+      media['name'] = _paths.files.first.name;
+      media['bytes'] = _paths.files.first.bytes;
+
+      // Provider.of<FilePickerDetails>(context, listen: false)
+      //     .updateState(media, 1);
+      BlocProvider.of<FilePickerCubit>(context, listen: false)
+          .updateFilePicker(media: media, i: 1);
+    }
+    // Provider.of<FilePickerDetails>(context, listen: false).filesAttached = 1;
+  }
+
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: onBackPress,
       child: Column(
         children: [
+          // Provider.of<FilePickerDetails>(context, listen: false)
+          //             .getFilesAttached() !=
+          //         0
+          //     ? Text(Provider.of<FilePickerDetails>(context, listen: false)
+          //             .getFilesAttached()
+          //             .toString() +
+          //         " file attached")
+          //     : Container(),
+          BlocBuilder<FilePickerCubit, FilePickerDetails>(
+              builder: (context, state) {
+            if (state.filesAttached != 0) {
+              return Text(state.filesAttached.toString() + " file attached");
+            }
+            return Container();
+          }),
           Row(
             children: [
               IconButton(
@@ -97,11 +131,22 @@ class MsgBoxState extends State<MsgBox> {
                             widget.channelId == null ||
                                     widget.channelId!.isEmpty
                                 ? widget.sendMessage(
-                                    context: context, content: data.trim())
+                                    context: context,
+                                    content: data.trim(),
+                                    media: BlocProvider.of<FilePickerCubit>(
+                                            context,
+                                            listen: false)
+                                        .state
+                                        .media)
                                 : widget.sendMessage(
                                     context: context,
                                     content: data.trim(),
-                                    channelId: widget.channelId);
+                                    channelId: widget.channelId,
+                                    media: BlocProvider.of<FilePickerCubit>(
+                                            context,
+                                            listen: false)
+                                        .state
+                                        .media);
                           }
                         }
                       },
@@ -119,13 +164,30 @@ class MsgBoxState extends State<MsgBox> {
                           inputController.clear();
                           widget.channelId == null || widget.channelId!.isEmpty
                               ? widget.sendMessage(
-                                  context: context, content: data.trim())
+                                  context: context,
+                                  content: data.trim(),
+                                  media: BlocProvider.of<FilePickerCubit>(
+                                          context,
+                                          listen: false)
+                                      .state
+                                      .media)
                               : widget.sendMessage(
                                   context: context,
                                   content: data.trim(),
-                                  channelId: widget.channelId);
+                                  channelId: widget.channelId,
+                                  media: BlocProvider.of<FilePickerCubit>(
+                                          context,
+                                          listen: false)
+                                      .state
+                                      .media);
                         },
                         decoration: InputDecoration(
+                            suffixIcon: IconButton(
+                              icon: Icon(Icons.attach_file),
+                              onPressed: () {
+                                _openFileExplorer();
+                              },
+                            ),
                             border: OutlineInputBorder(),
                             hintText: 'Type a message'),
                       ))),
@@ -135,11 +197,20 @@ class MsgBoxState extends State<MsgBox> {
                     inputController.clear();
                     widget.channelId == null || widget.channelId!.isEmpty
                         ? widget.sendMessage(
-                            context: context, content: data.trim())
+                            context: context,
+                            content: data.trim(),
+                            media: BlocProvider.of<FilePickerCubit>(context,
+                                    listen: false)
+                                .state
+                                .media)
                         : widget.sendMessage(
                             context: context,
                             content: data.trim(),
-                            channelId: widget.channelId);
+                            channelId: widget.channelId,
+                            media: BlocProvider.of<FilePickerCubit>(context,
+                                    listen: false)
+                                .state
+                                .media);
                     ;
                   },
                   icon: Icon(Icons.send))

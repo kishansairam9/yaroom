@@ -3,6 +3,8 @@ import 'db.dart';
 Future<void> updateDb(AppDb db, Map<dynamic, dynamic> data) async {
   data['time'] = DateTime.parse(data['time']).toLocal();
   if (data['type'] == 'ChatMessage') {
+    print("data");
+    print(data);
     await db
         .insertMessage(
       msgId: data['msgId'],

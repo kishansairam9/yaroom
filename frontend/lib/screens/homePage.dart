@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:bottom_navy_bar/bottom_navy_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:yaroom/blocs/rooms.dart';
+import 'package:yaroom/blocs/fcmToken.dart';
+import 'package:yaroom/screens/components/contactView.dart';
 import 'package:yaroom/utils/guidePages.dart';
 import 'package:yaroom/utils/messageExchange.dart';
 import 'package:yaroom/utils/types.dart';
@@ -12,6 +14,7 @@ import './rooms/room.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import './components/roomsList.dart';
 import '../utils/authorizationService.dart';
+import '../utils/fcmToken.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import '../screens/components/friendsView.dart';
 
@@ -47,6 +50,7 @@ class HomePage extends StatefulWidget {
 class HomePageState extends State<HomePage> {
   late int currentIndex;
   late PageController _pageController;
+  final GlobalKey<ScaffoldState> _scaffoldkey = new GlobalKey();
 
   HomePageState({required this.currentIndex});
 
@@ -126,38 +130,132 @@ class HomePageState extends State<HomePage> {
   AppBar _getRoomAppBar(
       BuildContext context, String roomId, String? channelId) {
     return AppBar(
-        titleSpacing: 0,
-        leading: FutureBuilder(
-          future: RepositoryProvider.of<AppDb>(context)
-              .getRoomDetails(roomId: roomId)
-              .get(),
-          builder: (BuildContext context,
-              AsyncSnapshot<List<RoomsListData>> snapshot) {
-            if (snapshot.hasData) {
-              return IconButton(
-                  icon: CircleAvatar(
-                    backgroundColor: Colors.grey[350],
-                    foregroundImage: snapshot.data![0].roomIcon == null
-                        ? null
-                        : NetworkImage('${snapshot.data![0].roomIcon!}'),
-                    backgroundImage: AssetImage('assets/no-profile.png'),
-                  ),
-                  onPressed: () => Scaffold.of(context).openDrawer());
-            }
+      titleSpacing: 0,
+      leading: FutureBuilder(
+        future: RepositoryProvider.of<AppDb>(context)
+            .getRoomDetails(roomId: roomId)
+            .get(),
+        builder: (BuildContext context,
+            AsyncSnapshot<List<RoomsListData>> snapshot) {
+          if (snapshot.hasData) {
             return IconButton(
-                onPressed: () => Scaffold.of(context).openDrawer(),
-                icon: Icon(Icons.list));
-          },
-        ),
-        title: channelId == null
-            ? Text("Pick a channel")
-            : _getRoomTitle(context, roomId, channelId));
+                icon: CircleAvatar(
+                  backgroundColor: Colors.grey[350],
+                  foregroundImage: snapshot.data![0].roomIcon == null
+                      ? null
+                      : NetworkImage('${snapshot.data![0].roomIcon!}'),
+                  backgroundImage: AssetImage('assets/no-profile.png'),
+                ),
+                onPressed: () => Scaffold.of(context).openDrawer());
+          }
+          return IconButton(
+              onPressed: () => Scaffold.of(context).openDrawer(),
+              icon: Icon(Icons.list));
+        },
+      ),
+      title: channelId == null
+          ? Text("Pick a channel")
+          : _getRoomTitle(context, roomId, channelId),
+      actions: <Widget>[
+        IconButton(
+          onPressed: () => {_scaffoldkey.currentState!.openEndDrawer()},
+          icon: Icon(Icons.more_vert),
+          tooltip: 'More',
+        )
+      ],
+    );
+  }
+
+  _getEndDrawer(
+    BuildContext context,
+  ) {
+    return FutureBuilder(
+        future: RepositoryProvider.of<AppDb>(context)
+            .getRoomMembers(roomID: widget.roomId!)
+            .get(),
+        builder: (BuildContext context,
+            AsyncSnapshot<List<User>> roomMembersSnapshot) {
+          if (roomMembersSnapshot.hasData) {
+            return Drawer(
+              child: ListView(padding: EdgeInsets.zero, children: [
+                DrawerHeader(
+                    child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                      ListTile(
+                        tileColor: Colors.transparent,
+                        title: Text(widget.roomName!,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 20)),
+                      ),
+                      Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            Column(
+                              children: [
+                                IconButton(
+                                    onPressed: () => {},
+                                    tooltip: "Pinned Messages",
+                                    icon: Icon(Icons.push_pin)),
+                                Text("Pins")
+                              ],
+                            ),
+                            Column(
+                              children: [
+                                IconButton(
+                                    onPressed: () => {},
+                                    tooltip: "Search",
+                                    icon: Icon(Icons.search)),
+                                Text("Search")
+                              ],
+                            )
+                          ])
+                    ])),
+                ...roomMembersSnapshot.data!.map((User e) => ListTile(
+                    onTap: () => showModalBottomSheet(
+                        context: context,
+                        builder: (BuildContext c) {
+                          return ViewContact(e);
+                        }),
+                    tileColor: Colors.transparent,
+                    leading: Stack(
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: Colors.grey[350],
+                          foregroundImage: NetworkImage('${e.profileImg}'),
+                          backgroundImage: AssetImage('assets/no-profile.png'),
+                        ),
+                        Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                                width: 15,
+                                height: 15,
+                                decoration: new BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                )))
+                      ],
+                    ),
+                    title: Text(
+                      e.name,
+                    )))
+              ]),
+            );
+          } else if (roomMembersSnapshot.hasError) {
+            print(roomMembersSnapshot.error);
+            return SnackBar(
+                content: Text('Error has occured while reading from local DB'));
+          }
+          return CircularProgressIndicator();
+        });
   }
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
+        key: _scaffoldkey,
         appBar: currentIndex == 0
             ? (PreferredSize(
                 child: BlocBuilder<RoomsCubit, RoomsState>(
@@ -183,12 +281,25 @@ class HomePageState extends State<HomePage> {
                   Builder(
                     builder: (context) => IconButton(
                       onPressed: () async {
-                        await Provider.of<AuthorizationService>(context,
-                                listen: false)
-                            .logout(context);
+                        // Invalidate fcm token
+                        final String? accessToken =
+                            await Provider.of<AuthorizationService>(context,
+                                    listen: false)
+                                .getValidAccessToken();
+                        await invalidateFCMToken(
+                            BlocProvider.of<FcmTokenCubit>(context,
+                                listen: false),
+                            accessToken!);
+                        // Close websocket
                         Provider.of<MessageExchangeStream>(context,
                                 listen: false)
                             .close();
+
+                        // Logout
+                        await Provider.of<AuthorizationService>(context,
+                                listen: false)
+                            .logout(context);
+
                         await Navigator.of(context)
                             .pushNamedAndRemoveUntil('/signin', (_) => false);
                       },
@@ -203,17 +314,21 @@ class HomePageState extends State<HomePage> {
             ? Drawer(
                 child: Row(
                   children: [
-                    RoomListView(),
-                    (widget.roomId == null
-                        ? SelectRoomPage()
-                        : ChannelsView(
-                            roomName: widget.roomName!,
-                            roomId: widget.roomId!,
-                          )),
+                    Expanded(flex: 15, child: RoomListView()),
+                    Expanded(
+                      flex: 90,
+                      child: (widget.roomId == null
+                          ? SelectRoomPage()
+                          : ChannelsView(
+                              roomName: widget.roomName!,
+                              roomId: widget.roomId!,
+                            )),
+                    ),
                   ],
                 ),
               )
             : null,
+        endDrawer: currentIndex == 0 ? _getEndDrawer(context) : null,
         body: SizedBox.expand(
           child: PageView(
             controller: _pageController,

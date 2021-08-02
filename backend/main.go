@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -14,27 +15,31 @@ import (
 	"github.com/gocql/gocql"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
+	"github.com/nats-io/nats.go"
 	"github.com/rs/zerolog/log"
 	"github.com/scylladb/gocqlx/v2"
-	"github.com/streadway/amqp"
 )
 
-var rmqConn *amqp.Connection
 var dbSession gocqlx.Session
 var minioClient *minio.Client
 var fcmClient *fcm.Client
+var jsContext nats.JetStreamContext
 
 const miniobucket = "yaroom-test"
 
 func main() {
 	var err error
-	// Rabbit mq
+	// Jet stream
 	{
-		rmqConn, err = amqp.Dial("amqp://guest:guest@localhost:5672/")
+		nc, err := nats.Connect("localhost:4222")
 		if err != nil {
-			log.Fatal().Str("where", "amqp dial").Str("type", "failed to connect to rabbit mq").Msg(err.Error())
+			log.Fatal().Str("where", "nats connect").Str("type", "failed to connect to nats").Msg(err.Error())
 		}
-		defer rmqConn.Close()
+		defer nc.Close()
+		jsContext, err = nc.JetStream()
+		if err != nil {
+			log.Fatal().Str("where", "nats jetstream").Str("type", "failed to create jet stream context").Msg(err.Error())
+		}
 	}
 
 	// Database
@@ -99,8 +104,12 @@ func main() {
 		// Web socket
 		secured.GET("/ws", wsHandler)
 
-		// FCM Token Update
-		secured.POST("/fcmToken", fcmTokenHandler)
+		// Media handler
+		secured.GET("/media/:objectid", mediaServerHandler)
+
+		// FCM Token
+		secured.POST("/fcmTokenUpdate", fcmTokenUpdateHandler)
+		secured.POST("/fcmTokenInvalidate", fcmTokenInvalidateHandler)
 	}
 
 	// Testing routes. Take user id from url (instead of jwt)
@@ -122,6 +131,37 @@ func main() {
 		// Media handler
 		testing.GET("/media/:objectid", mediaServerHandler)
 
+		// Send active status
+		testing.POST("/status", func(g *gin.Context) {
+			var status testingActiveStatus
+			if err := g.BindJSON(&status); err != nil {
+				log.Info().Str("where", "bind json").Str("type", "failed to parse body to json").Msg(err.Error())
+				return
+			}
+
+			rawUserId, _ := g.Get("userId")
+			userId := rawUserId.(string)
+			if userId != status.UserId {
+				g.AbortWithStatusJSON(400, gin.H{"error": "Request sender and msg fromUser don't match"})
+				return
+			}
+
+			stream := []string{fmt.Sprintf("USER:%v", userId)}
+			if err = ensureActiveStatusStreamsExist(stream); err != nil {
+				log.Error().Str("where", "ensure stream").Str("type", "failed to ensure stream exists").Msg(err.Error())
+				g.AbortWithStatusJSON(500, gin.H{"error": "internal server error"})
+				return
+			}
+			fmt.Printf("Published %v to %v\n", fmt.Sprintf("%v:%v", userId, status.Active), stream[0])
+			_, err = jsContext.Publish(stream[0], []byte(fmt.Sprintf("%v:%v", userId, status.Active)))
+			if err != nil {
+				log.Error().Str("where", "active send to user").Str("type", "failed to send activity status").Msg(err.Error())
+				g.AbortWithStatusJSON(500, gin.H{"error": "internal server error"})
+				return
+			}
+		})
+
+		// Message handler
 		testing.POST("/addMessage", func(g *gin.Context) {
 			var msg WSMessage
 			if err := g.BindJSON(&msg); err != nil {
@@ -147,10 +187,9 @@ func main() {
 			}
 			if err = sendMessageNotification(msg.ToUser, msg); err != nil {
 				log.Error().Str("where", "fcm send to user").Str("type", "failed to send push notification").Msg(err.Error())
+				g.AbortWithStatusJSON(500, gin.H{"error": "internal server error"})
+				return
 			}
-			// if err = msgQueueSendToUser(msg.ToUser, msg); err != nil {
-			// 	log.Error().Str("where", "msgQueue send to user").Str("type", "failed to write to user queue").Msg(err.Error())
-			// }
 			g.JSON(200, msg)
 		})
 	}

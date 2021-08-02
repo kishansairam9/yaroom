@@ -11,6 +11,8 @@ import 'fakegen.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'utils/types.dart';
+import 'utils/activeStatus.dart';
+import 'utils/fcmToken.dart';
 import 'utils/messageExchange.dart';
 import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -62,7 +64,7 @@ Future<void> main() async {
         : await getTemporaryDirectory(),
   );
 
-  final removeExistingDB = false;
+  final removeExistingDB = true;
   AppDb db = constructDb(logStatements: true, removeExisting: removeExistingDB);
 
   var msgStream = MessageExchangeStream();
@@ -70,6 +72,10 @@ Future<void> main() async {
     var data = jsonDecode(encodedData) as Map;
     if (data.containsKey('error')) {
       print("WS stream returned error ${data['error']}");
+      return;
+    } else if (data.containsKey('active')) {
+      print(
+          "Active status recieved for ${data['userId']} as ${data['active']}");
       return;
     }
     await updateDb(db, data);
@@ -86,14 +92,13 @@ Future<void> main() async {
       SecureStorageService(secureStorage);
 
   if (removeExistingDB) {
-    fakeInsert(db, "0");
+    fakeInsert(db, "5baa6f0d-0705-4740-b4a1-ae1b44bbd10b");
   }
 
   runApp(MyApp(db, msgStream, secureStorageService, fcmTokenCubit));
 }
 
 class MyApp extends StatelessWidget {
-  final _contentRouter = ContentRouter();
   late final AppDb db;
   late final MessageExchangeStream msgExchangeStream;
   late final SecureStorageService secureStorageService;
@@ -146,6 +151,10 @@ class MyApp extends StatelessWidget {
         RepositoryProvider<AppDb>.value(value: db),
         Provider<MessageExchangeStream>.value(value: msgExchangeStream),
         BlocProvider<FcmTokenCubit>.value(value: fcmTokenCubit),
+        BlocProvider(create: (context) {
+          return FilePickerCubit(
+              initialState: FilePickerDetails(media: Map(), filesAttached: 0)); 
+        })
       ],
       child: Builder(
         builder: (context) {
@@ -153,29 +162,71 @@ class MyApp extends StatelessWidget {
             future: getInitialRoute(context),
             builder: (context, snapshot) {
               if (snapshot.hasData) {
-                return MaterialApp(
-                  initialRoute: snapshot.data!,
-                  debugShowCheckedModeBanner: false,
-                  title: 'yaroom',
-                  theme: ThemeData(
-                    brightness: Brightness.light,
-                    primaryColor: Colors.blueGrey[600],
-                    accentColor: Colors.grey[300],
-                  ),
-                  darkTheme: ThemeData(
-                    brightness: Brightness.dark,
-                    primaryColor: Colors.blueGrey[600],
-                    accentColor: Colors.black38,
-                  ),
-                  themeMode: ThemeMode.dark,
-                  onGenerateRoute: _contentRouter.onGenerateRoute,
-                );
+                return MaterialAppWrapper(
+                    initialRoute: snapshot.data!, ws: msgExchangeStream);
               }
               return CircularProgressIndicator();
             },
           );
         },
       ),
+    );
+  }
+}
+
+class MaterialAppWrapper extends StatefulWidget {
+  late final String initialRoute;
+  late final ActiveStatusNotifier activityNotify;
+  MaterialAppWrapper({required this.initialRoute, required ws}) {
+    this.activityNotify = ActiveStatusNotifier(ws: ws);
+  }
+
+  @override
+  _MaterialAppWrapperState createState() => _MaterialAppWrapperState();
+}
+
+class _MaterialAppWrapperState extends State<MaterialAppWrapper>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance?.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance?.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      widget.activityNotify.start();
+    } else {
+      widget.activityNotify.stop();
+    }
+  }
+
+  final _contentRouter = ContentRouter();
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      initialRoute: widget.initialRoute,
+      debugShowCheckedModeBanner: false,
+      title: 'yaroom',
+      theme: ThemeData(
+        brightness: Brightness.light,
+        primaryColor: Colors.blueGrey[600],
+        accentColor: Colors.grey[300],
+      ),
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        primaryColor: Colors.blueGrey[600],
+        accentColor: Colors.black38,
+      ),
+      themeMode: ThemeMode.dark,
+      onGenerateRoute: _contentRouter.onGenerateRoute,
     );
   }
 }
