@@ -53,40 +53,6 @@ var AddUserFriend *gocqlx.Queryx
 var DeleteUserFriend *gocqlx.Queryx
 var SelectUserFriend *gocqlx.Queryx
 
-var ChatMessageMetadata = table.Metadata{
-	Name:    "yaroom.chat_messages",
-	Columns: []string{"exchange_id", "msgid", "fromuser", "touser", "msgtime", "content", "mediaid", "replyto", "es_query", "es_options"},
-	PartKey: []string{"exchange_id"},
-	SortKey: []string{"msgid"},
-}
-
-var GroupsMessageMetadata = table.Metadata{
-	Name:    "yaroom.groups_messages",
-	Columns: []string{"exchange_id", "msgid", "fromuser", "groupid", "msgtime", "content", "mediaid", "replyto", "es_query", "es_options"},
-	PartKey: []string{"exchange_id"},
-	SortKey: []string{"msgid"},
-}
-
-var RoomsMessageMetadata = table.Metadata{
-	Name:    "yaroom.rooms_messages",
-	Columns: []string{"exchange_id", "msgid", "fromuser", "roomid", "channelid", "msgtime", "content", "mediaid", "replyto", "es_query", "es_options"},
-	PartKey: []string{"exchange_id"},
-	SortKey: []string{"msgid"},
-}
-
-var ChatMessageTable *table.Table
-
-var RoomsMessageTable *table.Table
-
-var GroupsMessageTable *table.Table
-
-var InsertChatMessage *gocqlx.Queryx
-
-var InsertGroupsMessage *gocqlx.Queryx
-
-var InsertRoomsMessage *gocqlx.Queryx
-
-
 func setupDB() {
 	UserMetadataTable = table.New(UsersTableMetadata)
 	SelectUserMetadata = UserMetadataTable.SelectQuery(dbSession)
