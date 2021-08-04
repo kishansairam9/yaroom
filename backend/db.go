@@ -17,13 +17,13 @@ var UsersTableMetadata = table.Metadata{
 	PartKey: []string{"userid"},
 }
 
-var GroupsTableMetadata = table.Metadata{
+var GroupTableMetadata = table.Metadata{
 	Name:    "yaroom.groups",
 	Columns: []string{"groupid", "name", "image", "description", "userslist"},
 	PartKey: []string{"groupid"},
 }
 
-var RoomsTableMetadata = table.Metadata{
+var RoomTableMetadata = table.Metadata{
 	Name:    "yaroom.rooms",
 	Columns: []string{"rooomid", "name", "image", "description", "userslist", "channelslist"},
 	PartKey: []string{"roomid"},
@@ -58,10 +58,10 @@ func setupDB() {
 	SelectUserMetadata = UserMetadataTable.SelectQuery(dbSession)
 	UpdateUserMetadata = UserMetadataTable.UpdateQuery(dbSession)
 
-	GroupMetadataTable = table.New(GroupsTableMetadata)
+	GroupMetadataTable = table.New(GroupTableMetadata)
 	SelectGroupMetadata = GroupMetadataTable.SelectQuery(dbSession)
 
-	RoomMetadataTable = table.New(RoomsTableMetadata)
+	RoomMetadataTable = table.New(RoomTableMetadata)
 	SelectRoomMetadata = RoomMetadataTable.SelectQuery(dbSession)
 
 	AddUserFCMToken = UserMetadataTable.UpdateBuilder().Add("tokens").Query(dbSession)
@@ -77,10 +77,10 @@ func setupDB() {
 
 	ChatMessageTable = table.New(ChatMessageMetadata)
 	InsertChatMessage = ChatMessageTable.InsertQuery(dbSession)
-	GroupsMessageTable = table.New(GroupsMessageMetadata)
-	InsertGroupsMessage = GroupsMessageTable.InsertQuery(dbSession)
-	RoomsMessageTable = table.New(RoomsMessageMetadata)
-	InsertRoomsMessage = RoomsMessageTable.InsertQuery(dbSession)
+	GroupMessageTable = table.New(GroupMessageMetadata)
+	InsertGroupMessage = GroupMessageTable.InsertQuery(dbSession)
+	RoomMessageTable = table.New(RoomMessageMetadata)
+	InsertRoomMessage = RoomMessageTable.InsertQuery(dbSession)
 }
 
 type User_udt struct {

@@ -92,7 +92,7 @@ Future<void> main() async {
       SecureStorageService(secureStorage);
 
   if (removeExistingDB) {
-    fakeInsert(db, "5baa6f0d-0705-4740-b4a1-ae1b44bbd10b");
+    fakeInsert(db, "ef8a936c-888f-4863-8d30-8a62c7c20c29");
   }
 
   runApp(MyApp(db, msgStream, secureStorageService, fcmTokenCubit));
@@ -153,7 +153,7 @@ class MyApp extends StatelessWidget {
         BlocProvider<FcmTokenCubit>.value(value: fcmTokenCubit),
         BlocProvider(create: (context) {
           return FilePickerCubit(
-              initialState: FilePickerDetails(media: Map(), filesAttached: 0)); 
+              initialState: FilePickerDetails(media: Map(), filesAttached: 0));
         })
       ],
       child: Builder(

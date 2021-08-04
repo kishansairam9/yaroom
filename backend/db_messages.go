@@ -22,14 +22,14 @@ var ChatMessageMetadata = table.Metadata{
 	SortKey: []string{"msgid"},
 }
 
-var GroupsMessageMetadata = table.Metadata{
+var GroupMessageMetadata = table.Metadata{
 	Name:    "yaroom.group_messages",
 	Columns: []string{"exchange_id", "msgid", "fromuser", "groupid", "msgtime", "content", "mediaid", "replyto", "es_query", "es_options"},
 	PartKey: []string{"exchange_id"},
 	SortKey: []string{"msgid"},
 }
 
-var RoomsMessageMetadata = table.Metadata{
+var RoomMessageMetadata = table.Metadata{
 	Name:    "yaroom.room_messages",
 	Columns: []string{"exchange_id", "msgid", "fromuser", "roomid", "channelid", "msgtime", "content", "mediaid", "replyto", "es_query", "es_options"},
 	PartKey: []string{"exchange_id"},
@@ -38,15 +38,19 @@ var RoomsMessageMetadata = table.Metadata{
 
 var ChatMessageTable *table.Table
 
-var RoomsMessageTable *table.Table
+var RoomMessageTable *table.Table
 
-var GroupsMessageTable *table.Table
+var GroupMessageTable *table.Table
 
 var InsertChatMessage *gocqlx.Queryx
 
-var InsertGroupsMessage *gocqlx.Queryx
+var InsertGroupMessage *gocqlx.Queryx
 
-var InsertRoomsMessage *gocqlx.Queryx
+var InsertRoomMessage *gocqlx.Queryx
+
+var GetLaterChatMessages *gocqlx.Queryx
+
+var GetLaterGroupMessages *gocqlx.Queryx
 
 type ChatMessage struct {
 	Exchange_id string    `json:"exchange_id,omitempty"`
@@ -61,7 +65,7 @@ type ChatMessage struct {
 	Es_options  string    `json:"es_options,omitempty"`
 }
 
-type GroupsMessage struct {
+type GroupMessage struct {
 	Exchange_id string    `json:"exchange_id,omitempty"`
 	Msgid       string    `json:"msgId,omitempty"`
 	Fromuser    string    `json:"fromUser"`
@@ -74,7 +78,7 @@ type GroupsMessage struct {
 	Es_options  string    `json:"es_options,omitempty"`
 }
 
-type RoomsMessage struct {
+type RoomMessage struct {
 	Exchange_id string    `json:"exchange_id,omitempty"`
 	Msgid       string    `json:"msgId,omitempty"`
 	Fromuser    string    `json:"fromUser"`
@@ -94,11 +98,11 @@ func getExchangeId(msg *WSMessage) (string, error) {
 		uids := []string{msg.FromUser, msg.ToUser}
 		sort.Strings(uids)
 		return uids[0] + ":" + uids[1], nil
-	case "GroupsMessage":
+	case "GroupMessage":
 		uids := []string{msg.GroupId}
 		sort.Strings(uids)
 		return uids[0], nil
-	case "RoomsMessage":
+	case "RoomMessage":
 		uids := []string{msg.RoomId}
 		sort.Strings(uids)
 		return uids[0], nil
@@ -155,35 +159,35 @@ func addMessage(msg *WSMessage) error {
 			log.Error().Str("where", "insert chat message").Str("type", "failed to execute query").Msg(err.Error())
 			return errors.New("internal server error")
 		}
-	case "GroupsMessage":
-		var data GroupsMessage
+	case "GroupMessage":
+		var data GroupMessage
 		if err := json.Unmarshal(jsonBytes, &data); err != nil {
 			return err
 		}
 		data.Exchange_id = exchange_id
 		data.Msgid = msgId
 		data.Msgtime = time.Now()
-		if q := InsertGroupsMessage.BindStruct(data); q.Err() != nil {
+		if q := InsertGroupMessage.BindStruct(data); q.Err() != nil {
 			log.Error().Str("where", "insert chat message").Str("type", "failed to bind struct").Msg(q.Err().Error())
 			return errors.New("internal server error")
 		}
-		if err := InsertGroupsMessage.Exec(); err != nil {
+		if err := InsertGroupMessage.Exec(); err != nil {
 			log.Error().Str("where", "insert groups message").Str("type", "failed to execute query").Msg(err.Error())
 			return errors.New("internal server error")
 		}
-	case "RoomsMessage":
-		var data RoomsMessage
+	case "RoomMessage":
+		var data RoomMessage
 		if err := json.Unmarshal(jsonBytes, &data); err != nil {
 			return err
 		}
 		data.Exchange_id = exchange_id
 		data.Msgid = msgId
 		data.Msgtime = time.Now()
-		if q := InsertRoomsMessage.BindStruct(data); q.Err() != nil {
+		if q := InsertRoomMessage.BindStruct(data); q.Err() != nil {
 			log.Error().Str("where", "insert rooms message").Str("type", "failed to bind struct").Msg(q.Err().Error())
 			return errors.New("internal server error")
 		}
-		if err := InsertRoomsMessage.Exec(); err != nil {
+		if err := InsertRoomMessage.Exec(); err != nil {
 			log.Error().Str("where", "insert rooms message").Str("type", "failed to execute query").Msg(err.Error())
 			return errors.New("internal server error")
 		}

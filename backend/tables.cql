@@ -62,8 +62,8 @@ CREATE TABLE yaroom.rooms (
 -- `exchange_id design` -> needs to be deterministic, shouldn't depend on who is sending message
 -- STICK TO THIS, MEDIA ACCESS CONTROLS ALSO DEPENDS ON THIS
 -- DMs -> sort user ids and u1 < u2 => exchange_id = `u1:u2`
--- Groups -> exchange_id = `groupdId` 
--- Rooms -> exchange_id = `roomId` 
+-- Group -> exchange_id = `groupdId` 
+-- Room -> exchange_id = `roomId` 
 
 CREATE TABLE yaroom.chat_messages (
     exchange_id text,
