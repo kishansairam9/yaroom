@@ -6,11 +6,14 @@ import (
 	"encoding/json"
 	"errors"
 	"sort"
+	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/minio/minio-go/v7"
 	"github.com/rs/xid"
 	"github.com/rs/zerolog/log"
+	"github.com/scylladb/gocqlx/qb"
 	"github.com/scylladb/gocqlx/v2"
 	"github.com/scylladb/gocqlx/v2/table"
 )
@@ -48,9 +51,21 @@ var InsertGroupMessage *gocqlx.Queryx
 
 var InsertRoomMessage *gocqlx.Queryx
 
-var GetLaterChatMessages *gocqlx.Queryx
-
-var GetLaterGroupMessages *gocqlx.Queryx
+type DBMessage struct {
+	Exchange_id string    `json:"exchange_id,omitempty"`
+	Msgid       string    `json:"msgId,omitempty"`
+	Fromuser    string    `json:"fromUser"`
+	Touser      string    `json:"toUser"`
+	Groupid     string    `json:"groupId"`
+	Roomid      string    `json:"roomId"`
+	Channelid   string    `json:"channelId"`
+	Msgtime     time.Time `json:"time"`
+	Content     *string   `json:"content,omitempty"`
+	Mediaid     *string   `json:"media,omitempty"`
+	Replyto     *string   `json:"replyTo,omitempty"`
+	Es_query    string    `json:"es_query,omitempty"`
+	Es_options  string    `json:"es_options,omitempty"`
+}
 
 type ChatMessage struct {
 	Exchange_id string    `json:"exchange_id,omitempty"`
@@ -82,8 +97,8 @@ type RoomMessage struct {
 	Exchange_id string    `json:"exchange_id,omitempty"`
 	Msgid       string    `json:"msgId,omitempty"`
 	Fromuser    string    `json:"fromUser"`
-	Roomid      string    `json:"roomid"`
-	Channelid   string    `json:"channelid"`
+	Roomid      string    `json:"roomId"`
+	Channelid   string    `json:"channelId"`
 	Msgtime     time.Time `json:"time"`
 	Content     *string   `json:"content,omitempty"`
 	Mediaid     *string   `json:"media,omitempty"`
@@ -99,13 +114,9 @@ func getExchangeId(msg *WSMessage) (string, error) {
 		sort.Strings(uids)
 		return uids[0] + ":" + uids[1], nil
 	case "GroupMessage":
-		uids := []string{msg.GroupId}
-		sort.Strings(uids)
-		return uids[0], nil
+		return msg.GroupId, nil
 	case "RoomMessage":
-		uids := []string{msg.RoomId}
-		sort.Strings(uids)
-		return uids[0], nil
+		return msg.RoomId, nil
 	default:
 		return "", errors.New("unknown message type")
 	}
@@ -222,4 +233,86 @@ func dbInsertRoutine(inChannel <-chan interface{}, outChannel chan<- interface{}
 			return
 		}
 	}
+}
+
+func getMessageHandler(g *gin.Context) {
+	var req getMessages
+	if err := g.BindJSON(&req); err != nil {
+		log.Info().Str("where", "bind json").Str("type", "failed to parse body to json").Msg(err.Error())
+		return
+	}
+
+	rawUserId, exists := g.Get("userId")
+	if !exists {
+		g.AbortWithStatusJSON(400, gin.H{"error": "user not authenticated"})
+		return
+	}
+	userId := rawUserId.(string)
+
+	if req.LastMsgId == "null" {
+		req.LastMsgId = "0"
+	}
+
+	msgs, err := getLaterMessages(userId, req.LastMsgId)
+	if err != nil {
+		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	g.JSON(200, msgs)
+}
+
+func getLaterMessages(userId, lastMsgId string) ([]DBMessage, error) {
+	userId = "'" + userId + "'"
+	lastMsgId = "'" + lastMsgId + "'"
+	userMeta, err := getUserMetadata(userId)
+	if err != nil {
+		log.Error().Str("where", "get later messages").Str("type", "error occured in retrieving user metadata").Msg(err.Error())
+		return nil, err
+	}
+	groups := make([]string, 0)
+	rooms := make([]string, 0)
+	// TODO: FIX THIS, userMeta can't be nil, added for testing checks
+	if userMeta != nil {
+		for _, group := range userMeta.Groupslist {
+			groups = append(groups, "'"+group+"'")
+		}
+		for _, room := range userMeta.Roomslist {
+			rooms = append(rooms, "'"+room+"'")
+
+		}
+	}
+
+	var chatfrom []DBMessage
+	q := dbSession.Query(qb.Select("yaroom.chat_messages").Where(qb.GtLit("msgid", lastMsgId)).Where(qb.EqLit("fromuser", userId)).AllowFiltering().ToCql())
+	if err := q.SelectRelease(&chatfrom); err != nil {
+		return nil, err
+	}
+	var chatto []DBMessage
+	q = dbSession.Query(qb.Select("yaroom.chat_messages").Columns("fromuser", "touser", "msgid").Where(qb.GtLit("msgid", lastMsgId)).Where(qb.EqLit("touser", userId)).AllowFiltering().ToCql())
+	if err := q.SelectRelease(&chatto); err != nil {
+		return nil, err
+	}
+
+	var groupchat []DBMessage
+	if len(groups) > 0 {
+		q = dbSession.Query(qb.Select("yaroom.group_messages").Columns("exchange_id").Where(qb.GtLit("msgid", lastMsgId)).Where(qb.InLit("exchange_id", "("+strings.Join(groups, ",")+")")).AllowFiltering().ToCql())
+		if err := q.SelectRelease(&groupchat); err != nil {
+			return nil, err
+		}
+	}
+
+	var roomchat []DBMessage
+	if len(rooms) > 0 {
+		q = dbSession.Query(qb.Select("yaroom.room_messages").Columns("exchange_id").Where(qb.GtLit("msgid", lastMsgId)).Where(qb.InLit("exchange_id", "("+strings.Join(rooms, ",")+")")).AllowFiltering().ToCql())
+		if err := q.SelectRelease(&roomchat); err != nil {
+			return nil, err
+		}
+	}
+
+	all := make([]DBMessage, 0)
+	all = append(all, chatfrom...)
+	all = append(all, chatto...)
+	all = append(all, groupchat...)
+	all = append(all, roomchat...)
+	return all, nil
 }

@@ -21,7 +21,6 @@ CREATE TABLE yaroom.users (
     groupslist set<text>,
     roomslist set<text>,
     pendinglist set<text>,
-    friendslist set<text>,
     PRIMARY KEY (userid),
 );
 
@@ -110,7 +109,8 @@ CREATE TABLE yaroom.room_messages (
 
 CREATE INDEX chat_messages_from_index ON yaroom.chat_messages (fromuser);
 CREATE INDEX chat_messages_to_index ON yaroom.chat_messages (touser);
-CREATE INDEX group_messages_index ON yaroom.group_messages (groupid);
-CREATE INDEX room_messages_room_index ON yaroom.room_messages (roomid);
+-- group id and room id don't need indexes, the exchange id itself is same, which being primary key is already indexed
+-- CREATE INDEX group_messages_index ON yaroom.group_messages (groupid);
+-- CREATE INDEX room_messages_room_index ON yaroom.room_messages (roomid);
 CREATE INDEX room_messages_channel_index ON yaroom.room_messages (channelid);
 

@@ -13,6 +13,10 @@ type mediaRequest struct {
 	ObjectId string `uri:"objectid" binding:"required"`
 }
 
+type getMessages struct {
+	LastMsgId string `json:"lastMsgId"`
+}
+
 // TODO: Remove receiving name and image, backend should have it alread
 type fcmTokenUpdate struct {
 	Name  string `json:"name"`
