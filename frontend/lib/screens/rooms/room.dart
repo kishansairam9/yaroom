@@ -20,7 +20,7 @@ class Room extends StatefulWidget {
 
 class RoomState extends State<Room> {
   //  Current State of InnerDrawerState
-  late final webSocketSubscription;
+  late var webSocketSubscription;
 
   @override
   void initState() {
@@ -371,6 +371,16 @@ class RoomState extends State<Room> {
         .updateFilePicker(media: Map(), i: 0);
   }
 
+  Widget getSelectChannelPage() {
+    webSocketSubscription =
+        Provider.of<MessageExchangeStream>(context, listen: false)
+            .stream
+            .where((_) {
+      return false;
+    }).listen((_) { });
+    return SelectChannelPage();
+  }
+
   Widget _buildMessagesView(List<RoomsMessage> msgs, String channelId) {
     msgs = msgs.where((element) => element.channelId == channelId).toList();
     return Expanded(
@@ -407,7 +417,7 @@ class RoomState extends State<Room> {
   @override
   Widget build(BuildContext context) {
     return widget.channelId == null
-        ? SelectChannelPage()
+        ? getSelectChannelPage()
         : FutureBuilder(
             future: RepositoryProvider.of<AppDb>(context)
                 .getRoomMembers(roomID: widget.roomId)
@@ -488,6 +498,7 @@ class RoomState extends State<Room> {
                                   ]);
                             }));
                       }
+
                       return CircularProgressIndicator();
                     });
               } else if (roomMembersSnapshot.hasError) {

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"sort"
 	"strings"
 	"time"
@@ -135,7 +136,10 @@ func addMessage(msg *WSMessage) error {
 			return errors.New("invalid media file, check non empty name, bytes > 0")
 		}
 		// TODO: COMPRESS AND STORE TO SAVE STORAGE SPACE (LATER)
+		fmt.Printf("%v", msg.MediaData)
+		
 		mediaBytes, _ := json.Marshal(msg.MediaData)
+		fmt.Printf("%v", string(mediaBytes))
 		mediaId := xid.New().String()
 
 		if _, err := minioClient.PutObject(context.Background(), miniobucket, mediaId, bytes.NewReader(mediaBytes), -1, minio.PutObjectOptions{ContentType: "application/json", UserMetadata: map[string]string{"x-amz-meta-key": exchange_id}}); err != nil {

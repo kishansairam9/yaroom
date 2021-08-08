@@ -277,20 +277,22 @@ class HomePageState extends State<HomePage> {
       if (roomId == null) {
         if (state.lastActive == null) {
           roomflag = false;
+        } else {
+          roomId = state.lastActive!.roomId;
         }
-        roomId = state.lastActive!.roomId;
       }
       String? channelId = state.lastOpened.containsKey(roomId)
           ? state.lastOpened[roomId]
           : null;
-
 
       return SafeArea(
         child: Scaffold(
           key: _scaffoldkey,
           appBar: currentIndex == 0
               ? (PreferredSize(
-                  child: _getRoomAppBar(context, roomId, channelId),
+                  child: roomId == null
+                      ? AppBar()
+                      : _getRoomAppBar(context, roomId, channelId),
                   preferredSize: Size.fromHeight(kToolbarHeight)))
               : AppBar(
                   automaticallyImplyLeading: false,
@@ -338,7 +340,7 @@ class HomePageState extends State<HomePage> {
                         child: (roomflag == false
                             ? SelectRoomPage()
                             : ChannelsView(
-                                roomId: roomId,
+                                roomId: roomId!,
                               )),
                       ),
                     ],
@@ -357,37 +359,36 @@ class HomePageState extends State<HomePage> {
                 setState(() => currentIndex = index);
               },
               children: <Widget>[
-                Room(roomId: roomId, channelId: channelId),
+                roomflag == false
+                    ? SelectRoomPage()
+                    : Room(roomId: roomId!, channelId: channelId),
                 ChatView(),
                 GroupChatView(),
-                Container(
-                  color: Colors.blue,
-                ),
+                FriendsView(),
               ],
             ),
           ),
           bottomNavigationBar: BottomNavyBar(
-            selectedIndex: currentIndex,
-            onItemSelected: (index) {
-              setState(() => currentIndex = index);
-              _pageController.jumpToPage(index);
-            },
-            items: <BottomNavyBarItem>[
-              BottomNavyBarItem(
-                  title: Text('Rooms'),
-                  icon: CircleAvatar(
-                      radius: 15,
-                      foregroundImage: AssetImage("assets/yaroom.png"))),
-              BottomNavyBarItem(
-                  title: Text('Messages'), icon: Icon(Icons.chat_bubble)),
-              BottomNavyBarItem(title: Text('Groups'), icon: Icon(Icons.group)),
-              BottomNavyBarItem(
-                  title: Text('Settings'), icon: Icon(Icons.settings)),
-            ],
-          ),
+              selectedIndex: currentIndex,
+              onItemSelected: (index) {
+                setState(() => currentIndex = index);
+                _pageController.jumpToPage(index);
+              },
+              items: <BottomNavyBarItem>[
+                BottomNavyBarItem(
+                    title: Text('Rooms'),
+                    icon: CircleAvatar(
+                        radius: 15,
+                        foregroundImage: AssetImage("assets/yaroom.png"))),
+                BottomNavyBarItem(
+                    title: Text('Messages'), icon: Icon(Icons.chat_bubble)),
+                BottomNavyBarItem(
+                    title: Text('Groups'), icon: Icon(Icons.group)),
+                BottomNavyBarItem(
+                    title: Text('Friends'), icon: Icon(Icons.person)),
+              ]),
         ),
       );
     });
-
   }
 }
