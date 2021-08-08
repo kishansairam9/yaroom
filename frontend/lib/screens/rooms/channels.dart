@@ -13,7 +13,7 @@ class ChannelsView extends StatefulWidget {
 
   ChannelsView({
     required this.roomId,
-    required this.roomName,
+    // required this.roomName,
   });
 
   @override
@@ -29,20 +29,35 @@ class ChannelsViewState extends State<ChannelsView> {
         builder:
             (BuildContext context, AsyncSnapshot<List<RoomsChannel>> snapshot) {
           if (snapshot.hasData) {
-            return ListView.builder(
-                itemCount: snapshot.data!.length,
-                itemBuilder: (context, index) {
-                  RoomsChannel e = snapshot.data![index];
-                  ChannelsTile tile = ChannelsTile(
-                      roomId: widget.roomId,
-                      channelId: e.channelId,
-                      name: e.channelName);
-                  if (index == 0) {
-                    return Column(
-                      children: [Text(widget.roomName), tile],
-                    );
+            return StreamBuilder(
+                stream: RepositoryProvider.of<AppDb>(context)
+                    .getRoomDetails(roomId: widget.roomId)
+                    .watch(),
+                builder: (BuildContext context,
+                    AsyncSnapshot<List<RoomsListData>> Roomsnapshot) {
+                  if (Roomsnapshot.hasData) {
+                    return ListView.builder(
+                        itemCount: snapshot.data!.length,
+                        itemBuilder: (context, index) {
+                          RoomsChannel e = snapshot.data![index];
+                          ChannelsTile tile = ChannelsTile(
+                              roomId: widget.roomId,
+                              channelId: e.channelId,
+                              name: e.channelName);
+                          if (index == 0) {
+                            return Column(
+                              children: [Text(Roomsnapshot.data![0].name), tile],
+                            );
+                          }
+                          return tile;
+                        });
+                  } else if (Roomsnapshot.hasError) {
+                    print(Roomsnapshot.error);
+                    return SnackBar(
+                        content:
+                            Text('Error has occured while reading from DB'));
                   }
-                  return tile;
+                  return Container();
                 });
           } else if (snapshot.hasError) {
             print(snapshot.error);
