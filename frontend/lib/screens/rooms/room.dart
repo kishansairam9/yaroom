@@ -13,9 +13,9 @@ class Room extends StatefulWidget {
   @override
   RoomState createState() => RoomState();
   late final String roomId;
-  late final String roomName;
+  // late final String roomName;
   late final String? channelId;
-  Room({required this.roomId, required this.roomName, this.channelId});
+  Room({required this.roomId, this.channelId});
 }
 
 class RoomState extends State<Room> {
