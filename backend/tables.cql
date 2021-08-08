@@ -20,7 +20,8 @@ CREATE TABLE yaroom.users (
     friendslist set<text>,
     groupslist set<text>,
     roomslist set<text>,
-    PRIMARY KEY (userid)
+    pendinglist set<text>,
+    PRIMARY KEY (userid),
 );
 
 CREATE TYPE yaroom.user_udt (
@@ -60,8 +61,8 @@ CREATE TABLE yaroom.rooms (
 -- `exchange_id design` -> needs to be deterministic, shouldn't depend on who is sending message
 -- STICK TO THIS, MEDIA ACCESS CONTROLS ALSO DEPENDS ON THIS
 -- DMs -> sort user ids and u1 < u2 => exchange_id = `u1:u2`
--- Groups -> exchange_id = `groupdId` 
--- Rooms -> exchange_id = `roomId` 
+-- Group -> exchange_id = `groupdId` 
+-- Room -> exchange_id = `roomId` 
 
 CREATE TABLE yaroom.chat_messages (
     exchange_id text,
@@ -108,7 +109,8 @@ CREATE TABLE yaroom.room_messages (
 
 CREATE INDEX chat_messages_from_index ON yaroom.chat_messages (fromuser);
 CREATE INDEX chat_messages_to_index ON yaroom.chat_messages (touser);
-CREATE INDEX group_messages_index ON yaroom.group_messages (groupid);
-CREATE INDEX room_messages_room_index ON yaroom.room_messages (roomid);
+-- group id and room id don't need indexes, the exchange id itself is same, which being primary key is already indexed
+-- CREATE INDEX group_messages_index ON yaroom.group_messages (groupid);
+-- CREATE INDEX room_messages_room_index ON yaroom.room_messages (roomid);
 CREATE INDEX room_messages_channel_index ON yaroom.room_messages (channelid);
 

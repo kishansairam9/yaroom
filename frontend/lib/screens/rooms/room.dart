@@ -358,7 +358,7 @@ class RoomState extends State<Room> {
 
     Provider.of<MessageExchangeStream>(context, listen: false)
         .sendWSMessage(jsonEncode({
-      'type': 'RoomsMessage',
+      'type': 'RoomMessage',
       'roomId': widget.roomId,
       'channelId': channelId,
       'fromUser': Provider.of<UserId>(context, listen: false),

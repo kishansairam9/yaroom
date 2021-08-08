@@ -16,6 +16,7 @@ import './components/roomsList.dart';
 import '../utils/authorizationService.dart';
 import '../utils/fcmToken.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import '../screens/components/friendsView.dart';
 
 class HomePage extends StatefulWidget {
   late final int initIndex;
@@ -283,6 +284,7 @@ class HomePageState extends State<HomePage> {
           ? state.lastOpened[roomId]
           : null;
 
+
       return SafeArea(
         child: Scaffold(
           key: _scaffoldkey,
@@ -386,5 +388,6 @@ class HomePageState extends State<HomePage> {
         ),
       );
     });
+
   }
 }
