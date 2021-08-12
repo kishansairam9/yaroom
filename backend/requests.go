@@ -24,6 +24,13 @@ type getOlderMessagesRequest struct {
 	LastMsgId  string `json:"lastMsgId"`
 }
 
+type searchQueryRequest struct {
+	ExchangeId   string `json:"exchangeId"`
+	MsgType      string `json:"msgType"`
+	Limit        uint   `json:"limit"`
+	SearchString string `json:"searchString"`
+}
+
 // TODO: Remove receiving name and image, backend should have it alread
 type fcmTokenUpdate struct {
 	Name  string `json:"name"`

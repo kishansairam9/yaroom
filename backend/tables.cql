@@ -1,11 +1,6 @@
 -- cql is case insensitive by default, need to add quotations around each to force case
 -- don't unless necessary, just use all lower case 
 
--- TODO: These tables are accessed very frequently cache them using redis
--- 1. User Metadata
--- 2. FCM tokens
--- 3. User and room, group mapping
-
 -- TODO: PERFORM DENORMALIZATION CURRENT DESING IS BAD FOR SCHEMA DUE TO METADATA ACCESSES LOT OF READS
 
 CREATE KEYSPACE yaroom WITH replication = 

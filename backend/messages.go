@@ -407,3 +407,96 @@ func getLaterMessageHandler(g *gin.Context) {
 	}
 	g.JSON(200, msgs)
 }
+
+func searchQuery(userId, searchString, exchangeId, msgType string, limit uint) ([]DBMessage, error) {
+	// Handle different message types
+	var chat []DBMessage
+	var table string
+	es_options := "indices="
+	switch msgType {
+	case "ChatMessage":
+		table = "yaroom.chat_messages"
+		es_options += "chat_messages"
+	case "GroupMessage":
+		table = "yaroom.group_messages"
+		es_options += "group_messages"
+	case "RoomMessage":
+		table = "yaroom.room_messages"
+		es_options += "room_messages"
+	default:
+		return nil, errors.New("unknown message type")
+	}
+	// Check if user has access to exchange id
+	split_exchange_id := strings.Split(exchangeId, ":")
+	switch len(split_exchange_id) {
+	case 1:
+		userMeta, err := getUserMetadata(userId)
+		if err != nil {
+			log.Error().Str("where", "media metadata check").Str("type", "error occured in retrieving data").Msg(err.Error())
+			return nil, err
+		}
+		hasAccess := false
+		for _, group := range userMeta.Groupslist {
+			if split_exchange_id[0] == group {
+				hasAccess = true
+				break
+			}
+		}
+		if hasAccess {
+			break
+		}
+		room_id_split := strings.Split(split_exchange_id[0], "#")
+		for _, room := range userMeta.Roomslist {
+			if room_id_split[0] == room {
+				hasAccess = true
+				break
+			}
+		}
+		if hasAccess {
+			break
+		}
+		return nil, errors.New("user doesn't have access")
+	case 2:
+		if !(split_exchange_id[0] == userId || split_exchange_id[1] == userId) {
+			return nil, errors.New("user doesn't have access")
+
+		}
+	default:
+		return nil, errors.New("invalid exchange id")
+	}
+	es_options = "'" + es_options + "'"
+	exchangeId = "'" + exchangeId + "'"
+	es_query := fmt.Sprintf("'{\"query\":{\"query_string\":{\"query\":\"%v\"}}}'", searchString)
+	q := dbSession.Query(qb.Select(table).Where(qb.EqLit("exchange_id", exchangeId)).Where(qb.EqLit("es_query", es_query)).Where(qb.EqLit("es_options", es_options)).Limit(limit).AllowFiltering().ToCql())
+	if err := q.SelectRelease(&chat); err != nil {
+		return nil, err
+	}
+	return chat, nil
+}
+
+func searchQueryHandler(g *gin.Context) {
+	var req searchQueryRequest
+	if err := g.BindJSON(&req); err != nil {
+		log.Info().Str("where", "bind json").Str("type", "failed to parse body to json").Msg(err.Error())
+		return
+	}
+
+	rawUserId, exists := g.Get("userId")
+	if !exists {
+		g.AbortWithStatusJSON(400, gin.H{"error": "user not authenticated"})
+		return
+	}
+	userId := rawUserId.(string)
+
+	if req.SearchString == "" {
+		g.AbortWithStatusJSON(400, gin.H{"error": "empty search string"})
+		return
+	}
+
+	msgs, err := searchQuery(userId, req.SearchString, req.ExchangeId, req.MsgType, req.Limit)
+	if err != nil {
+		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	g.JSON(200, msgs)
+}

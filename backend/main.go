@@ -110,6 +110,7 @@ func main() {
 		// Get messages
 		secured.GET("/getLaterMessages", getLaterMessageHandler)
 		secured.GET("/getOlderMessages", getOlderMessageHandler)
+		secured.GET("/search", searchQueryHandler)
 
 		// FCM Token
 		secured.POST("/fcmTokenUpdate", fcmTokenUpdateHandler)
@@ -138,6 +139,7 @@ func main() {
 		// Get messages
 		testing.GET("/getLaterMessages", getLaterMessageHandler)
 		testing.GET("/getOlderMessages", getOlderMessageHandler)
+		testing.GET("/search", searchQueryHandler)
 
 		// Send active status
 		testing.POST("/status", func(g *gin.Context) {
