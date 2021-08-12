@@ -117,7 +117,7 @@ func getExchangeId(msg *WSMessage) (string, error) {
 	case "GroupMessage":
 		return msg.GroupId, nil
 	case "RoomMessage":
-		return msg.RoomId, nil
+		return msg.RoomId + "#" + msg.ChannelId, nil
 	default:
 		return "", errors.New("unknown message type")
 	}
@@ -272,8 +272,9 @@ func getOlderMessages(userId, lastMsgId, exchangeId, msgType string, limit uint)
 		if hasAccess {
 			break
 		}
+		room_id_split := strings.Split(split_exchange_id[0], "#")
 		for _, room := range userMeta.Roomslist {
-			if split_exchange_id[0] == room {
+			if room_id_split[0] == room {
 				hasAccess = true
 				break
 			}
