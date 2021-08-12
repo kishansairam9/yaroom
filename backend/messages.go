@@ -137,7 +137,7 @@ func addMessage(msg *WSMessage) error {
 		}
 		// TODO: COMPRESS AND STORE TO SAVE STORAGE SPACE (LATER)
 		fmt.Printf("%v", msg.MediaData)
-		
+
 		mediaBytes, _ := json.Marshal(msg.MediaData)
 		fmt.Printf("%v", string(mediaBytes))
 		mediaId := xid.New().String()
@@ -239,8 +239,68 @@ func dbInsertRoutine(inChannel <-chan interface{}, outChannel chan<- interface{}
 	}
 }
 
-func getMessageHandler(g *gin.Context) {
-	var req getMessages
+func getOlderMessages(userId, lastMsgId, exchangeId, msgType string, limit uint) ([]DBMessage, error) {
+	// Handle different message types
+	var chat []DBMessage
+	var table string
+	switch msgType {
+	case "ChatMessage":
+		table = "yaroom.chat_messages"
+	case "GroupMessage":
+		table = "yaroom.group_messages"
+	case "RoomMessage":
+		table = "yaroom.room_messages"
+	default:
+		return nil, errors.New("unknown message type")
+	}
+	// Check if user has access to exchange id
+	split_exchange_id := strings.Split(exchangeId, ":")
+	switch len(split_exchange_id) {
+	case 1:
+		userMeta, err := getUserMetadata(userId)
+		if err != nil {
+			log.Error().Str("where", "media metadata check").Str("type", "error occured in retrieving data").Msg(err.Error())
+			return nil, err
+		}
+		hasAccess := false
+		for _, group := range userMeta.Groupslist {
+			if split_exchange_id[0] == group {
+				hasAccess = true
+				break
+			}
+		}
+		if hasAccess {
+			break
+		}
+		for _, room := range userMeta.Roomslist {
+			if split_exchange_id[0] == room {
+				hasAccess = true
+				break
+			}
+		}
+		if hasAccess {
+			break
+		}
+		return nil, errors.New("user doesn't have access")
+	case 2:
+		if !(split_exchange_id[0] == userId || split_exchange_id[1] == userId) {
+			return nil, errors.New("user doesn't have access")
+
+		}
+	default:
+		return nil, errors.New("invalid exchange id")
+	}
+	lastMsgId = "'" + lastMsgId + "'"
+	exchangeId = "'" + exchangeId + "'"
+	q := dbSession.Query(qb.Select(table).Where(qb.EqLit("exchange_id", exchangeId)).Where(qb.LtLit("msgid", lastMsgId)).Limit(limit).AllowFiltering().ToCql())
+	if err := q.SelectRelease(&chat); err != nil {
+		return nil, err
+	}
+	return chat, nil
+}
+
+func getOlderMessageHandler(g *gin.Context) {
+	var req getOlderMessagesRequest
 	if err := g.BindJSON(&req); err != nil {
 		log.Info().Str("where", "bind json").Str("type", "failed to parse body to json").Msg(err.Error())
 		return
@@ -257,7 +317,7 @@ func getMessageHandler(g *gin.Context) {
 		req.LastMsgId = "0"
 	}
 
-	msgs, err := getLaterMessages(userId, req.LastMsgId)
+	msgs, err := getOlderMessages(userId, req.LastMsgId, req.ExchangeId, req.MsgType, req.Limit)
 	if err != nil {
 		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
 		return
@@ -319,4 +379,30 @@ func getLaterMessages(userId, lastMsgId string) ([]DBMessage, error) {
 	all = append(all, groupchat...)
 	all = append(all, roomchat...)
 	return all, nil
+}
+
+func getLaterMessageHandler(g *gin.Context) {
+	var req getLaterMessagesRequest
+	if err := g.BindJSON(&req); err != nil {
+		log.Info().Str("where", "bind json").Str("type", "failed to parse body to json").Msg(err.Error())
+		return
+	}
+
+	rawUserId, exists := g.Get("userId")
+	if !exists {
+		g.AbortWithStatusJSON(400, gin.H{"error": "user not authenticated"})
+		return
+	}
+	userId := rawUserId.(string)
+
+	if req.LastMsgId == "null" {
+		req.LastMsgId = "0"
+	}
+
+	msgs, err := getLaterMessages(userId, req.LastMsgId)
+	if err != nil {
+		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	g.JSON(200, msgs)
 }

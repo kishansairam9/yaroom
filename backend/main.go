@@ -108,7 +108,8 @@ func main() {
 		secured.GET("/media/:objectid", mediaServerHandler)
 
 		// Get messages
-		secured.GET("/getMessages", getMessageHandler)
+		secured.GET("/getLaterMessages", getLaterMessageHandler)
+		secured.GET("/getOlderMessages", getOlderMessageHandler)
 
 		// FCM Token
 		secured.POST("/fcmTokenUpdate", fcmTokenUpdateHandler)
@@ -135,7 +136,8 @@ func main() {
 		testing.GET("/media/:objectid", mediaServerHandler)
 
 		// Get messages
-		testing.GET("/getMessages", getMessageHandler)
+		testing.GET("/getLaterMessages", getLaterMessageHandler)
+		testing.GET("/getOlderMessages", getOlderMessageHandler)
 
 		// Send active status
 		testing.POST("/status", func(g *gin.Context) {
