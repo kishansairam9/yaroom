@@ -92,6 +92,8 @@ Future<void> main() async {
       SecureStorageService(secureStorage);
 
   if (removeExistingDB) {
+    // ef8a936c-888f-4863-8d30-8a62c7c20c29 kishan
+    // aa616733-4e1b-4899-950f-48ea990d8db2 kalyan
     fakeInsert(db, "aa616733-4e1b-4899-950f-48ea990d8db2");
   }
 
@@ -127,6 +129,14 @@ class MyApp extends StatelessWidget {
 
       // Handle refresh token update
       notifyFCMToken(fcmTokenCubit, accessToken);
+
+      // TODO: Get User Details - friends, rooms, groups etc and populate in DB
+      // Backend hanldes user new case :)
+      // visit route `getUserDetails`
+
+      // TODO: Get new messages if any by passing largest msgId in DB
+      // visit route `getLaterMessages`
+
       return Future.value('/');
     }
     return Future.value('/signin');
@@ -153,7 +163,7 @@ class MyApp extends StatelessWidget {
         BlocProvider<FcmTokenCubit>.value(value: fcmTokenCubit),
         BlocProvider(create: (context) {
           return FilePickerCubit(
-              initialState: FilePickerDetails(media: Map(), filesAttached: 0)); 
+              initialState: FilePickerDetails(media: Map(), filesAttached: 0));
         })
       ],
       child: Builder(

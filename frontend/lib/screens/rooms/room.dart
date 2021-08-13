@@ -13,14 +13,14 @@ class Room extends StatefulWidget {
   @override
   RoomState createState() => RoomState();
   late final String roomId;
-  late final String roomName;
+  // late final String roomName;
   late final String? channelId;
-  Room({required this.roomId, required this.roomName, this.channelId});
+  Room({required this.roomId, this.channelId});
 }
 
 class RoomState extends State<Room> {
   //  Current State of InnerDrawerState
-  late final webSocketSubscription;
+  late var webSocketSubscription;
 
   @override
   void initState() {
@@ -358,7 +358,7 @@ class RoomState extends State<Room> {
 
     Provider.of<MessageExchangeStream>(context, listen: false)
         .sendWSMessage(jsonEncode({
-      'type': 'RoomsMessage',
+      'type': 'RoomMessage',
       'roomId': widget.roomId,
       'channelId': channelId,
       'fromUser': Provider.of<UserId>(context, listen: false),
@@ -369,6 +369,16 @@ class RoomState extends State<Room> {
     }));
     BlocProvider.of<FilePickerCubit>(context, listen: false)
         .updateFilePicker(media: Map(), i: 0);
+  }
+
+  Widget getSelectChannelPage() {
+    webSocketSubscription =
+        Provider.of<MessageExchangeStream>(context, listen: false)
+            .stream
+            .where((_) {
+      return false;
+    }).listen((_) { });
+    return SelectChannelPage();
   }
 
   Widget _buildMessagesView(List<RoomsMessage> msgs, String channelId) {
@@ -407,7 +417,7 @@ class RoomState extends State<Room> {
   @override
   Widget build(BuildContext context) {
     return widget.channelId == null
-        ? SelectChannelPage()
+        ? getSelectChannelPage()
         : FutureBuilder(
             future: RepositoryProvider.of<AppDb>(context)
                 .getRoomMembers(roomID: widget.roomId)
@@ -488,6 +498,7 @@ class RoomState extends State<Room> {
                                   ]);
                             }));
                       }
+
                       return CircularProgressIndicator();
                     });
               } else if (roomMembersSnapshot.hasError) {

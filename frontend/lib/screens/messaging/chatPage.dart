@@ -1,13 +1,17 @@
+import 'dart:typed_data';
+import '../components/searchDelegate.dart';
 import 'package:bubble/bubble.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:yaroom/screens/components/msgBox.dart';
+import 'package:yaroom/utils/authorizationService.dart';
 import '../components/contactView.dart';
 import 'package:provider/provider.dart';
 import '../../utils/messageExchange.dart';
 import '../../utils/types.dart';
 import '../../blocs/chats.dart';
+import 'package:http/http.dart' as http;
 
 class ChatPage extends StatefulWidget {
   late final String userId, name;
@@ -52,45 +56,45 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     }
   }
 
-  Widget _buildSingleMessage(ChatMessage msg, bool isMe) {
-    print(msg);
-    if (msg.media != null && msg.content != null) {
-      print('hi');
-      // print(msg.media!);
-      return Column(
-        children: [
-          Text(
-            msg.media!, // Using unicode space is imp as flutter engine trims otherwise
-            textAlign: isMe ? TextAlign.right : TextAlign.left,
-            style: TextStyle(color: Colors.white),
-          ),
-          Text(
-            msg.content!, // Using unicode space is imp as flutter engine trims otherwise
-            textAlign: isMe ? TextAlign.right : TextAlign.left,
-            style: TextStyle(color: Colors.white),
-          ),
-        ],
-      );
+  Future<Widget> _buildSingleMessage(
+      BuildContext context, ChatMessage msg, bool isMe) async {
+    // final String? accessToken =
+    //     await Provider.of<AuthorizationService>(context, listen: false)
+    //         .getValidAccessToken();
+    // print("hi");
+    // print("accessToken");
+    // print(accessToken);
+    final userid = Provider.of<UserId>(context, listen: false);
+
+    if (msg.media == null) {
+      if (msg.content == null) {
+        return Container();
+      } else {
+        return Text(
+          msg.content!, // Using unicode space is imp as flutter engine trims otherwise
+          textAlign: isMe ? TextAlign.right : TextAlign.left,
+          style: TextStyle(color: Colors.white),
+        );
+      }
+    } else {
+      var media = await http.get(Uri.parse(
+          'http://localhost:8884/testing/' + userid + '/media/' + msg.media!));
+      var data = jsonDecode(media.body) as Map;
+      if (msg.content == null) {
+        return Image.memory(Uint8List.fromList(data['bytes'].cast<int>()));
+      } else {
+        return Column(
+          children: [
+            Image.memory(Uint8List.fromList(data['bytes'].cast<int>())),
+            Text(
+              msg.content!,
+              textAlign: isMe ? TextAlign.right : TextAlign.left,
+              style: TextStyle(color: Colors.white),
+            ),
+          ],
+        );
+      }
     }
-    if (msg.media != null && msg.content == null) {
-      print('hi');
-      // print(msg.media!);
-      return Text(
-        msg.media!, // Using unicode space is imp as flutter engine trims otherwise
-        textAlign: isMe ? TextAlign.right : TextAlign.left,
-        style: TextStyle(color: Colors.white),
-      );
-    }
-    if (msg.media == null && msg.content != null) {
-      print("hola");
-      print(msg.content!);
-      return Text(
-        msg.content!, // Using unicode space is imp as flutter engine trims otherwise
-        textAlign: isMe ? TextAlign.right : TextAlign.left,
-        style: TextStyle(color: Colors.white),
-      );
-    }
-    return Container();
   }
 
   _buildMessage(ChatMessage msg, bool prevIsSame, DateTime? prependDay) {
@@ -113,7 +117,19 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
             padding: EdgeInsets.only(bottom: 18),
             child: ConstrainedBox(
                 constraints: BoxConstraints(minWidth: 60),
-                child: _buildSingleMessage(msg, isMe)),
+                child: Builder(
+                  builder: (context) {
+                    return FutureBuilder(
+                        future: _buildSingleMessage(context, msg, isMe),
+                        builder: (BuildContext context,
+                            AsyncSnapshot<Widget> snapshot) {
+                          if (snapshot.hasData) {
+                            return snapshot.data!;
+                          }
+                          return CircularProgressIndicator();
+                        });
+                  },
+                )),
           ),
           Positioned(
               bottom: 0,
@@ -207,8 +223,8 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     if (media == null && content == null) {
       return;
     }
-    print("hello me here");
-    print(media);
+    // print("hello me here");
+    // print(media);
     Provider.of<MessageExchangeStream>(context, listen: false)
         .sendWSMessage(jsonEncode({
       'type': 'ChatMessage',
@@ -228,6 +244,15 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   Future<bool> onBackPress() {
     Navigator.of(context).pop();
     return Future.value(false);
+  }
+
+  String getExchangeId() {
+    var ids = <String>[
+      Provider.of<UserId>(context, listen: false),
+      widget.userId
+    ];
+    ids.sort();
+    return ids[0] + ":" + ids[1];
   }
 
   Widget build(BuildContext context) {
@@ -293,9 +318,19 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                     ),
                     actions: <Widget>[
                       IconButton(
-                        onPressed: () => {},
-                        icon: Icon(Icons.phone),
-                        tooltip: 'Call',
+                        onPressed: () => {
+                          showSearch(
+                              context: context,
+                              delegate: ExchangeSearchDelegate(
+                                  accessToken: Provider.of<UserId>(context,
+                                      listen:
+                                          false), // Passing userId for now TODO FIX ONCE FIXED AUTH0 BUG
+                                  exchangeId: getExchangeId(),
+                                  msgType: "ChatMessage",
+                                  limit: 100))
+                        },
+                        icon: Icon(Icons.search),
+                        tooltip: 'Search',
                       ),
                       IconButton(
                         onPressed: () => {},

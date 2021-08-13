@@ -24,7 +24,7 @@ class RoomsState {
 }
 
 class RoomsCubit extends HydratedCubit<RoomsState> {
-  RoomsCubit() : super(RoomsState(lastOpened: Map<String, String>()));
+  RoomsCubit() : super(RoomsState(lastOpened: {"a": "b"}));
 
   @override
   RoomsState? fromJson(Map<String, dynamic> json) {

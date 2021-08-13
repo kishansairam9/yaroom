@@ -107,6 +107,14 @@ func main() {
 		// Media handler
 		secured.GET("/media/:objectid", mediaServerHandler)
 
+		// User Details
+		secured.GET("/getUserDetails", getUserDetailsHandler)
+
+		// Get messages
+		secured.GET("/getLaterMessages", getLaterMessageHandler)
+		secured.GET("/getOlderMessages", getOlderMessageHandler)
+		secured.GET("/search", searchQueryHandler)
+
 		// FCM Token
 		secured.POST("/fcmTokenUpdate", fcmTokenUpdateHandler)
 		secured.POST("/fcmTokenInvalidate", fcmTokenInvalidateHandler)
@@ -130,6 +138,14 @@ func main() {
 
 		// Media handler
 		testing.GET("/media/:objectid", mediaServerHandler)
+
+		// User Details
+		testing.GET("/getUserDetails", getUserDetailsHandler)
+
+		// Get messages
+		testing.GET("/getLaterMessages", getLaterMessageHandler)
+		testing.GET("/getOlderMessages", getOlderMessageHandler)
+		testing.GET("/search", searchQueryHandler)
 
 		// Send active status
 		testing.POST("/status", func(g *gin.Context) {
@@ -185,11 +201,11 @@ func main() {
 				g.AbortWithStatus(500)
 				return
 			}
-			if err = sendMessageNotification(msg.ToUser, msg); err != nil {
-				log.Error().Str("where", "fcm send to user").Str("type", "failed to send push notification").Msg(err.Error())
-				g.AbortWithStatusJSON(500, gin.H{"error": "internal server error"})
-				return
-			}
+			// if err = sendMessageNotification(msg.ToUser, msg); err != nil {
+			// log.Error().Str("where", "fcm send to user").Str("type", "failed to send push notification").Msg(err.Error())
+			// g.AbortWithStatusJSON(500, gin.H{"error": "internal server error"})
+			// return
+			// }
 			g.JSON(200, msg)
 		})
 	}

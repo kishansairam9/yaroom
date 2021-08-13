@@ -10,7 +10,6 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// TODO: Remove receiving name and image, backend should have it already
 func fcmTokenUpdateHandler(g *gin.Context) {
 	var req fcmTokenUpdate
 	if err := g.BindJSON(&req); err != nil {
@@ -26,7 +25,7 @@ func fcmTokenUpdateHandler(g *gin.Context) {
 	}
 	userId := rawUserId.(string)
 
-	if err := addFCMToken(&UserFCMTokenUpdate{Userid: userId, Tokens: []string{req.Token}, Name: req.Name, Image: req.Image}); err != nil {
+	if err := addFCMToken(&UserFCMTokenUpdate{Userid: userId, Tokens: []string{req.Token}}); err != nil {
 		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
 		return
 	}
@@ -48,7 +47,7 @@ func fcmTokenInvalidateHandler(g *gin.Context) {
 	}
 	userId := rawUserId.(string)
 
-	if err := removeFCMToken(&UserFCMTokenUpdate{Userid: userId, Tokens: []string{req.Token}, Name: req.Name, Image: req.Image}); err != nil {
+	if err := removeFCMToken(&UserFCMTokenUpdate{Userid: userId, Tokens: []string{req.Token}}); err != nil {
 		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
 		return
 	}
@@ -69,20 +68,24 @@ func sendMessageNotification(userId string, msg WSMessage) error {
 
 	var fromUserData *UserMetadata
 	var toUserData *UserMetadata
-	// TODO: Uncomment after mocking
-	// fromUserData, err := getUserMetadata(msg.FromUser)
-	// if err != nil {
-	// 	return err
-	// }
-	dummy := "dmmy"
-	fromUserData = &UserMetadata{Name: dummy}
-	toUserData, err := getUserMetadata(userId)
+
+	fromUserData, err := getUserMetadata(msg.FromUser)
 	if err != nil {
 		return err
 	}
 
-	if toUserData.Userid == "" || len(toUserData.Tokens) == 0 {
-		return errors.New("user doesn't exits or token for notification not present")
+	toUserData, err = getUserMetadata(userId)
+	if err != nil {
+		return err
+	}
+
+	if toUserData == nil || fromUserData == nil {
+		return errors.New("user doesn't exits")
+	}
+
+	if len(toUserData.Tokens) == 0 {
+		// no active device token so no need to send notification
+		return nil
 	}
 
 	// TODO Remove debug statements
@@ -94,10 +97,6 @@ func sendMessageNotification(userId string, msg WSMessage) error {
 
 	switch msg.Type {
 	case "ChatMessage":
-		if fromUserData.Image == nil || *fromUserData.Image == "" {
-			testImg := "https://cdn.business2community.com/wp-content/uploads/2017/08/blank-profile-picture-973460_640.png"
-			fromUserData.Image = &testImg
-		}
 		for _, token := range toUserData.Tokens {
 			print("sending to ", token)
 			notif := &fcm.Message{
@@ -106,7 +105,6 @@ func sendMessageNotification(userId string, msg WSMessage) error {
 				Notification: &fcm.Notification{
 					Title: fromUserData.Name,
 					Body:  trimLength(msg.Content, 150),
-					Image: *fromUserData.Image,
 				},
 			}
 			res, err := fcmClient.SendWithRetry(notif, 3)

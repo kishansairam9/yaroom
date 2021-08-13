@@ -3,12 +3,25 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/rs/zerolog/log"
 )
+
+type JSONableSlice []uint8
+
+func (u JSONableSlice) MarshalJSON() ([]byte, error) {
+	var result string
+	if u == nil {
+		result = "null"
+	} else {
+		result = strings.Join(strings.Fields(fmt.Sprintf("%d", u)), ",")
+	}
+	return []byte(result), nil
+}
 
 var wsUpgrader = websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024}
 
@@ -29,8 +42,8 @@ type WSMessage struct {
 }
 
 type WSMediaFile struct {
-	Name  string `json:"name"`
-	Bytes []byte `json:"bytes"`
+	Name  string        `json:"name"`
+	Bytes JSONableSlice `json:"bytes"`
 }
 
 type WSError struct {
@@ -60,13 +73,12 @@ func wsHandler(g *gin.Context) {
 		return
 	}
 	if userMeta == nil {
-		log.Error().Str("where", "get user metadata").Str("type", "no metadata in user tables").Msg(err.Error())
+		log.Error().Str("where", "get user metadata").Str("type", "no metadata in user tables")
 		g.AbortWithStatus(500)
 		return
 	}
 
 	activeStatusStreams := make([]string, 0)
-	activeStatusStreams = append(activeStatusStreams, "USER:15")
 	if userMeta.Friendslist != nil {
 		for _, friend := range userMeta.Friendslist {
 			activeStatusStreams = append(activeStatusStreams, fmt.Sprintf("USER:%v", friend))
@@ -165,12 +177,12 @@ func wsHandler(g *gin.Context) {
 				log.Info().Str("where", "wsHandler").Str("type", "writing message").Msg(err.Error())
 				connFailed = true
 			}
-			// data, isMsg := out.(WSMessage)
-			// if isMsg && data.FromUser == userId {
-			// 	if err = sendMessageNotification(out.(WSMessage).ToUser, out.(WSMessage)); err != nil {
-			// 		log.Error().Str("where", "fcm send to user").Str("type", "failed to send push notification").Msg(err.Error())
-			// 	}
-			// }
+			data, isMsg := out.(WSMessage)
+			if isMsg && data.FromUser == userId {
+				if err = sendMessageNotification(out.(WSMessage).ToUser, out.(WSMessage)); err != nil {
+					log.Error().Str("where", "fcm send to user").Str("type", "failed to send push notification").Msg(err.Error())
+				}
+			}
 
 		case activity := <-activeStatusOutChannel:
 			err = conn.WriteJSON(activity)
