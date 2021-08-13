@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:yaroom/screens/components/msgBox.dart';
 import '../components/contactView.dart';
+import '../components/searchDelegate.dart';
 import 'package:provider/provider.dart';
 import '../../utils/messageExchange.dart';
 import '../../utils/types.dart';
@@ -434,9 +435,20 @@ class GroupChatPageState extends State<GroupChatPage>
                                       )),
                               actions: <Widget>[
                                 IconButton(
-                                  onPressed: () => {},
-                                  icon: Icon(Icons.phone),
-                                  tooltip: 'Call',
+                                  onPressed: () => {
+                                    showSearch(
+                                        context: context,
+                                        delegate: ExchangeSearchDelegate(
+                                            accessToken: Provider.of<UserId>(
+                                                context,
+                                                listen:
+                                                    false), // Passing userId for now TODO FIX ONCE FIXED AUTH0 BUG
+                                            exchangeId: widget.groupId,
+                                            msgType: "GroupMessage",
+                                            limit: 100))
+                                  },
+                                  icon: Icon(Icons.search),
+                                  tooltip: 'Search',
                                 ),
                                 IconButton(
                                   onPressed: () => {

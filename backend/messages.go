@@ -466,7 +466,7 @@ func searchQuery(userId, searchString, exchangeId, msgType string, limit uint) (
 	}
 	es_options = "'" + es_options + "'"
 	exchangeId = "'" + exchangeId + "'"
-	es_query := fmt.Sprintf("'{\"query\":{\"query_string\":{\"query\":\"%v\"}}}'", searchString)
+	es_query := fmt.Sprintf("'{\"query\":{\"query_string\":{\"query\":\"*%v*\"}}}'", searchString)
 	q := dbSession.Query(qb.Select(table).Where(qb.EqLit("exchange_id", exchangeId)).Where(qb.EqLit("es_query", es_query)).Where(qb.EqLit("es_options", es_options)).Limit(limit).AllowFiltering().ToCql())
 	if err := q.SelectRelease(&chat); err != nil {
 		return nil, err

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:bottom_navy_bar/bottom_navy_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:yaroom/blocs/rooms.dart';
+import 'components/searchDelegate.dart';
 import 'package:yaroom/blocs/fcmToken.dart';
 import 'package:yaroom/screens/components/contactView.dart';
 import 'package:yaroom/utils/guidePages.dart';
@@ -156,13 +157,30 @@ class HomePageState extends State<HomePage> {
       title: channelId == null
           ? Text("Pick a channel")
           : _getRoomTitle(context, roomId, channelId),
-      actions: <Widget>[
-        IconButton(
-          onPressed: () => {_scaffoldkey.currentState!.openEndDrawer()},
-          icon: Icon(Icons.more_vert),
-          tooltip: 'More',
-        )
-      ],
+      actions: channelId == null
+          ? []
+          : <Widget>[
+              IconButton(
+                onPressed: () => {
+                  showSearch(
+                      context: context,
+                      delegate: ExchangeSearchDelegate(
+                          accessToken: Provider.of<UserId>(context,
+                              listen:
+                                  false), // Passing userId for now TODO FIX ONCE FIXED AUTH0 BUG
+                          exchangeId: roomId + "#" + channelId,
+                          msgType: "RoomMessage",
+                          limit: 100))
+                },
+                icon: Icon(Icons.search),
+                tooltip: 'Search',
+              ),
+              IconButton(
+                onPressed: () => {_scaffoldkey.currentState!.openEndDrawer()},
+                icon: Icon(Icons.more_vert),
+                tooltip: 'More',
+              )
+            ],
     );
   }
 

@@ -3,24 +3,26 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"time"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/rs/zerolog/log"
 )
+
 type JSONableSlice []uint8
 
 func (u JSONableSlice) MarshalJSON() ([]byte, error) {
-    var result string
-    if u == nil {
-        result = "null"
-    } else {
-        result = strings.Join(strings.Fields(fmt.Sprintf("%d", u)), ",")
-    }
-    return []byte(result), nil
+	var result string
+	if u == nil {
+		result = "null"
+	} else {
+		result = strings.Join(strings.Fields(fmt.Sprintf("%d", u)), ",")
+	}
+	return []byte(result), nil
 }
+
 var wsUpgrader = websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024}
 
 // All message types are handled by one raw struct (non relavant fields are ignored), we switch based on type of message as required
@@ -40,7 +42,7 @@ type WSMessage struct {
 }
 
 type WSMediaFile struct {
-	Name  string  `json:"name"`
+	Name  string        `json:"name"`
 	Bytes JSONableSlice `json:"bytes"`
 }
 
@@ -64,35 +66,35 @@ func wsHandler(g *gin.Context) {
 	userId := rawUserId.(string)
 
 	// Get metadata for active status handlers
-	userMeta, err := getUserMetadata(userId)
-	if err != nil {
-		log.Error().Str("where", "get user metadata").Str("type", "error occured in retrieving data").Msg(err.Error())
-		g.AbortWithStatus(500)
-		return
-	}
-	if userMeta == nil {
-		log.Error().Str("where", "get user metadata").Str("type", "no metadata in user tables").Msg(err.Error())
-		g.AbortWithStatus(500)
-		return
-	}
+	// userMeta, err := getUserMetadata(userId)
+	// if err != nil {
+	// 	log.Error().Str("where", "get user metadata").Str("type", "error occured in retrieving data").Msg(err.Error())
+	// 	g.AbortWithStatus(500)
+	// 	return
+	// }
+	// if userMeta == nil {
+	// log.Error().Str("where", "get user metadata").Str("type", "no metadata in user tables")
+	// 	g.AbortWithStatus(500)
+	// 	return
+	// }
 
 	activeStatusStreams := make([]string, 0)
 	activeStatusStreams = append(activeStatusStreams, "USER:15")
-	if userMeta.Friendslist != nil {
-		for _, friend := range userMeta.Friendslist {
-			activeStatusStreams = append(activeStatusStreams, fmt.Sprintf("USER:%v", friend))
-		}
-	}
-	if userMeta.Groupslist != nil {
-		for _, group := range userMeta.Groupslist {
-			activeStatusStreams = append(activeStatusStreams, fmt.Sprintf("GROUP:%v", group))
-		}
-	}
-	if userMeta.Roomslist != nil {
-		for _, room := range userMeta.Roomslist {
-			activeStatusStreams = append(activeStatusStreams, fmt.Sprintf("ROOM:%v", room))
-		}
-	}
+	// if userMeta.Friendslist != nil {
+	// 	for _, friend := range userMeta.Friendslist {
+	// 		activeStatusStreams = append(activeStatusStreams, fmt.Sprintf("USER:%v", friend))
+	// 	}
+	// }
+	// if userMeta.Groupslist != nil {
+	// 	for _, group := range userMeta.Groupslist {
+	// 		activeStatusStreams = append(activeStatusStreams, fmt.Sprintf("GROUP:%v", group))
+	// 	}
+	// }
+	// if userMeta.Roomslist != nil {
+	// 	for _, room := range userMeta.Roomslist {
+	// 		activeStatusStreams = append(activeStatusStreams, fmt.Sprintf("ROOM:%v", room))
+	// 	}
+	// }
 	err = ensureActiveStatusStreamsExist(activeStatusStreams)
 	if err != nil {
 		log.Error().Str("where", "ensure active status streams").Str("type", "error occured in adding streams").Msg(err.Error())

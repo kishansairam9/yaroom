@@ -1,5 +1,5 @@
 import 'dart:typed_data';
-
+import '../components/searchDelegate.dart';
 import 'package:bubble/bubble.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
@@ -223,8 +223,8 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     if (media == null && content == null) {
       return;
     }
-    print("hello me here");
-    print(media);
+    // print("hello me here");
+    // print(media);
     Provider.of<MessageExchangeStream>(context, listen: false)
         .sendWSMessage(jsonEncode({
       'type': 'ChatMessage',
@@ -244,6 +244,15 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   Future<bool> onBackPress() {
     Navigator.of(context).pop();
     return Future.value(false);
+  }
+
+  String getExchangeId() {
+    var ids = <String>[
+      Provider.of<UserId>(context, listen: false),
+      widget.userId
+    ];
+    ids.sort();
+    return ids[0] + ":" + ids[1];
   }
 
   Widget build(BuildContext context) {
@@ -309,9 +318,19 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                     ),
                     actions: <Widget>[
                       IconButton(
-                        onPressed: () => {},
-                        icon: Icon(Icons.phone),
-                        tooltip: 'Call',
+                        onPressed: () => {
+                          showSearch(
+                              context: context,
+                              delegate: ExchangeSearchDelegate(
+                                  accessToken: Provider.of<UserId>(context,
+                                      listen:
+                                          false), // Passing userId for now TODO FIX ONCE FIXED AUTH0 BUG
+                                  exchangeId: getExchangeId(),
+                                  msgType: "ChatMessage",
+                                  limit: 100))
+                        },
+                        icon: Icon(Icons.search),
+                        tooltip: 'Search',
                       ),
                       IconButton(
                         onPressed: () => {},
