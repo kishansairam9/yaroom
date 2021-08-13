@@ -107,10 +107,13 @@ func main() {
 		// Media handler
 		secured.GET("/media/:objectid", mediaServerHandler)
 
+		// User Details
+		secured.GET("/getUserDetails", getUserDetailsHandler)
+
 		// Get messages
 		secured.GET("/getLaterMessages", getLaterMessageHandler)
 		secured.GET("/getOlderMessages", getOlderMessageHandler)
-		secured.POST("/search", searchQueryHandler)
+		secured.GET("/search", searchQueryHandler)
 
 		// FCM Token
 		secured.POST("/fcmTokenUpdate", fcmTokenUpdateHandler)
@@ -136,10 +139,13 @@ func main() {
 		// Media handler
 		testing.GET("/media/:objectid", mediaServerHandler)
 
+		// User Details
+		testing.GET("/getUserDetails", getUserDetailsHandler)
+
 		// Get messages
 		testing.GET("/getLaterMessages", getLaterMessageHandler)
 		testing.GET("/getOlderMessages", getOlderMessageHandler)
-		testing.POST("/search", searchQueryHandler)
+		testing.GET("/search", searchQueryHandler)
 
 		// Send active status
 		testing.POST("/status", func(g *gin.Context) {

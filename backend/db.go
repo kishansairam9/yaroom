@@ -131,6 +131,12 @@ type RoomMetadata struct {
 	Channelslist map[string]string
 }
 
+type UserDetails struct {
+	UserData  UserMetadata
+	GroupData []GroupMetadata
+	RoomData  []RoomMetadata
+}
+
 func updateUserMetadata(data *UserMetadata) error {
 	if q := UpdateUserMetadata.BindStruct(data); q.Err() != nil {
 		log.Error().Str("where", "update user metadata").Str("type", "failed to bind struct").Msg(q.Err().Error())
@@ -180,6 +186,72 @@ func getRoomMetadata(roomId string) (*RoomMetadata, error) {
 		return nil, errors.New("internal server error")
 	}
 	return rows[0], nil
+}
+
+func getUserDetails(userId string) (*UserDetails, error) {
+	paddedUserId := "'" + userId + "'"
+	userMeta, err := getUserMetadata(userId)
+	if err != nil {
+		log.Error().Str("where", "get user details").Str("type", "error occured in retrieving user metadata").Msg(err.Error())
+		return nil, err
+	}
+	if userMeta == nil {
+		// New user, add user to demo rooms and groups
+		in := dbSession.Query(qb.Insert("yaroom.users").LitColumn("userid", paddedUserId).LitColumn("name", paddedUserId).LitColumn("image", "''").LitColumn("username", paddedUserId).LitColumn("groupslist", "{'group-demo-1', 'group-demo-2'}").LitColumn("roomslist", "{'room-demo-1', 'room-demo-2'}").ToCql())
+		if err := in.ExecRelease(); err != nil {
+			return nil, err
+		}
+		err := addUserFriend(&UserFriendListUpdate{
+			Userid:      userId,
+			Friendslist: []string{"john-doe", "alice-jane"},
+		})
+		if err != nil {
+			log.Error().Str("where", "adding new user").Str("type", "error occured in db op").Msg(err.Error())
+			return nil, err
+		}
+		err = addUserFriend(&UserFriendListUpdate{
+			Userid:      "alice-jane",
+			Friendslist: []string{userId},
+		})
+		if err != nil {
+			log.Error().Str("where", "adding new user").Str("type", "error occured in db op").Msg(err.Error())
+			return nil, err
+		}
+		err = addUserFriend(&UserFriendListUpdate{
+			Userid:      "john-doe",
+			Friendslist: []string{userId},
+		})
+		if err != nil {
+			log.Error().Str("where", "adding new user").Str("type", "error occured in db op").Msg(err.Error())
+			return nil, err
+		}
+		userMeta, err = getUserMetadata(userId)
+		if err != nil {
+			log.Error().Str("where", "adding new user").Str("type", "error occured in db op").Msg(err.Error())
+			return nil, err
+		}
+	}
+	var ret UserDetails
+	ret.UserData = *userMeta
+	ret.GroupData = make([]GroupMetadata, 0)
+	for _, group := range userMeta.Groupslist {
+		val, err := getGroupMetadata(group)
+		if err != nil {
+			log.Error().Str("where", "get group metadata").Str("type", "error occured in retrieving group metadata").Msg(err.Error())
+			continue
+		}
+		ret.GroupData = append(ret.GroupData, *val)
+	}
+	ret.RoomData = make([]RoomMetadata, 0)
+	for _, room := range userMeta.Roomslist {
+		val, err := getRoomMetadata(room)
+		if err != nil {
+			log.Error().Str("where", "get room metadata").Str("type", "error occured in retrieving room metadata").Msg(err.Error())
+			continue
+		}
+		ret.RoomData = append(ret.RoomData, *val)
+	}
+	return &ret, nil
 }
 
 type UserPendingListUpdate struct {
@@ -272,8 +344,6 @@ func selectUserFriend(userid string) ([]UserFriendListUpdate, error) {
 type UserFCMTokenUpdate struct {
 	Userid string
 	Tokens []string
-	Image  string
-	Name   string
 }
 
 func addFCMToken(tok *UserFCMTokenUpdate) error {

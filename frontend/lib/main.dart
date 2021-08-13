@@ -128,6 +128,14 @@ class MyApp extends StatelessWidget {
 
       // Handle refresh token update
       notifyFCMToken(fcmTokenCubit, accessToken);
+
+      // TODO: Get User Details - friends, rooms, groups etc and populate in DB
+      // Backend hanldes user new case :)
+      // visit route `getUserDetails`
+
+      // TODO: Get new messages if any by passing largest msgId in DB
+      // visit route `getLaterMessages`
+
       return Future.value('/');
     }
     return Future.value('/signin');

@@ -6,6 +6,8 @@ import '../utils/authorizationService.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../utils/fcmToken.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class LandingViewModel extends ChangeNotifier {
   bool _signingIn = false;
@@ -43,18 +45,17 @@ class LandingPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
             Image(image: AssetImage('assets/yaroom_full_logo_200x200.png')),
-            if (viewModel.signingIn) CircularProgressIndicator(),
-            ElevatedButton(
-              style: ButtonStyle(
-                  backgroundColor: MaterialStateProperty.all(
-                      Theme.of(context).primaryColor)),
-              onPressed: viewModel.signingIn
-                  ? null
-                  : () async {
+            viewModel.signingIn
+                ? CircularProgressIndicator()
+                : ElevatedButton(
+                    style: ButtonStyle(
+                        backgroundColor: MaterialStateProperty.all(
+                            Theme.of(context).primaryColor)),
+                    onPressed: () async {
                       await signIn(context);
                     },
-              child: const Text('Login with Auth0'),
-            ),
+                    child: const Text('Login with Auth0'),
+                  ),
           ],
         ),
       ),
@@ -67,6 +68,12 @@ class LandingPage extends StatelessWidget {
       final String? accessToken =
           await Provider.of<AuthorizationService>(context, listen: false)
               .getValidAccessToken();
+      // TODO: Get User Details - friends, rooms, groups etc and populate in DB
+      // Backend hanldes user new case :)
+      // visit route `getUserDetails`
+
+      // TODO: Get new messages if any by passing largest msgId in DB
+      // visit route `getLaterMessages`
 
       // Start web socket
       Provider.of<MessageExchangeStream>(context, listen: false)

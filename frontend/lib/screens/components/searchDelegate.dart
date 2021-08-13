@@ -39,7 +39,7 @@ class ExchangeSearchDelegate extends SearchDelegate {
         child: Text("Enter query"),
       );
     }
-    print("Queried ${query.toLowerCase()}");
+    // print("Queried ${query.toLowerCase()}");
     final userid = accessToken; // TODO FIX THIS AFTER AUTH0 BUG FIX
     var req = await http.post(
       Uri.parse('http://localhost:8884/testing/' + userid + '/search'),

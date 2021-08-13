@@ -44,6 +44,14 @@ CREATE TABLE yaroom.rooms (
     PRIMARY KEY (roomid)
 );
 
+INSERT INTO yaroom.groups (groupid, name, description, image, userslist) VALUES ('group-demo-1', 'Group Demo 1', 'Group for demo purposes', 'https://news.blr.com/app/uploads/sites/3/2018/07/Demo-5.jpg', {'john-doe':{userid:'john-doe', name:'John Doe', image:'https://rahulsias.files.wordpress.com/2017/01/john-doe_text.jpg'}, 'alice-jane':{userid:'alice-jane', name:'Alice Jane', image:''}});
+INSERT INTO yaroom.groups (groupid, name, description, image, userslist) VALUES ('group-demo-2', 'Group Demo 2', 'Group for demo purposes', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTDStpvuQWus5fPuovIQHlgytQhjXbAgCEP4A&usqp=CAU', {'john-doe':{userid:'john-doe', name:'John Doe', image:'https://rahulsias.files.wordpress.com/2017/01/john-doe_text.jpg'}, 'alice-jane':{userid:'alice-jane', name:'Alice Jane', image:''}});
+
+INSERT INTO yaroom.rooms (roomid, name, description, image, userslist, channelslist) VALUES ('room-demo-1', 'Room Demo 1', 'Room for demo purposes', 'https://news.blr.com/app/uploads/sites/3/2018/07/Demo-5.jpg', {'john-doe':{userid:'john-doe', name:'John Doe', image:'https://rahulsias.files.wordpress.com/2017/01/john-doe_text.jpg'}, 'alice-jane':{userid:'alice-jane', name:'Alice Jane', image:''}}, {'chan1': 'Channel 1', 'chan2': 'Channel 2', 'chan3': 'Channel 3'});
+INSERT INTO yaroom.rooms (roomid, name, description, image, userslist, channelslist) VALUES ('room-demo-2', 'Room Demo 2', 'Room for demo purposes', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTDStpvuQWus5fPuovIQHlgytQhjXbAgCEP4A&usqp=CAU', {'john-doe':{userid:'john-doe', name:'John Doe', image:'https://rahulsias.files.wordpress.com/2017/01/john-doe_text.jpg'}, 'alice-jane':{userid:'alice-jane', name:'Alice Jane', image:''}}, {'chan1': 'Channel 1', 'chan2': 'Channel 2', 'chan3': 'Channel 3'});
+
+INSERT INTO yaroom.users (userid, name, username, image, groupslist, roomslist) VALUES ('john-doe', 'John Doe', 'johndoe_demo', 'https://rahulsias.files.wordpress.com/2017/01/john-doe_text.jpg', {'group-demo-1', 'group-demo-2'}, {'room-demo-1', 'room-demo-2'});
+INSERT INTO yaroom.users (userid, name, username, image, groupslist, roomslist) VALUES ('alice-jane', 'Alice Jane', 'alicejane_demo', '', {'group-demo-1', 'group-demo-2'}, {'room-demo-1', 'room-demo-2'});
 
 -- exchange_id should be present for all messages, and it is partition key and for all tables
 -- use (exchange_id, msgid) as PRIMARY KEY, exchange_id can be same but msgid won't be hence unique

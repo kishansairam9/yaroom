@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/minio/minio-go/v7"
 	"github.com/rs/xid"
 	"github.com/rs/zerolog/log"
@@ -300,51 +299,27 @@ func getOlderMessages(userId, lastMsgId, exchangeId, msgType string, limit uint)
 	return chat, nil
 }
 
-func getOlderMessageHandler(g *gin.Context) {
-	var req getOlderMessagesRequest
-	if err := g.BindJSON(&req); err != nil {
-		log.Info().Str("where", "bind json").Str("type", "failed to parse body to json").Msg(err.Error())
-		return
-	}
-
-	rawUserId, exists := g.Get("userId")
-	if !exists {
-		g.AbortWithStatusJSON(400, gin.H{"error": "user not authenticated"})
-		return
-	}
-	userId := rawUserId.(string)
-
-	if req.LastMsgId == "null" {
-		req.LastMsgId = "0"
-	}
-
-	msgs, err := getOlderMessages(userId, req.LastMsgId, req.ExchangeId, req.MsgType, req.Limit)
-	if err != nil {
-		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
-		return
-	}
-	g.JSON(200, msgs)
-}
-
 func getLaterMessages(userId, lastMsgId string) ([]DBMessage, error) {
+	nonPadedUserId := userId
 	userId = "'" + userId + "'"
 	lastMsgId = "'" + lastMsgId + "'"
-	userMeta, err := getUserMetadata(userId)
+	userMeta, err := getUserMetadata(nonPadedUserId)
 	if err != nil {
 		log.Error().Str("where", "get later messages").Str("type", "error occured in retrieving user metadata").Msg(err.Error())
 		return nil, err
 	}
+
+	if userMeta == nil {
+		return nil, errors.New("user data doesn't exist")
+	}
+
 	groups := make([]string, 0)
 	rooms := make([]string, 0)
-	// TODO: FIX THIS, userMeta can't be nil, added for testing checks
-	if userMeta != nil {
-		for _, group := range userMeta.Groupslist {
-			groups = append(groups, "'"+group+"'")
-		}
-		for _, room := range userMeta.Roomslist {
-			rooms = append(rooms, "'"+room+"'")
-
-		}
+	for _, group := range userMeta.Groupslist {
+		groups = append(groups, "'"+group+"'")
+	}
+	for _, room := range userMeta.Roomslist {
+		rooms = append(rooms, "'"+room+"'")
 	}
 
 	var chatfrom []DBMessage
@@ -379,33 +354,10 @@ func getLaterMessages(userId, lastMsgId string) ([]DBMessage, error) {
 	all = append(all, chatto...)
 	all = append(all, groupchat...)
 	all = append(all, roomchat...)
+	if len(all) == 0 {
+		return nil, nil // For consistency in API with other func calls
+	}
 	return all, nil
-}
-
-func getLaterMessageHandler(g *gin.Context) {
-	var req getLaterMessagesRequest
-	if err := g.BindJSON(&req); err != nil {
-		log.Info().Str("where", "bind json").Str("type", "failed to parse body to json").Msg(err.Error())
-		return
-	}
-
-	rawUserId, exists := g.Get("userId")
-	if !exists {
-		g.AbortWithStatusJSON(400, gin.H{"error": "user not authenticated"})
-		return
-	}
-	userId := rawUserId.(string)
-
-	if req.LastMsgId == "null" {
-		req.LastMsgId = "0"
-	}
-
-	msgs, err := getLaterMessages(userId, req.LastMsgId)
-	if err != nil {
-		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
-		return
-	}
-	g.JSON(200, msgs)
 }
 
 func searchQuery(userId, searchString, exchangeId, msgType string, limit uint) ([]DBMessage, error) {
@@ -472,31 +424,4 @@ func searchQuery(userId, searchString, exchangeId, msgType string, limit uint) (
 		return nil, err
 	}
 	return chat, nil
-}
-
-func searchQueryHandler(g *gin.Context) {
-	var req searchQueryRequest
-	if err := g.BindJSON(&req); err != nil {
-		log.Info().Str("where", "bind json").Str("type", "failed to parse body to json").Msg(err.Error())
-		return
-	}
-
-	rawUserId, exists := g.Get("userId")
-	if !exists {
-		g.AbortWithStatusJSON(400, gin.H{"error": "user not authenticated"})
-		return
-	}
-	userId := rawUserId.(string)
-
-	if req.SearchString == "" {
-		g.AbortWithStatusJSON(400, gin.H{"error": "empty search string"})
-		return
-	}
-
-	msgs, err := searchQuery(userId, req.SearchString, req.ExchangeId, req.MsgType, req.Limit)
-	if err != nil {
-		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
-		return
-	}
-	g.JSON(200, msgs)
 }

@@ -4,16 +4,12 @@ import 'dart:convert';
 
 Future<void> notifyFCMToken(
     FcmTokenCubit tokenCubit, String accessToken) async {
-  // TODO: REMOVE THIS SENDING OF USER NAME AND IMAGE! SHOULDN'T
-  String userName = 'testuser', image = '';
   // Send token
   try {
     var response =
         await http.post(Uri.parse('http://localhost:8884/v1/fcmTokenUpdate'),
             body: jsonEncode(<String, String>{
               'fcm_token': tokenCubit.state,
-              'name': userName,
-              'image': image,
             }),
             headers: <String, String>{
           'Content-Type': 'application/json',
@@ -31,8 +27,6 @@ Future<void> notifyFCMToken(
           await http.post(Uri.parse('http://localhost:8884/v1/fcmTokenUpdate'),
               body: jsonEncode(<String, String>{
                 'fcm_token': newToken,
-                'name': userName,
-                'image': image,
               }),
               headers: <String, String>{
             'Content-Type': 'application/json',
@@ -47,16 +41,12 @@ Future<void> notifyFCMToken(
 
 Future<void> invalidateFCMToken(
     FcmTokenCubit tokenCubit, String accessToken) async {
-  // TODO: REMOVE THIS SENDING OF USER NAME AND IMAGE! SHOULDN'T
-  String userName = 'testuser', image = '';
   // Send token
   try {
     var response = await http
         .post(Uri.parse('http://localhost:8884/v1/fcmTokenInvalidate'),
             body: jsonEncode(<String, String>{
               'fcm_token': tokenCubit.state,
-              'name': userName,
-              'image': image,
             }),
             headers: <String, String>{
           'Content-Type': 'application/json',
