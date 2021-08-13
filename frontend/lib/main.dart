@@ -92,7 +92,7 @@ Future<void> main() async {
       SecureStorageService(secureStorage);
 
   if (removeExistingDB) {
-    fakeInsert(db, "5baa6f0d-0705-4740-b4a1-ae1b44bbd10b");
+    fakeInsert(db, "aa616733-4e1b-4899-950f-48ea990d8db2");
   }
 
   runApp(MyApp(db, msgStream, secureStorageService, fcmTokenCubit));

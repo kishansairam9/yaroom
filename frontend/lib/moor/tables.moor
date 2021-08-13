@@ -190,6 +190,7 @@ getGroupsNameMatching(:match AS TEXT): SELECT * FROM GroupDMs WHERE LOWER(name) 
 -- Group-User Mapping Table
 -------------
 addUserToGroup(:groupId AS TEXT, :userId AS TEXT): INSERT into GroupUserMapping VALUES (:groupId, :userId);
+removeUserFromGroup(:groupId AS TEXT, :userId AS TEXT): DELETE from GroupUserMapping WHERE (userId = :userId) AND (groupId = :groupId);
 
 
 getGroupsOfUser(:userID AS TEXT): SELECT DISTINCT G.groupId, G.name, G.description, G.groupIcon FROM GroupDMs AS G, GroupUserMapping as GM WHERE GM.userId = :userID;   
