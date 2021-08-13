@@ -93,7 +93,8 @@ Future<void> main() async {
 
   if (removeExistingDB) {
     // ef8a936c-888f-4863-8d30-8a62c7c20c29 kishan
-    fakeInsert(db, "ef8a936c-888f-4863-8d30-8a62c7c20c29");
+    // aa616733-4e1b-4899-950f-48ea990d8db2 kalyan
+    fakeInsert(db, "aa616733-4e1b-4899-950f-48ea990d8db2");
   }
 
   runApp(MyApp(db, msgStream, secureStorageService, fcmTokenCubit));

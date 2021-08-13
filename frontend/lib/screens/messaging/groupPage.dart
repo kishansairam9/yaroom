@@ -283,10 +283,57 @@ class GroupChatPageState extends State<GroupChatPage>
           backgroundImage: AssetImage('assets/no-profile.png'),
         ),
         tileColor: Colors.transparent,
-        trailing: IconButton(
-          onPressed: () => {},
-          icon: Icon(Icons.more_vert),
-          tooltip: "More",
+        trailing: PopupMenuButton<int>(
+          onSelected: (selection) => {
+            if (selection == 1)
+              {
+                showDialog(
+                    context: context,
+                    builder: (_) {
+                      return AlertDialog(
+                          title: Text("Exit Group"),
+                          content: Text(
+                              "Are you sure you want to exit the group? The related chat will no longer be displayed to you."),
+                          actions: [
+                            TextButton(
+                                onPressed: () async {
+                                  print("7777777777777");
+                                  print(Provider.of<UserId>(context,
+                                      listen: false));
+                                  await RepositoryProvider.of<AppDb>(context)
+                                      .removeUserFromGroup(
+                                          groupId: widget.groupId,
+                                          userId: Provider.of<UserId>(context,
+                                              listen: false)
+                                              );
+                                  // await Navigator.pushReplacementNamed(
+                                  //     context, '/');
+                                },
+                                child: Text("Yes")),
+                            TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: Text("No"))
+                          ]);
+                    })
+              }
+          },
+          itemBuilder: (context) => [
+            PopupMenuItem(
+              value: 1,
+              child: ListTile(
+                  title:
+                      Text("Exit Group", style: TextStyle(color: Colors.red)),
+                  leading: Icon(
+                    Icons.exit_to_app,
+                    color: Colors.red,
+                  )),
+            ),
+            PopupMenuItem(
+              value: 2,
+              child: ListTile(
+                  title: Text("Settings"), leading: Icon(Icons.settings)),
+            ),
+          ],
         ),
         title: Text(
           widget.name,

@@ -3704,6 +3704,16 @@ abstract class _$AppDb extends GeneratedDatabase {
     );
   }
 
+  Future<int> removeUserFromGroup(
+      {required String userId, required String groupId}) {
+    return customUpdate(
+      'DELETE FROM GroupUserMapping WHERE(userId = ?1)AND(groupId = ?2)',
+      variables: [Variable<String>(userId), Variable<String>(groupId)],
+      updates: {groupUserMapping},
+      updateKind: UpdateKind.delete,
+    );
+  }
+
   Selectable<GroupDM> getGroupsOfUser({required String userID}) {
     return customSelect(
         'SELECT DISTINCT G.groupId, G.name, G.description, G.groupIcon FROM GroupDMs AS G,GroupUserMapping AS GM WHERE GM.userId = ?1',
@@ -3877,7 +3887,7 @@ abstract class _$AppDb extends GeneratedDatabase {
 
   Selectable<RoomsListData> getRoomsOfUser({required String userID}) {
     return customSelect(
-        'SELECT DISTINCT R.roomId, R.name, R.description, R.roomIcon FROM RoomsList AS R,RoomsUserMapping AS RM WHERE RM.userId = ?1',
+        'SELECT DISTINCT R.roomId, R.name, R.description, R.roomIcon FROM RoomsList AS R,RoomsUserMapping AS RM WHERE RM.userId = ?1 AND RM.roomId = R.roomId',
         variables: [
           Variable<String>(userID)
         ],
