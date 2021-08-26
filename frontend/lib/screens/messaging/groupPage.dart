@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show kIsWeb; // Web detection
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:yaroom/screens/components/msgBox.dart';
+import 'package:yaroom/screens/messaging/groupsView.dart';
 import '../components/contactView.dart';
 import '../components/searchDelegate.dart';
 import 'package:provider/provider.dart';
@@ -283,10 +284,11 @@ class GroupChatPageState extends State<GroupChatPage>
           backgroundImage: AssetImage('assets/no-profile.png'),
         ),
         tileColor: Colors.transparent,
-        trailing: PopupMenuButton<int>(
-          onSelected: (selection) => {
-            if (selection == 1)
-              {
+        trailing: Consumer<GroupChatData>(
+            builder: (_, GroupChatData groupChatData, __) {
+          return PopupMenuButton<int>(
+            onSelected: (selection) async {
+              if (selection == 1) {
                 showDialog(
                     context: context,
                     builder: (_) {
@@ -297,44 +299,38 @@ class GroupChatPageState extends State<GroupChatPage>
                           actions: [
                             TextButton(
                                 onPressed: () async {
-                                  print("7777777777777");
-                                  print(Provider.of<UserId>(context,
-                                      listen: false));
-                                  await RepositoryProvider.of<AppDb>(context)
-                                      .removeUserFromGroup(
-                                          groupId: widget.groupId,
-                                          userId: Provider.of<UserId>(context,
-                                              listen: false)
-                                              );
-                                  // await Navigator.pushReplacementNamed(
-                                  //     context, '/');
+                                  await groupChatData.removeGroup(
+                                      context, widget.groupId);
+                                  await Navigator.pushReplacementNamed(
+                                      context, '/');
                                 },
                                 child: Text("Yes")),
                             TextButton(
                                 onPressed: () => Navigator.pop(context),
                                 child: Text("No"))
                           ]);
-                    })
+                    });
               }
-          },
-          itemBuilder: (context) => [
-            PopupMenuItem(
-              value: 1,
-              child: ListTile(
-                  title:
-                      Text("Exit Group", style: TextStyle(color: Colors.red)),
-                  leading: Icon(
-                    Icons.exit_to_app,
-                    color: Colors.red,
-                  )),
-            ),
-            PopupMenuItem(
-              value: 2,
-              child: ListTile(
-                  title: Text("Settings"), leading: Icon(Icons.settings)),
-            ),
-          ],
-        ),
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 1,
+                child: ListTile(
+                    title:
+                        Text("Exit Group", style: TextStyle(color: Colors.red)),
+                    leading: Icon(
+                      Icons.exit_to_app,
+                      color: Colors.red,
+                    )),
+              ),
+              PopupMenuItem(
+                value: 2,
+                child: ListTile(
+                    title: Text("Settings"), leading: Icon(Icons.settings)),
+              ),
+            ],
+          );
+        }),
         title: Text(
           widget.name,
           overflow: TextOverflow.ellipsis,

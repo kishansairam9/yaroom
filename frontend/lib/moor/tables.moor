@@ -190,10 +190,10 @@ getGroupsNameMatching(:match AS TEXT): SELECT * FROM GroupDMs WHERE LOWER(name) 
 -- Group-User Mapping Table
 -------------
 addUserToGroup(:groupId AS TEXT, :userId AS TEXT): INSERT into GroupUserMapping VALUES (:groupId, :userId);
-removeUserFromGroup(:groupId AS TEXT, :userId AS TEXT): DELETE from GroupUserMapping WHERE (userId = :userId) AND (groupId = :groupId);
+removeUserFromGroup(:groupId AS TEXT, :userId AS TEXT): DELETE from GroupUserMapping WHERE ((userId = :userId) AND (groupId = :groupId));
 
 
-getGroupsOfUser(:userID AS TEXT): SELECT DISTINCT G.groupId, G.name, G.description, G.groupIcon FROM GroupDMs AS G, GroupUserMapping as GM WHERE GM.userId = :userID;   
+getGroupsOfUser(:userID AS TEXT): SELECT DISTINCT G.groupId, G.name, G.description, G.groupIcon FROM GroupDMs AS G INNER JOIN GroupUserMapping as GM ON G.groupId = GM.groupId WHERE GM.userId = :userID ORDER BY G.groupId;   
 getGroupMembers(:groupID AS TEXT): SELECT U.* FROM Users AS U, (SELECT DISTINCT userId FROM GroupUserMapping AS GM WHERE GM.groupId = :groupID) AS UID WHERE U.userId = UID.userId; 
 
 
@@ -229,7 +229,7 @@ getRoomDetails(:roomId AS TEXT): SELECT * FROM RoomsList WHERE roomId = :roomId;
 -------------
 addUserToRoom(:roomId AS TEXT, :userId AS TEXT): INSERT into RoomsUserMapping VALUES (:roomsId, :userId);
 
-getRoomsOfUser(:userID AS TEXT): SELECT DISTINCT R.roomId, R.name, R.description, R.roomIcon FROM RoomsList AS R, RoomsUserMapping as RM WHERE RM.userId = :userID AND RM.roomId = R.roomId;   
+getRoomsOfUser(:userID AS TEXT): SELECT DISTINCT R.roomId, R.name, R.description, R.roomIcon FROM RoomsList AS R INNER JOIN RoomsUserMapping as RM ON R.roomId = RM.roomId WHERE RM.userId = :userID;   
 
 getRoomMembers(:roomID AS TEXT): SELECT U.* FROM Users AS U, (SELECT DISTINCT userId FROM RoomsUserMapping AS RM WHERE RM.roomId = :roomID) AS UID WHERE U.userId = UID.userId; 
 

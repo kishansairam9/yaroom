@@ -32,11 +32,6 @@ class _FriendsViewState extends State<FriendsView> {
             return DefaultTabController(
               length: 3,
               child: Scaffold(
-                // floatingActionButton: FloatingActionButton(
-                //     onPressed: () => _showFriendRequests(context,
-                //         snapshot.data!.where((element) => element.st == 1)),
-                //     child: Icon(Icons.person_add),
-                //     backgroundColor: Theme.of(context).primaryColor),
                 appBar: AppBar(
                   bottomOpacity: 0.0,
                   elevation: 0.0,

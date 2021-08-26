@@ -3707,7 +3707,7 @@ abstract class _$AppDb extends GeneratedDatabase {
   Future<int> removeUserFromGroup(
       {required String userId, required String groupId}) {
     return customUpdate(
-      'DELETE FROM GroupUserMapping WHERE(userId = ?1)AND(groupId = ?2)',
+      'DELETE FROM GroupUserMapping WHERE((userId = ?1)AND(groupId = ?2))',
       variables: [Variable<String>(userId), Variable<String>(groupId)],
       updates: {groupUserMapping},
       updateKind: UpdateKind.delete,
@@ -3716,7 +3716,7 @@ abstract class _$AppDb extends GeneratedDatabase {
 
   Selectable<GroupDM> getGroupsOfUser({required String userID}) {
     return customSelect(
-        'SELECT DISTINCT G.groupId, G.name, G.description, G.groupIcon FROM GroupDMs AS G,GroupUserMapping AS GM WHERE GM.userId = ?1',
+        'SELECT DISTINCT G.groupId, G.name, G.description, G.groupIcon FROM GroupDMs AS G INNER JOIN GroupUserMapping AS GM ON G.groupId = GM.groupId WHERE GM.userId = ?1 ORDER BY G.groupId',
         variables: [
           Variable<String>(userID)
         ],
@@ -3887,7 +3887,7 @@ abstract class _$AppDb extends GeneratedDatabase {
 
   Selectable<RoomsListData> getRoomsOfUser({required String userID}) {
     return customSelect(
-        'SELECT DISTINCT R.roomId, R.name, R.description, R.roomIcon FROM RoomsList AS R,RoomsUserMapping AS RM WHERE RM.userId = ?1 AND RM.roomId = R.roomId',
+        'SELECT DISTINCT R.roomId, R.name, R.description, R.roomIcon FROM RoomsList AS R INNER JOIN RoomsUserMapping AS RM ON R.roomId = RM.roomId WHERE RM.userId = ?1',
         variables: [
           Variable<String>(userID)
         ],

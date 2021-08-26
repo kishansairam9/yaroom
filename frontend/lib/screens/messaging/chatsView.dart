@@ -18,7 +18,7 @@ class ChatViewState extends State<ChatView> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder(
-        stream: RepositoryProvider.of<AppDb>(context).getAllUsers().watch(),
+        stream: RepositoryProvider.of<AppDb>(context).getFriends(userId: Provider.of<UserId>(context, listen: false)).watch(),
         builder: (BuildContext context, AsyncSnapshot<List<User>> snapshot) {
           if (snapshot.hasData) {
             return ListView(

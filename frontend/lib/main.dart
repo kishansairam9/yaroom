@@ -23,6 +23,8 @@ import 'utils/secureStorageService.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 import 'utils/authorizationService.dart';
 import 'moor/utils.dart';
+import 'screens/messaging/groupsView.dart';
+import 'utils/fetchBackendData.dart';
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print("Handling a background message: ${message.messageId}");
@@ -133,9 +135,11 @@ class MyApp extends StatelessWidget {
       // TODO: Get User Details - friends, rooms, groups etc and populate in DB
       // Backend hanldes user new case :)
       // visit route `getUserDetails`
+      // await fetchUserDetails(accessToken, context);
 
       // TODO: Get new messages if any by passing largest msgId in DB
       // visit route `getLaterMessages`
+      // await fetchLaterMessages(accessToken, null, context);
 
       return Future.value('/');
     }
@@ -161,6 +165,9 @@ class MyApp extends StatelessWidget {
         RepositoryProvider<AppDb>.value(value: db),
         Provider<MessageExchangeStream>.value(value: msgExchangeStream),
         BlocProvider<FcmTokenCubit>.value(value: fcmTokenCubit),
+        ChangeNotifierProvider<GroupChatData>(
+          create: (_) => GroupChatData(),
+        ),
         BlocProvider(create: (context) {
           return FilePickerCubit(
               initialState: FilePickerDetails(media: Map(), filesAttached: 0));
