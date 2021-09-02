@@ -34,6 +34,8 @@ class AuthorizationService {
               additionalParameters: {'audience': issuer + '/api/v2/'},
               scopes: ['openid', 'profile', 'offline_access', 'app_metadata']));
       await secureStorageService.saveIdToken(response?.idToken);
+      print("sign in ///////////");
+      print(response?.accessToken);
       await secureStorageService.saveAccessToken(response?.accessToken);
       await secureStorageService
           .saveAccessTokenExpiresIn(response?.accessTokenExpirationDateTime);
@@ -59,7 +61,15 @@ class AuthorizationService {
     final DateTime? expirationDate =
         await secureStorageService.getAccessTokenExpirationDateTime();
     int? cmp = expirationDate?.compareTo(DateTime.now());
-    if (cmp != null && cmp < 0) {
+    // print(expirationDate);
+    // print("********** $cmp");
+    // print(DateTime.now());
+    // var a = await secureStorageService.getAccessToken();
+    // var b = await secureStorageService.getRefreshToken();
+    // print(a);
+    // print("object");
+    // print(b);
+    if (cmp != null && cmp > 0) {
       return secureStorageService.getAccessToken();
     }
     return _refreshAccessToken();
@@ -72,6 +82,8 @@ class AuthorizationService {
       final TokenResponse? response = await appAuth.token(TokenRequest(
           clientId, redirectUrl,
           issuer: issuer, refreshToken: refreshToken));
+      // print("refresh token ///////////");
+      // print(response?.accessToken);
       await secureStorageService.saveAccessToken(response?.accessToken);
       await secureStorageService
           .saveAccessTokenExpiresIn(response?.accessTokenExpirationDateTime);
@@ -85,6 +97,8 @@ class AuthorizationService {
 
   Future<void> logout(BuildContext context) async {
     String? accessToken = await secureStorageService.getAccessToken();
+    print("Accesss token ---- ");
+    print(accessToken);
     String? refreshToken = await secureStorageService.getRefreshToken();
     if (accessToken != null) {
       if (refreshToken != null) {
@@ -108,7 +122,7 @@ class AuthorizationService {
 
         String logoutUrl = issuer + '/v2/logout';
         if (await canLaunch(logoutUrl)) {
-          await launch(logoutUrl);
+          launch(logoutUrl);
         }
       }
     }

@@ -2,9 +2,11 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 
 	"github.com/gocql/gocql"
+	"github.com/rs/xid"
 	"github.com/rs/zerolog/log"
 	"github.com/scylladb/gocqlx/qb"
 	"github.com/scylladb/gocqlx/v2"
@@ -53,6 +55,14 @@ var AddUserFriend *gocqlx.Queryx
 var DeleteUserFriend *gocqlx.Queryx
 var SelectUserFriend *gocqlx.Queryx
 
+var AddGroupToUser *gocqlx.Queryx
+var DeleteGroupFromUser *gocqlx.Queryx
+var SelectGroupsOfUser *gocqlx.Queryx
+
+// var AddUserToGroup *gocqlx.Queryx
+var DeleteUserFromGroup *gocqlx.Queryx
+var SelectUsersOfGroup *gocqlx.Queryx
+
 func setupDB() {
 	UserMetadataTable = table.New(UsersTableMetadata)
 	SelectUserMetadata = UserMetadataTable.SelectQuery(dbSession)
@@ -60,6 +70,7 @@ func setupDB() {
 
 	GroupMetadataTable = table.New(GroupTableMetadata)
 	SelectGroupMetadata = GroupMetadataTable.SelectQuery(dbSession)
+	UpdateGroupMetadata = GroupMetadataTable.UpdateQuery(dbSession)
 
 	RoomMetadataTable = table.New(RoomTableMetadata)
 	SelectRoomMetadata = RoomMetadataTable.SelectQuery(dbSession)
@@ -75,6 +86,14 @@ func setupDB() {
 	DeleteUserFriend = UserMetadataTable.UpdateBuilder().Remove("friendslist").Query(dbSession)
 	SelectUserFriend = UserMetadataTable.SelectBuilder("friendslist").Query(dbSession)
 
+	AddGroupToUser = UserMetadataTable.UpdateBuilder().Add("groupslist").Query(dbSession)
+	DeleteGroupFromUser = UserMetadataTable.UpdateBuilder().Remove("groupslist").Query(dbSession)
+	SelectGroupsOfUser = UserMetadataTable.SelectBuilder("groupslist").Query(dbSession)
+
+	// AddUserToGroup = GroupMetadataTable.UpdateBuilder().Add("userslist").Query(dbSession)
+	DeleteUserFromGroup = GroupMetadataTable.UpdateBuilder().Remove("userslist").Query(dbSession)
+	SelectUsersOfGroup = GroupMetadataTable.SelectBuilder("userslist").Query(dbSession)
+
 	ChatMessageTable = table.New(ChatMessageMetadata)
 	InsertChatMessage = ChatMessageTable.InsertQuery(dbSession)
 	GroupMessageTable = table.New(GroupMessageMetadata)
@@ -85,9 +104,9 @@ func setupDB() {
 
 type User_udt struct {
 	gocqlx.UDT
-	Userid string
-	Name   string
-	Image  *string
+	Userid string  `json:"userId"`
+	Name   string  `json:"name"`
+	Image  *string `json:"profileImg"`
 }
 
 // MarshalUDT implements UDTMarshaler.
@@ -137,6 +156,31 @@ type UserDetails struct {
 	RoomData  []RoomMetadata
 }
 
+type UserFCMTokenUpdate struct {
+	Userid string
+	Tokens []string
+}
+
+type GroupsListOfUserUpdate struct {
+	Userid     string
+	Groupslist []string
+}
+
+type FriendsListOfUserUpdate struct {
+	Userid      string
+	FriendsList []string
+}
+
+type PendingListOfUserUpdate struct {
+	Userid      string
+	Pendinglist []string
+}
+
+type UsersListOfGroupUpdate struct {
+	Groupid   string
+	Userslist map[string]User_udt
+}
+
 func updateUserMetadata(data *UserMetadata) error {
 	if q := UpdateUserMetadata.BindStruct(data); q.Err() != nil {
 		log.Error().Str("where", "update user metadata").Str("type", "failed to bind struct").Msg(q.Err().Error())
@@ -175,6 +219,57 @@ func getGroupMetadata(groupId string) (*GroupMetadata, error) {
 	return rows[0], nil
 }
 
+func convertMapToString(data map[string]User_udt) string {
+	var s string
+	s += "{"
+	for key, val := range data {
+		fmt.Println(key, val)
+		if val.Image != nil {
+			s += fmt.Sprintf("'%s':{userid:'%s', name:'%s', image:'%s'},", key, val.Userid, val.Name, *val.Image)
+		} else {
+			s += fmt.Sprintf("'%s':{userid:'%s', name:'%s', image:''},", key, val.Userid, val.Name)
+		}
+	}
+	s = s[:len(s)-1]
+	s += "}"
+	return s
+}
+func updateGroupMetadata(data *GroupMetadata) (*GroupMetadata, error) {
+	if data.Groupid == "" {
+		data.Groupid = xid.New().String()
+	}
+	paddedGroupId := "'" + data.Groupid + "'"
+	groupMeta, err := getGroupMetadata(paddedGroupId)
+	if err != nil {
+		log.Error().Str("where", "get group details").Str("type", "error occured in retrieving group metadata").Msg(err.Error())
+		return nil, err
+	}
+	if groupMeta == nil {
+		in := dbSession.Query(qb.Insert("yaroom.groups").LitColumn("groupid", paddedGroupId).LitColumn("name", "'"+data.Name+"'").LitColumn("image", "'"+*data.Image+"'").LitColumn("description", "'"+*data.Description+"'").LitColumn("userslist", convertMapToString(data.Userslist)).ToCql())
+		if err := in.ExecRelease(); err != nil {
+			return nil, err
+		}
+		for key, _ := range data.Userslist {
+			if err := addGroupToUser(&GroupsListOfUserUpdate{Userid: key, Groupslist: []string{data.Groupid}}); err != nil {
+				return nil, err
+			}
+		}
+		if err := addUserToGroup(&UsersListOfGroupUpdate{Groupid: data.Groupid, Userslist: data.Userslist}); err != nil {
+			return nil, err
+		}
+	} else {
+		if q := UpdateGroupMetadata.BindStruct(data); q.Err() != nil {
+			log.Error().Str("where", "update Group metadata").Str("type", "failed to bind struct").Msg(q.Err().Error())
+			return nil, errors.New("internal server error")
+		}
+		if err := UpdateGroupMetadata.Exec(); err != nil {
+			log.Error().Str("where", "update Group metadata").Str("type", "failed to execute query").Msg(err.Error())
+			return nil, errors.New("internal server error")
+		}
+	}
+	return data, nil
+}
+
 func getRoomMetadata(roomId string) (*RoomMetadata, error) {
 	if q := SelectRoomMetadata.BindMap(qb.M{"roomid": roomId}); q.Err() != nil {
 		log.Error().Str("where", "get room metadata").Str("type", "failed to bind struct").Msg(q.Err().Error())
@@ -201,25 +296,25 @@ func getUserDetails(userId string) (*UserDetails, error) {
 		if err := in.ExecRelease(); err != nil {
 			return nil, err
 		}
-		err := addUserFriend(&UserFriendListUpdate{
+		err := addUserFriend(&FriendsListOfUserUpdate{
 			Userid:      userId,
-			Friendslist: []string{"john-doe", "alice-jane"},
+			FriendsList: []string{"john-doe", "alice-jane"},
 		})
 		if err != nil {
 			log.Error().Str("where", "adding new user").Str("type", "error occured in db op").Msg(err.Error())
 			return nil, err
 		}
-		err = addUserFriend(&UserFriendListUpdate{
+		err = addUserFriend(&FriendsListOfUserUpdate{
 			Userid:      "alice-jane",
-			Friendslist: []string{userId},
+			FriendsList: []string{userId},
 		})
 		if err != nil {
 			log.Error().Str("where", "adding new user").Str("type", "error occured in db op").Msg(err.Error())
 			return nil, err
 		}
-		err = addUserFriend(&UserFriendListUpdate{
+		err = addUserFriend(&FriendsListOfUserUpdate{
 			Userid:      "john-doe",
-			Friendslist: []string{userId},
+			FriendsList: []string{userId},
 		})
 		if err != nil {
 			log.Error().Str("where", "adding new user").Str("type", "error occured in db op").Msg(err.Error())
@@ -254,12 +349,78 @@ func getUserDetails(userId string) (*UserDetails, error) {
 	return &ret, nil
 }
 
-type UserPendingListUpdate struct {
-	Userid      string
-	Pendinglist []string
+func addGroupToUser(user *GroupsListOfUserUpdate) error {
+	if q := AddGroupToUser.BindStruct(user); q.Err() != nil {
+		log.Error().Str("where", "add group to user").Str("type", "failed to bind struct").Msg(q.Err().Error())
+		return errors.New("internal server error")
+	}
+	if err := AddGroupToUser.Exec(); err != nil {
+		log.Error().Str("where", "add group to user").Str("type", "failed to execute query").Msg(err.Error())
+		return errors.New("internal server error")
+	}
+	return nil
 }
 
-func addUserPendingRequest(user *UserPendingListUpdate) error {
+func deleteGroupFromUser(user *GroupsListOfUserUpdate) error {
+	if q := DeleteGroupFromUser.BindStruct(user); q.Err() != nil {
+		log.Error().Str("where", "delete group from user").Str("type", "failed to bind struct").Msg(q.Err().Error())
+		return errors.New("internal server error")
+	}
+	if err := DeleteGroupFromUser.Exec(); err != nil {
+		log.Error().Str("where", "delete group from user").Str("type", "failed to execute query").Msg(err.Error())
+		return errors.New("internal server error")
+	}
+	return nil
+}
+
+func selectGroupsOfUser(userId string) ([]GroupsListOfUserUpdate, error) {
+	if q := SelectGroupsOfUser.BindMap(qb.M{"userid": userId}); q.Err() != nil {
+		log.Error().Str("where", "get groups of user").Str("type", "failed to bind struct").Msg(q.Err().Error())
+		return nil, errors.New("internal server error")
+	}
+	rows := make([]GroupsListOfUserUpdate, 1)
+	if err := SelectGroupsOfUser.Select(&rows); err != nil {
+		log.Error().Str("where", "get groups of user").Str("type", "failed to execute query").Msg(err.Error())
+		return nil, errors.New("internal server error")
+	}
+	return rows, nil
+}
+
+func addUserToGroup(group *UsersListOfGroupUpdate) error {
+	in := dbSession.Query(qb.Update("yaroom.groups").AddLit("userslist", convertMapToString(group.Userslist)).Where(qb.EqLit("groupid", "'"+group.Groupid+"'")).ToCql())
+	if err := in.ExecRelease(); err != nil {
+		log.Error().Str("where", "add user to group").Str("type", "failed to execute query").Msg(err.Error())
+		return err
+	}
+	return nil
+}
+
+func deleteUserFromGroup(user *UsersListOfGroupUpdate) error {
+	if q := DeleteUserFromGroup.BindStruct(user); q.Err() != nil {
+		log.Error().Str("where", "delete user from group").Str("type", "failed to bind struct").Msg(q.Err().Error())
+		return errors.New("internal server error")
+	}
+	if err := DeleteUserFromGroup.Exec(); err != nil {
+		log.Error().Str("where", "delete user from group").Str("type", "failed to execute query").Msg(err.Error())
+		return errors.New("internal server error")
+	}
+	return nil
+}
+
+func selectUsersFromGroup(userId string) ([]UsersListOfGroupUpdate, error) {
+	if q := SelectUsersOfGroup.BindMap(qb.M{"userid": userId}); q.Err() != nil {
+		log.Error().Str("where", "get users of group").Str("type", "failed to bind struct").Msg(q.Err().Error())
+		return nil, errors.New("internal server error")
+	}
+	rows := make([]UsersListOfGroupUpdate, 1)
+	if err := SelectUsersOfGroup.Select(&rows); err != nil {
+		log.Error().Str("where", "get users of group").Str("type", "failed to execute query").Msg(err.Error())
+		return nil, errors.New("internal server error")
+	}
+	return rows, nil
+}
+
+func addUserPendingRequest(user *PendingListOfUserUpdate) error {
 	if q := AddUserPendingRequest.BindStruct(user); q.Err() != nil {
 		log.Error().Str("where", "add pending friend request").Str("type", "failed to bind struct").Msg(q.Err().Error())
 		return errors.New("internal server error")
@@ -271,8 +432,8 @@ func addUserPendingRequest(user *UserPendingListUpdate) error {
 	return nil
 }
 
-func removeUserPendingRequest(userId *UserPendingListUpdate) error {
-	if q := DeleteUserPendingRequest.BindStruct(userId); q.Err() != nil {
+func removeUserPendingRequest(user *PendingListOfUserUpdate) error {
+	if q := DeleteUserPendingRequest.BindStruct(user); q.Err() != nil {
 		log.Error().Str("where", "delete pending friend request").Str("type", "failed to bind struct").Msg(q.Err().Error())
 		return errors.New("internal server error")
 	}
@@ -283,27 +444,20 @@ func removeUserPendingRequest(userId *UserPendingListUpdate) error {
 	return nil
 }
 
-func selectUserPendingRequest(userId string) ([]UserPendingListUpdate, error) {
+func selectUserPendingRequest(userId string) ([]PendingListOfUserUpdate, error) {
 	if q := SelectUserPendingRequest.BindMap(qb.M{"userid": userId}); q.Err() != nil {
-		log.Error().Str("where", "get user metadata").Str("type", "failed to bind struct").Msg(q.Err().Error())
+		log.Error().Str("where", "get pending requests").Str("type", "failed to bind struct").Msg(q.Err().Error())
 		return nil, errors.New("internal server error")
 	}
-	rows := make([]UserPendingListUpdate, 1)
+	rows := make([]PendingListOfUserUpdate, 1)
 	if err := SelectUserPendingRequest.Select(&rows); err != nil {
-		log.Error().Str("where", "get user metadata").Str("type", "failed to execute query").Msg(err.Error())
+		log.Error().Str("where", "get pending requests").Str("type", "failed to execute query").Msg(err.Error())
 		return nil, errors.New("internal server error")
 	}
 	return rows, nil
 }
 
-// Gotta remove user id somehow
-type UserFriendListUpdate struct {
-	Userid string
-	// Username    string
-	Friendslist []string
-}
-
-func addUserFriend(user *UserFriendListUpdate) error {
+func addUserFriend(user *FriendsListOfUserUpdate) error {
 	if q := AddUserFriend.BindStruct(user); q.Err() != nil {
 		log.Error().Str("where", "add friend").Str("type", "failed to bind struct").Msg(q.Err().Error())
 		return errors.New("internal server error")
@@ -315,7 +469,7 @@ func addUserFriend(user *UserFriendListUpdate) error {
 	return nil
 }
 
-func removeUserFriend(user *UserFriendListUpdate) error {
+func removeUserFriend(user *FriendsListOfUserUpdate) error {
 	if q := DeleteUserFriend.BindStruct(user); q.Err() != nil {
 		log.Error().Str("where", "delete friend").Str("type", "failed to bind struct").Msg(q.Err().Error())
 		return errors.New("internal server error")
@@ -327,23 +481,17 @@ func removeUserFriend(user *UserFriendListUpdate) error {
 	return nil
 }
 
-func selectUserFriend(userid string) ([]UserFriendListUpdate, error) {
+func selectUserFriend(userid string) ([]FriendsListOfUserUpdate, error) {
 	if q := SelectUserFriend.BindMap(qb.M{"userid": userid}); q.Err() != nil {
 		log.Error().Str("where", "get friends list").Str("type", "failed to bind struct").Msg(q.Err().Error())
 		return nil, errors.New("internal server error")
 	}
-	rows := make([]UserFriendListUpdate, 1)
+	rows := make([]FriendsListOfUserUpdate, 1)
 	if err := SelectUserFriend.Select(&rows); err != nil {
 		log.Error().Str("where", "get friends list").Str("type", "failed to execute query").Msg(err.Error())
 		return nil, errors.New("internal server error")
 	}
 	return rows, nil
-}
-
-// TODO: Remove receiving name and image, backend should have it already
-type UserFCMTokenUpdate struct {
-	Userid string
-	Tokens []string
 }
 
 func addFCMToken(tok *UserFCMTokenUpdate) error {

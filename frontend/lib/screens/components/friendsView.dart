@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import '../../utils/types.dart';
 import 'contactView.dart';
+import '../createOrAdd/friend.dart';
 
 class FriendsView extends StatefulWidget {
   const FriendsView({Key? key}) : super(key: key);
@@ -22,21 +23,13 @@ class _FriendsViewState extends State<FriendsView> {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-        future: RepositoryProvider.of<AppDb>(context)
-            .getFriendRequests(
-                userId: Provider.of<UserId>(context, listen: false))
-            .get(),
+        future: RepositoryProvider.of<AppDb>(context).getFriendRequests().get(),
         builder: (BuildContext context,
             AsyncSnapshot<List<GetFriendRequestsResult>> snapshot) {
           if (snapshot.hasData) {
             return DefaultTabController(
               length: 3,
               child: Scaffold(
-                // floatingActionButton: FloatingActionButton(
-                //     onPressed: () => _showFriendRequests(context,
-                //         snapshot.data!.where((element) => element.st == 1)),
-                //     child: Icon(Icons.person_add),
-                //     backgroundColor: Theme.of(context).primaryColor),
                 appBar: AppBar(
                   bottomOpacity: 0.0,
                   elevation: 0.0,
@@ -71,7 +64,7 @@ class _FriendsViewState extends State<FriendsView> {
                               about: result.about,
                               profileImg: result.profileImg,
                               userId: result.userId);
-                          if (result.st != 2)
+                          if (result.status != 2)
                             return const SizedBox(
                               height: 0,
                             );
@@ -96,7 +89,6 @@ class _FriendsViewState extends State<FriendsView> {
                           );
                         }),
                     Scaffold(
-                      // bottomSheet: Text.rich(TextSpan(text:" Swipe Left or Right to Accept or Delete requests "), textAlign: TextAlign.justify,),
                       bottomSheet: Container(
                           height: 40,
                           width: MediaQuery.of(context).size.width,
@@ -118,7 +110,7 @@ class _FriendsViewState extends State<FriendsView> {
                                 physics: NeverScrollableScrollPhysics(),
                                 itemCount: snapshot.data!.length,
                                 separatorBuilder: (_, index) =>
-                                    snapshot.data![index].st == 1
+                                    snapshot.data![index].status == 1
                                         ? const Divider()
                                         : SizedBox(
                                             height: 0,
@@ -130,7 +122,7 @@ class _FriendsViewState extends State<FriendsView> {
                                       about: result.about,
                                       profileImg: result.profileImg,
                                       userId: result.userId);
-                                  if (result.st != 1)
+                                  if (result.status != 1)
                                     return const SizedBox(
                                       height: 0,
                                     );
@@ -159,10 +151,7 @@ class _FriendsViewState extends State<FriendsView> {
                                                           .endToStart
                                                   ? 2
                                                   : 3,
-                                              userId_1: Provider.of<UserId>(
-                                                  context,
-                                                  listen: false),
-                                              userId_2: f.userId);
+                                              userId: f.userId);
                                       setState(() {
                                         snapshot.data!.removeAt(index);
                                       });
@@ -208,61 +197,5 @@ class _FriendsViewState extends State<FriendsView> {
           }
           return Container();
         });
-  }
-}
-
-class AddFriend extends StatefulWidget {
-  const AddFriend({Key? key}) : super(key: key);
-
-  @override
-  AddFriendState createState() {
-    return AddFriendState();
-  }
-}
-
-class AddFriendState extends State<AddFriend> {
-  final _formKey = GlobalKey<FormState>();
-
-  @override
-  Widget build(BuildContext context) {
-    return Form(
-      key: _formKey,
-      child: Padding(
-        padding: EdgeInsets.all(25.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text("Add your Friends!",textAlign: TextAlign.center,
-                style: Theme.of(context)
-                    .textTheme
-                    .headline6!),
-            TextFormField(
-              decoration: const InputDecoration(
-                  icon: Icon(Icons.person_add), labelText: 'Enter Username'),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter username';
-                }
-                return null;
-              },
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16.0),
-              child: ElevatedButton(
-                onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Processing Data')),
-                    );
-                  }
-                },
-                child: const Text('Send Friend Request'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

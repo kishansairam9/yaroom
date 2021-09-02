@@ -18,8 +18,8 @@ class LandingViewModel extends ChangeNotifier {
   Future<bool> signIn() async {
     try {
       _signingIn = true;
-      notifyListeners();
       _signedIn = await authorizationService.authorize();
+      notifyListeners();
     } catch (e) {
       _signingIn = false;
       notifyListeners();
