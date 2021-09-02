@@ -66,7 +66,7 @@ Future<void> main() async {
         : await getTemporaryDirectory(),
   );
 
-  final removeExistingDB = true;
+  final removeExistingDB = false;
   AppDb db = constructDb(logStatements: true, removeExisting: removeExistingDB);
 
   var msgStream = MessageExchangeStream();

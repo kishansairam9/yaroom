@@ -40,6 +40,38 @@ type fcmTokenUpdate struct {
 	Token string `json:"fcm_token" binding:"required"`
 }
 
+type groupDetails struct {
+	GroupId      string              `json:"groupId"`
+	Name         string              `json:"name"`
+	Description  string              `json:"description"`
+	GroupIcon    string              `json:"groupIcon"`
+	GroupMembers map[string]User_udt `json:"groupMembers"`
+}
+
+type roomDetails struct {
+	RoomId       string   `json:"roomId" binding:"required"`
+	Name         string   `json:"name" binding:"required"`
+	Description  string   `json:"description"`
+	RoomIcon     string   `json:"roomIcon"`
+	RoomMembers  []string `json:"roomMembers"`
+	ChannelsList []string `json:"channelsList"`
+}
+
+func updateGroupHandler(g *gin.Context) {
+	var req groupDetails
+	if err := g.BindJSON(&req); err != nil {
+		log.Info().Str("where", "bind json").Str("type", "failed to parse body to json").Msg(err.Error())
+		return
+	}
+
+	data, err := updateGroupMetadata(&GroupMetadata{Groupid: req.GroupId, Name: req.Name, Image: &req.GroupIcon, Description: &req.Description, Userslist: req.GroupMembers})
+	if err != nil {
+		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	g.JSON(200, groupDetails{GroupId: data.Groupid, Name: data.Name, Description: *data.Description, GroupIcon: *data.Image, GroupMembers: data.Userslist})
+}
+
 func getUserDetailsHandler(g *gin.Context) {
 	rawUserId, exists := g.Get("userId")
 	if !exists {

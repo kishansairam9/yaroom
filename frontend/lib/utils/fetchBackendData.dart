@@ -23,20 +23,14 @@ Future<void> populateUserData(data, context) async {
   if (userData['Pendinglist'] != null) {
     for (var req in userData['Pendinglist']) {
       await RepositoryProvider.of<AppDb>(context, listen: false)
-          .addNewFriendRequest(
-              userId_1: Provider.of<UserId>(context, listen: false),
-              userId_2: req,
-              status: 1);
+          .addNewFriendRequest(userId: req, status: 1);
     }
   }
 
   if (userData['Friendslist'] != null) {
     for (var req in userData['Pendinglist']) {
       await RepositoryProvider.of<AppDb>(context, listen: false)
-          .addNewFriendRequest(
-              userId_1: Provider.of<UserId>(context, listen: false),
-              userId_2: req,
-              status: 2);
+          .addNewFriendRequest(userId: req, status: 2);
     }
   }
 

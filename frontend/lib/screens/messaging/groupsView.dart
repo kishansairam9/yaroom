@@ -38,23 +38,28 @@ class GroupChatViewState extends State<GroupChatView> {
   Widget build(BuildContext context) {
     return Consumer<GroupChatData>(
         builder: (_, GroupChatData groupChatData, __) {
-      return FutureBuilder(
-          future: groupChatData.getGroupData(context),
-          builder: (BuildContext context, AsyncSnapshot<void> snapshot) {
-            if (snapshot.hasData) {
-              return ListView(
-                  children: ListTile.divideTiles(
-                context: context,
-                tiles: groupChatData.groupData.map((e) => GroupProfileTile(
-                    groupId: e.groupId, name: e.name, image: e.groupIcon)),
-              ).toList());
-            } else if (snapshot.hasError) {
-              print(snapshot.error);
-              return SnackBar(
-                  content: Text('Error has occured while reading from DB'));
-            }
-            return CircularProgressIndicator();
-          });
+      return Stack(
+        children: [
+          FutureBuilder(
+              future: groupChatData.getGroupData(context),
+              builder: (BuildContext context, AsyncSnapshot<void> snapshot) {
+                if (snapshot.hasData) {
+                  return ListView(
+                      children: ListTile.divideTiles(
+                    context: context,
+                    tiles: groupChatData.groupData.map((e) => GroupProfileTile(
+                        groupId: e.groupId, name: e.name, image: e.groupIcon)),
+                  ).toList());
+                } else if (snapshot.hasError) {
+                  print(snapshot.error);
+                  return SnackBar(
+                      content: Text('Error has occured while reading from DB'));
+                }
+                return CircularProgressIndicator();
+              }),
+          Align(alignment: Alignment.bottomRight, child: FloatingActionButton(child: Icon(Icons.people), onPressed: () => Navigator.of(context).pushNamed('/editgroup'), backgroundColor: Theme.of(context).primaryColor,), )
+        ],
+      );
     });
   }
 }
