@@ -9,11 +9,6 @@ type testingUser struct {
 	UserId string `uri:"userId" binding:"required"`
 }
 
-type testingActiveStatus struct {
-	UserId string `json:"userId" binding:"required"`
-	Active bool   `json:"active" binding:"required"`
-}
-
 type mediaRequest struct {
 	ObjectId string `uri:"objectid" binding:"required"`
 }

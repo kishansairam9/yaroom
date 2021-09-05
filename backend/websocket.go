@@ -51,13 +51,6 @@ type WSError struct {
 }
 
 func wsHandler(g *gin.Context) {
-	conn, err := wsUpgrader.Upgrade(g.Writer, g.Request, nil)
-	if err != nil {
-		log.Warn().Str("where", "wsHandler").Str("type", "ws upgrade").Msg(err.Error())
-		g.AbortWithStatusJSON(400, gin.H{"error": "failed to upgrade connection to websocket"})
-		return
-	}
-
 	rawUserId, exists := g.Get("userId")
 	if !exists {
 		g.AbortWithStatusJSON(400, gin.H{"error": "user not authenticated"})
@@ -65,7 +58,7 @@ func wsHandler(g *gin.Context) {
 	}
 	userId := rawUserId.(string)
 
-	// Get metadata for active status handlers
+	// Get metadata of user
 	userMeta, err := getUserMetadata(userId)
 	if err != nil {
 		log.Error().Str("where", "get user metadata").Str("type", "error occured in retrieving data").Msg(err.Error())
@@ -78,37 +71,48 @@ func wsHandler(g *gin.Context) {
 		return
 	}
 
-	activeStatusStreams := make([]string, 0)
+	backendStreams := make([]string, 0)
 	if userMeta.Friendslist != nil {
 		for _, friend := range userMeta.Friendslist {
-			activeStatusStreams = append(activeStatusStreams, fmt.Sprintf("USER:%v", friend))
+			backendStreams = append(backendStreams, fmt.Sprintf("USER:%v", friend))
 		}
 	}
 	if userMeta.Groupslist != nil {
 		for _, group := range userMeta.Groupslist {
-			activeStatusStreams = append(activeStatusStreams, fmt.Sprintf("GROUP:%v", group))
+			backendStreams = append(backendStreams, fmt.Sprintf("GROUP:%v", group))
 		}
 	}
 	if userMeta.Roomslist != nil {
 		for _, room := range userMeta.Roomslist {
-			activeStatusStreams = append(activeStatusStreams, fmt.Sprintf("ROOM:%v", room))
+			backendStreams = append(backendStreams, fmt.Sprintf("ROOM:%v", room))
 		}
 	}
-	err = ensureActiveStatusStreamsExist(activeStatusStreams)
+	err = ensureStreamsExist(backendStreams)
+	fmt.Println("Streams considering ")
+	for _, st := range backendStreams {
+		fmt.Println(st)
+	}
 	if err != nil {
-		log.Error().Str("where", "ensure active status streams").Str("type", "error occured in adding streams").Msg(err.Error())
+		log.Error().Str("where", "ensure backend streams exist").Str("type", "error occured in adding streams").Msg(err.Error())
 		g.AbortWithStatus(500)
 		return
 	}
 
-	// Active status routine
-	activeStatusQuit := make(chan bool)
-	activeStatusOutChannel := make(chan interface{}, 30)
-	go subscribeToActiveStatus(activeStatusStreams, activeStatusOutChannel, activeStatusQuit)
-	activityMonitorChannelQuit := make(chan bool)
-	activityMonitorChannel := make(chan bool, 3)
+	conn, err := wsUpgrader.Upgrade(g.Writer, g.Request, nil)
+	if err != nil {
+		log.Warn().Str("where", "wsHandler").Str("type", "ws upgrade").Msg(err.Error())
+		g.AbortWithStatusJSON(400, gin.H{"error": "failed to upgrade connection to websocket"})
+		return
+	}
+
+	// Subscription routine
+	subQuit := make(chan bool)
+	subOutChannel := make(chan []byte, 30)
+	go userSubscribeTo(userId, backendStreams, subOutChannel, subQuit)
+	monitorChannelQuit := make(chan bool)
+	monitorChannel := make(chan interface{}, 3)
 	// Activity monitor routine
-	go monitorActivity(userId, activeStatusStreams, activityMonitorChannel, activityMonitorChannelQuit)
+	go monitorStreams(userId, backendStreams, monitorChannel, monitorChannelQuit)
 
 	// Database insert routine
 	dbInChannel := make(chan interface{}, 50)
@@ -119,7 +123,7 @@ func wsHandler(g *gin.Context) {
 	// WS Read routine
 	readChannel := make(chan interface{}, 10)
 	readQuit := make(chan bool)
-	go func(msgChannel chan<- interface{}, activityChannel chan<- bool, quit chan bool) {
+	go func(msgChannel chan<- interface{}, activityChannel chan<- interface{}, quit chan bool) {
 		for {
 			_, rawMsg, err := conn.ReadMessage()
 			if err != nil {
@@ -134,7 +138,7 @@ func wsHandler(g *gin.Context) {
 			}
 
 			if msg.Type == "Active" {
-				activityChannel <- true
+				activityChannel <- ActiveStatus{Userid: userId, Active: true}
 			} else {
 				// Validate fromUser with userId in JWT to prevent invalid msgs
 				if msg.FromUser != userId {
@@ -150,7 +154,7 @@ func wsHandler(g *gin.Context) {
 			default:
 			}
 		}
-	}(readChannel, activityMonitorChannel, readQuit)
+	}(readChannel, monitorChannel, readQuit)
 
 	// Write loop
 	gotQuitFromRead := false
@@ -184,8 +188,8 @@ func wsHandler(g *gin.Context) {
 				}
 			}
 
-		case activity := <-activeStatusOutChannel:
-			err = conn.WriteJSON(activity)
+		case data := <-subOutChannel:
+			err = conn.WriteMessage(1, data)
 			if err != nil {
 				log.Info().Str("where", "wsHandler").Str("type", "writing message").Msg(err.Error())
 				connFailed = true
@@ -201,8 +205,8 @@ func wsHandler(g *gin.Context) {
 
 	}
 	dbQuit <- true
-	activeStatusQuit <- true
-	activityMonitorChannelQuit <- true
+	subQuit <- true
+	monitorChannel <- true
 	if !gotQuitFromRead {
 		readQuit <- true
 	}

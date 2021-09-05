@@ -168,7 +168,7 @@ type GroupsListOfUserUpdate struct {
 
 type FriendsListOfUserUpdate struct {
 	Userid      string
-	FriendsList []string
+	Friendslist []string
 }
 
 type PendingListOfUserUpdate struct {
@@ -298,7 +298,7 @@ func getUserDetails(userId string) (*UserDetails, error) {
 		}
 		err := addUserFriend(&FriendsListOfUserUpdate{
 			Userid:      userId,
-			FriendsList: []string{"john-doe", "alice-jane"},
+			Friendslist: []string{"john-doe", "alice-jane"},
 		})
 		if err != nil {
 			log.Error().Str("where", "adding new user").Str("type", "error occured in db op").Msg(err.Error())
@@ -306,7 +306,7 @@ func getUserDetails(userId string) (*UserDetails, error) {
 		}
 		err = addUserFriend(&FriendsListOfUserUpdate{
 			Userid:      "alice-jane",
-			FriendsList: []string{userId},
+			Friendslist: []string{userId},
 		})
 		if err != nil {
 			log.Error().Str("where", "adding new user").Str("type", "error occured in db op").Msg(err.Error())
@@ -314,7 +314,7 @@ func getUserDetails(userId string) (*UserDetails, error) {
 		}
 		err = addUserFriend(&FriendsListOfUserUpdate{
 			Userid:      "john-doe",
-			FriendsList: []string{userId},
+			Friendslist: []string{userId},
 		})
 		if err != nil {
 			log.Error().Str("where", "adding new user").Str("type", "error occured in db op").Msg(err.Error())

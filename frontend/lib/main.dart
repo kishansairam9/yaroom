@@ -71,6 +71,8 @@ Future<void> main() async {
 
   var msgStream = MessageExchangeStream();
   msgStream.stream.listen((encodedData) async {
+    print("Got encoded data::::::\n" + encodedData);
+    if (encodedData == "" || encodedData == "null") return;
     var data = jsonDecode(encodedData) as Map;
     if (data.containsKey('error')) {
       print("WS stream returned error ${data['error']}");
@@ -94,9 +96,8 @@ Future<void> main() async {
       SecureStorageService(secureStorage);
 
   if (removeExistingDB) {
-    // ef8a936c-888f-4863-8d30-8a62c7c20c29 kishan
-    // aa616733-4e1b-4899-950f-48ea990d8db2 kalyan
-    fakeInsert(db, "aa616733-4e1b-4899-950f-48ea990d8db2");
+    // fakeInsert(db, "aa616733-4e1b-4899-950f-48ea990d8db2"); // kalyan
+    fakeInsert(db, "ef8a936c-888f-4863-8d30-8a62c7c20c29"); // kishan
   }
 
   runApp(MyApp(db, msgStream, secureStorageService, fcmTokenCubit));
