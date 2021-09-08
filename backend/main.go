@@ -111,6 +111,8 @@ func main() {
 		// User Details
 		secured.GET("/getUserDetails", getUserDetailsHandler)
 
+
+		secured.GET("/editRoomDetails",updateRoomHandler)
 		// Group Details
 		secured.POST("/editGroupDetails", updateGroupHandler)
 

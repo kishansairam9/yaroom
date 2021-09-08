@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:yaroom/blocs/activeStatus.dart';
 import 'package:yaroom/blocs/fcmToken.dart';
 import 'package:yaroom/blocs/rooms.dart';
 import 'utils/router.dart';
@@ -63,12 +64,13 @@ Future<void> main() async {
   HydratedBloc.storage = await HydratedStorage.build(
     storageDirectory: kIsWeb
         ? HydratedStorage.webStorageDirectory
-        : await getTemporaryDirectory(),
+        : await getApplicationDocumentsDirectory(),
   );
 
   final removeExistingDB = false;
   AppDb db = constructDb(logStatements: true, removeExisting: removeExistingDB);
 
+  var activeStatus = ActiveStatusMap(statusMap: Map());
   var msgStream = MessageExchangeStream();
   msgStream.stream.listen((encodedData) async {
     print("Got encoded data::::::\n" + encodedData);
@@ -78,6 +80,8 @@ Future<void> main() async {
       print("WS stream returned error ${data['error']}");
       return;
     } else if (data.containsKey('active')) {
+      activeStatus.add(data['userId']);
+      activeStatus.update(data['userId'], data['active']);
       print(
           "Active status recieved for ${data['userId']} as ${data['active']}");
       return;
@@ -96,11 +100,16 @@ Future<void> main() async {
       SecureStorageService(secureStorage);
 
   if (removeExistingDB) {
+    // ef8a936c-888f-4863-8d30-8a62c7c20c29 kishan
+    // aa616733-4e1b-4899-950f-48ea990d8db2 kalyan
+    // 5baa6f0d-0705-4740-b4a1-ae1b44bbd10b abhi
+    //fakeInsert(db, "5baa6f0d-0705-4740-b4a1-ae1b44bbd10b");
     // fakeInsert(db, "aa616733-4e1b-4899-950f-48ea990d8db2"); // kalyan
     fakeInsert(db, "ef8a936c-888f-4863-8d30-8a62c7c20c29"); // kishan
   }
 
-  runApp(MyApp(db, msgStream, secureStorageService, fcmTokenCubit));
+  runApp(
+      MyApp(db, msgStream, secureStorageService, fcmTokenCubit, activeStatus));
 }
 
 class MyApp extends StatelessWidget {
@@ -108,13 +117,19 @@ class MyApp extends StatelessWidget {
   late final MessageExchangeStream msgExchangeStream;
   late final SecureStorageService secureStorageService;
   late final FcmTokenCubit fcmTokenCubit;
+  late final ActiveStatusMap activeStatus;
 
-  MyApp(AppDb db, MessageExchangeStream msgExchangeStream,
-      SecureStorageService secureStorageService, FcmTokenCubit fcmTokenCubit) {
+  MyApp(
+      AppDb db,
+      MessageExchangeStream msgExchangeStream,
+      SecureStorageService secureStorageService,
+      FcmTokenCubit fcmTokenCubit,
+      ActiveStatusMap activeStatus) {
     this.db = db;
     this.secureStorageService = secureStorageService;
     this.msgExchangeStream = msgExchangeStream;
     this.fcmTokenCubit = fcmTokenCubit;
+    this.activeStatus = activeStatus;
   }
 
   Future<String> getInitialRoute(BuildContext context) async {
@@ -132,6 +147,13 @@ class MyApp extends StatelessWidget {
 
       // Handle refresh token update
       notifyFCMToken(fcmTokenCubit, accessToken);
+
+      //setting user active
+      final userid =
+          await Provider.of<AuthorizationService>(context, listen: false)
+              .getUserId();
+      Provider.of<ActiveStatusMap>(context, listen: false).add(userid);
+      Provider.of<ActiveStatusMap>(context, listen: false).update(userid, true);
 
       // TODO: Get User Details - friends, rooms, groups etc and populate in DB
       // Backend hanldes user new case :)
@@ -151,6 +173,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        Provider<ActiveStatusMap>.value(value: activeStatus),
         Provider<FlutterAppAuth>(
           create: (_) => FlutterAppAuth(),
         ),
@@ -163,6 +186,7 @@ class MyApp extends StatelessWidget {
                   Provider.of<AuthorizationService>(context, listen: false),
                 )),
         BlocProvider<RoomsCubit>(create: (_) => RoomsCubit()),
+        // BlocProvider(create: create)
         RepositoryProvider<AppDb>.value(value: db),
         Provider<MessageExchangeStream>.value(value: msgExchangeStream),
         BlocProvider<FcmTokenCubit>.value(value: fcmTokenCubit),
@@ -207,6 +231,8 @@ class _MaterialAppWrapperState extends State<MaterialAppWrapper>
     with WidgetsBindingObserver {
   @override
   void initState() {
+    // Handle refresh token update
+
     super.initState();
     WidgetsBinding.instance?.addObserver(this);
   }
@@ -247,4 +273,39 @@ class _MaterialAppWrapperState extends State<MaterialAppWrapper>
       onGenerateRoute: _contentRouter.onGenerateRoute,
     );
   }
+}
+
+Future<bool> delMsg(BuildContext context, User user) async {
+  var oldMsg = await RepositoryProvider.of<AppDb>(context)
+      .getUserMsgsToDelete(userId: user.userId, count: 10)
+      .get();
+  for (int i = 0; i < oldMsg.length; i++) {
+    await RepositoryProvider.of<AppDb>(context)
+        .deleteMsg(msgId: oldMsg[i].msgId);
+  }
+  return Future.value(true);
+}
+
+Future<bool> delOldMsg(BuildContext context, User user) async {
+  print('hola');
+  var oldMsgCount = await RepositoryProvider.of<AppDb>(context)
+      .getUserMsgCount(userId: user.userId)
+      .get();
+  if (oldMsgCount[0] > 10) {
+    delMsg(context, user);
+  }
+  return Future.value(true);
+}
+
+Future<bool> cleanFrontendDB(BuildContext context) async {
+  final userid = await Provider.of<AuthorizationService>(context, listen: false)
+      .getUserId();
+  var oldUsers = await RepositoryProvider.of<AppDb>(context)
+      .getAllOtherUsers(userId: userid)
+      .get();
+  for (int i = 0; i < oldUsers.length; i++) {
+    await delOldMsg(context, oldUsers[i]);
+  }
+  print("hi");
+  return Future.value(true);
 }

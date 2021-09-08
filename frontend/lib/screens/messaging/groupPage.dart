@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:bubble/bubble.dart';
 import 'dart:convert';
@@ -13,6 +15,7 @@ import 'package:provider/provider.dart';
 import '../../utils/messageExchange.dart';
 import '../../utils/types.dart';
 import '../../blocs/groupChats.dart';
+import 'package:http/http.dart' as http;
 
 class GroupChatPage extends StatefulWidget {
   late final String groupId, name;
@@ -31,7 +34,8 @@ class GroupChatPageState extends State<GroupChatPage>
     with WidgetsBindingObserver {
   final inputController = TextEditingController();
   late final webSocketSubscription;
-
+  List<GroupChatMessage> newmsgs = [];
+  bool moreload = true;
   @override
   void initState() {
     super.initState();
@@ -70,46 +74,109 @@ class GroupChatPageState extends State<GroupChatPage>
     return Future.value(false);
   }
 
-  Widget buildSingleMsg(msg) {
-    if (msg.media != null && msg.content != null) {
-      return Column(
-        children: [
-          Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                msg.media!,
-                textAlign: TextAlign.left,
-                style: TextStyle(color: Colors.white),
-              )),
-          Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                msg.content!,
-                textAlign: TextAlign.left,
-                style: TextStyle(color: Colors.white),
-              )),
-        ],
-      );
+  Future<Widget> buildSingleMsg(
+      BuildContext context, GroupChatMessage msg) async {
+    final userid = Provider.of<UserId>(context, listen: false);
+
+    if (msg.media == null) {
+      if (msg.content == null) {
+        return Container();
+      } else {
+        return Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              msg.content!,
+              textAlign: TextAlign.left,
+              style: TextStyle(color: Colors.white),
+            ));
+      }
+    } else {
+      var media = await http.get(Uri.parse(
+          'http://localhost:8884/testing/' + userid + '/media/' + msg.media!));
+      var data = jsonDecode(media.body) as Map;
+      if (msg.content == null) {
+        var temp = data['name'].split(".");
+        return Align(
+            alignment: Alignment.centerLeft,
+            child: ['jpg', 'jpeg', 'png'].contains(temp.last)
+                ? Image.memory(Uint8List.fromList(data['bytes'].cast<int>()))
+                : Row(
+                    children: [
+                      Text(data['name']),
+                      IconButton(
+                        icon: const Icon(Icons.file_download),
+                        tooltip: 'Increase volume by 10',
+                        onPressed: () {},
+                      ),
+                    ],
+                  ));
+      } else {
+        var temp = data['name'].split(".");
+        return Column(
+          children: [
+            ['jpg', 'jpeg', 'png'].contains(temp.last)
+                ? Image.memory(Uint8List.fromList(data['bytes'].cast<int>()))
+                : Row(
+                    children: [
+                      Text(data['name']),
+                      IconButton(
+                        icon: const Icon(Icons.file_download),
+                        tooltip: 'Increase volume by 10',
+                        onPressed: () {},
+                      ),
+                    ],
+                  ),
+            Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  msg.content!,
+                  textAlign: TextAlign.left,
+                  style: TextStyle(color: Colors.white),
+                )),
+          ],
+        );
+      }
     }
-    if (msg.media != null && msg.content == null) {
-      return Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            msg.media!,
-            textAlign: TextAlign.left,
-            style: TextStyle(color: Colors.white),
-          ));
-    }
-    if (msg.media == null && msg.content != null) {
-      return Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            msg.content!,
-            textAlign: TextAlign.left,
-            style: TextStyle(color: Colors.white),
-          ));
-    }
-    return Container();
+
+    // if (msg.media != null && msg.content != null) {
+    //   return Column(
+    //     children: [
+    //       Align(
+    //           alignment: Alignment.centerLeft,
+    //           child: Text(
+    //             msg.media!,
+    //             textAlign: TextAlign.left,
+    //             style: TextStyle(color: Colors.white),
+    //           )),
+    //       Align(
+    //           alignment: Alignment.centerLeft,
+    //           child: Text(
+    //             msg.content!,
+    //             textAlign: TextAlign.left,
+    //             style: TextStyle(color: Colors.white),
+    //           )),
+    //     ],
+    //   );
+    // }
+    // if (msg.media != null && msg.content == null) {
+    //   return Align(
+    //       alignment: Alignment.centerLeft,
+    //       child: Text(
+    //         msg.media!,
+    //         textAlign: TextAlign.left,
+    //         style: TextStyle(color: Colors.white),
+    //       ));
+    // }
+    // if (msg.media == null && msg.content != null) {
+    //   return Align(
+    //       alignment: Alignment.centerLeft,
+    //       child: Text(
+    //         msg.content!,
+    //         textAlign: TextAlign.left,
+    //         style: TextStyle(color: Colors.white),
+    //       ));
+    // }
+    // return Container();
   }
 
   _buildMessage(BuildContext context, GroupChatMessage msg, bool prevIsSame,
@@ -157,7 +224,19 @@ class GroupChatPageState extends State<GroupChatPage>
                         SizedBox(
                           height: 10,
                         ),
-                        buildSingleMsg(msg),
+                        Builder(
+                          builder: (context) {
+                            return FutureBuilder(
+                                future: buildSingleMsg(context, msg),
+                                builder: (BuildContext context,
+                                    AsyncSnapshot<Widget> snapshot) {
+                                  if (snapshot.hasData) {
+                                    return snapshot.data!;
+                                  }
+                                  return CircularProgressIndicator();
+                                });
+                          },
+                        ),
                         Align(
                             alignment: Alignment.bottomRight,
                             child: Text(time,
@@ -221,31 +300,86 @@ class GroupChatPageState extends State<GroupChatPage>
   }
 
   final GlobalKey<ScaffoldState> _scaffoldkey = new GlobalKey();
+  loadMore(List<GroupChatMessage> msgs) async {
+    if (moreload) {
+      final userid = Provider.of<UserId>(context, listen: false);
+      var req = await http.get(Uri.parse('http://localhost:8884/testing/' +
+          userid +
+          '/getOlderMessages?msgType=GroupMessage&lastMsgId=' +
+          msgs[0].msgId +
+          '&exchangeId=' +
+          widget.groupId +
+          '&limit=15'));
+      if (req.body != "null") {
+        if (req.body
+              .contains(new RegExp("{\"error\"", caseSensitive: false))) {
+            return;
+          }
+        print(req.body);
+        var results = jsonDecode(req.body).cast<Map<String, dynamic>>();
+        List<GroupChatMessage> temp = [];
+        for (int i = 0; i < results.length; i++) {
+          GroupChatMessage msg = GroupChatMessage(
+            fromUser: results[i]['fromUser'],
+            msgId: results[i]['msgId'],
+            groupId: results[i]['groupId'],
+            time: DateTime.parse(results[i]['time']),
+            content: results[i]['content'],
+            // media: results[i]['media']
+          );
+          temp.add(msg);
+        }
+        temp.sort((a, b) => a.msgId.compareTo(b.msgId));
+        setState(() {
+          newmsgs = temp;
+        });
+      } else {
+        setState(() {
+          moreload = false;
+        });
+      }
+    }
+  }
 
   Widget _buildMessagesView(List<GroupChatMessage> msgs) {
     return Expanded(
       child: Column(
         children: [
           Expanded(
-              child: ListView.builder(
-                  reverse: true,
-                  padding: EdgeInsets.only(bottom: 15.0),
-                  itemCount: msgs.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    final bool prevIsSame = msgs.length - 2 - index >= 0
-                        ? (msgs[msgs.length - 2 - index].fromUser ==
-                            msgs[msgs.length - 1 - index].fromUser)
-                        : false;
-                    final bool prependDayCond = msgs.length - 2 - index >= 0
-                        ? (msgs[msgs.length - 2 - index].time.day !=
-                            msgs[msgs.length - 1 - index].time.day)
-                        : true;
-                    DateTime? prependDay = prependDayCond
-                        ? msgs[msgs.length - 1 - index].time
-                        : null;
-                    return _buildMessage(context, msgs[msgs.length - 1 - index],
-                        prevIsSame && !prependDayCond, prependDay);
-                  }))
+              child: NotificationListener<ScrollNotification>(
+            onNotification: (ScrollNotification scrollInfo) {
+              if (scrollInfo.metrics.pixels ==
+                  scrollInfo.metrics.maxScrollExtent) {
+                loadMore(msgs);
+                // newmsgs.addAll(msgs);
+                msgs.insertAll(0, newmsgs);
+                // setState(() {
+                //   newmsgs:[];
+                // });
+                return true;
+              }
+              return false;
+            },
+            child: ListView.builder(
+                reverse: true,
+                padding: EdgeInsets.only(bottom: 15.0),
+                itemCount: msgs.length,
+                itemBuilder: (BuildContext context, int index) {
+                  final bool prevIsSame = msgs.length - 2 - index >= 0
+                      ? (msgs[msgs.length - 2 - index].fromUser ==
+                          msgs[msgs.length - 1 - index].fromUser)
+                      : false;
+                  final bool prependDayCond = msgs.length - 2 - index >= 0
+                      ? (msgs[msgs.length - 2 - index].time.day !=
+                          msgs[msgs.length - 1 - index].time.day)
+                      : true;
+                  DateTime? prependDay = prependDayCond
+                      ? msgs[msgs.length - 1 - index].time
+                      : null;
+                  return _buildMessage(context, msgs[msgs.length - 1 - index],
+                      prevIsSame && !prependDayCond, prependDay);
+                }),
+          ))
         ],
       ),
     );
@@ -301,6 +435,7 @@ class GroupChatPageState extends State<GroupChatPage>
                           actions: [
                             TextButton(
                                 onPressed: () async {
+
                                   await groupChatData.removeGroup(
                                       context, widget.groupId);
                                   await Navigator.pushReplacementNamed(

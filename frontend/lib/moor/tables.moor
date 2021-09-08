@@ -246,6 +246,15 @@ insertRoomsChannelMessage(:msgId AS TEXT, :roomID AS TEXT, :channelId AS TEXT, :
 
 getRoomChannelChat(:roomId AS TEXT, :channelId AS TEXT): SELECT * FROM RoomsMessages WHERE roomId = :roomId AND channelId = :channelId ORDER BY msgId;
 
+--------------
+-- Clean frontend DB
+--------------
+getAllOtherUsers(:userId AS TEXT): SELECT * FROM Users WHERE userId != :userId;
+getUserMsgCount(:userId AS TEXT): SELECT COUNT(*) FROM ChatMessages WHERE fromUser = :userId OR toUser = :userId;
+getUserMsgsToDelete(:userId AS TEXT, :count AS NUMBER): SELECT * FROM ChatMessages WHERE toUser=:userId or fromUser =:userId  ORDER BY msgId DESC LIMIT -1 OFFSET :count;
+deleteMsg(:msgId AS TEXT): DELETE FROM ChatMessages WHERE msgId=:msgId;
+
+
 -- NOTE
 -- While using text full search index, if we use normal way like chats.moor
 -- With edit of non text field, while index of text will also be updated

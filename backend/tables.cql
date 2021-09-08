@@ -65,7 +65,7 @@ INSERT INTO yaroom.users (userid, name, username, image, groupslist, roomslist) 
 -- STICK TO THIS, MEDIA ACCESS CONTROLS ALSO DEPENDS ON THIS
 -- DMs -> sort user ids and u1 < u2 => exchange_id = `u1:u2`
 -- Group -> exchange_id = `groupdId` 
--- Room -> exchange_id = `roomId#channelId` 
+-- Room -> exchange_id = `roomId@channelId` 
 
 CREATE TABLE yaroom.chat_messages (
     exchange_id text,

@@ -3940,6 +3940,47 @@ abstract class _$AppDb extends GeneratedDatabase {
         }).map(roomsMessages.mapFromRow);
   }
 
+  Selectable<User> getAllOtherUsers({required String userId}) {
+    return customSelect('SELECT * FROM Users WHERE userId != ?1', variables: [
+      Variable<String>(userId)
+    ], readsFrom: {
+      users,
+    }).map(users.mapFromRow);
+  }
+
+  Selectable<int> getUserMsgCount({required String userId}) {
+    return customSelect(
+        'SELECT COUNT(*) AS _c0 FROM ChatMessages WHERE fromUser = ?1 OR toUser = ?1',
+        variables: [
+          Variable<String>(userId)
+        ],
+        readsFrom: {
+          chatMessages,
+        }).map((QueryRow row) => row.read<int>('_c0'));
+  }
+
+  Selectable<ChatMessage> getUserMsgsToDelete(
+      {required String userId, required double count}) {
+    return customSelect(
+        'SELECT * FROM ChatMessages WHERE toUser = ?1 OR fromUser = ?1 ORDER BY msgId DESC LIMIT -1 OFFSET ?2',
+        variables: [
+          Variable<String>(userId),
+          Variable<double>(count)
+        ],
+        readsFrom: {
+          chatMessages,
+        }).map(chatMessages.mapFromRow);
+  }
+
+  Future<int> deleteMsg({required String msgId}) {
+    return customUpdate(
+      'DELETE FROM ChatMessages WHERE msgId = ?1',
+      variables: [Variable<String>(msgId)],
+      updates: {chatMessages},
+      updateKind: UpdateKind.delete,
+    );
+  }
+
   @override
   Iterable<TableInfo> get allTables => allSchemaEntities.whereType<TableInfo>();
   @override

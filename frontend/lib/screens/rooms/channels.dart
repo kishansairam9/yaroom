@@ -46,7 +46,10 @@ class ChannelsViewState extends State<ChannelsView> {
                               name: e.channelName);
                           if (index == 0) {
                             return Column(
-                              children: [Text(Roomsnapshot.data![0].name), tile],
+                              children: [
+                                Text(Roomsnapshot.data![0].name),
+                                tile
+                              ],
                             );
                           }
                           return tile;
@@ -90,13 +93,70 @@ class ChannelsTile extends StatefulWidget {
 
 class ChannelsTileState extends State<ChannelsTile> {
   bool _unread = false;
-
   ChannelsTileState({
     bool? unread,
   }) {
     _unread = unread ?? (Random().nextInt(2) == 0 ? false : true);
     // _unread = true;
   }
+
+  Widget editChannel(String channelid) {
+    var ChannelController = TextEditingController();
+    return AlertDialog(
+      scrollable: true,
+      title: Text('Edit Channel'),
+      content: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Form(
+          child: Column(
+            children: <Widget>[
+              TextFormField(
+                controller: ChannelController,
+                decoration: InputDecoration(
+                  labelText: 'Name',
+                  icon: Icon(Icons.edit),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        ElevatedButton(
+            child: Text("Submit"),
+            onPressed: () async {
+              if (ChannelController.text != '') {
+                var channels = await RepositoryProvider.of<AppDb>(context)
+                    .getChannelsOfRoom(roomID: widget.roomId)
+                    .get();
+                var newChannels = [];
+                for (int i = 0; i < channels.length; i++) {
+                  newChannels.add(channels[i]);
+                  if (channels[i].channelId == channelid) {
+                    newChannels[i].channelName = ChannelController.text;
+                  }
+                }
+              }
+              
+            }),
+        ElevatedButton(
+            child: Text("Delete Channel"),
+            onPressed: () async {
+              var channels = await RepositoryProvider.of<AppDb>(context)
+                  .getChannelsOfRoom(roomID: widget.roomId)
+                  .get();
+              var newChannels = [];
+              for (int i = 0; i < channels.length; i++) {
+                if (channels[i].channelId != channelid) {
+                  newChannels.add(channels[i]);
+                }
+              }
+            
+            })
+      ],
+    );
+  }
+
   Widget build(BuildContext context) {
     return ListTile(
       minVerticalPadding: 5,
@@ -105,6 +165,13 @@ class ChannelsTileState extends State<ChannelsTile> {
         Navigator.of(context).pop();
         BlocProvider.of<RoomsCubit>(context, listen: false)
             .updateDefaultChannel(widget.roomId, widget.channelId);
+      },
+      onLongPress: () {
+        showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return editChannel(widget.channelId);
+            });
       },
       title: Text("# " + widget.name),
       trailing: _unread
@@ -116,7 +183,7 @@ class ChannelsTileState extends State<ChannelsTile> {
                 shape: BoxShape.circle,
               ),
             )
-          : null,
+          : Container(),
     );
   }
 }

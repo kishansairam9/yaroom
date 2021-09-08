@@ -116,7 +116,7 @@ func getExchangeId(msg *WSMessage) (string, error) {
 	case "GroupMessage":
 		return msg.GroupId, nil
 	case "RoomMessage":
-		return msg.RoomId + "#" + msg.ChannelId, nil
+		return msg.RoomId + "@" + msg.ChannelId, nil
 	default:
 		return "", errors.New("unknown message type")
 	}
@@ -135,10 +135,8 @@ func addMessage(msg *WSMessage) error {
 			return errors.New("invalid media file, check non empty name, bytes > 0")
 		}
 		// TODO: COMPRESS AND STORE TO SAVE STORAGE SPACE (LATER)
-		fmt.Printf("%v", msg.MediaData)
 
 		mediaBytes, _ := json.Marshal(msg.MediaData)
-		fmt.Printf("%v", string(mediaBytes))
 		mediaId := xid.New().String()
 
 		if _, err := minioClient.PutObject(context.Background(), miniobucket, mediaId, bytes.NewReader(mediaBytes), -1, minio.PutObjectOptions{ContentType: "application/json", UserMetadata: map[string]string{"x-amz-meta-key": exchange_id}}); err != nil {
@@ -271,7 +269,7 @@ func getOlderMessages(userId, lastMsgId, exchangeId, msgType string, limit uint)
 		if hasAccess {
 			break
 		}
-		room_id_split := strings.Split(split_exchange_id[0], "#")
+		room_id_split := strings.Split(split_exchange_id[0], "@")
 		for _, room := range userMeta.Roomslist {
 			if room_id_split[0] == room {
 				hasAccess = true
@@ -397,7 +395,7 @@ func searchQuery(userId, searchString, exchangeId, msgType string, limit uint) (
 		if hasAccess {
 			break
 		}
-		room_id_split := strings.Split(split_exchange_id[0], "#")
+		room_id_split := strings.Split(split_exchange_id[0], "@")
 		for _, room := range userMeta.Roomslist {
 			if room_id_split[0] == room {
 				hasAccess = true

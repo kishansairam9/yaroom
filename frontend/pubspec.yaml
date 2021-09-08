@@ -38,6 +38,8 @@ dependencies:
   auth0: ^2.0.1
   url_launcher: ^6.0.9
   file_picker: ^3.0.3
+  permission_handler: ^8.1.4+2
+  # downloads_path_provider: ^0.1.0
 
 dev_dependencies:
   flutter_test:

@@ -71,6 +71,7 @@ func wsHandler(g *gin.Context) {
 		return
 	}
 
+
 	backendStreams := make([]string, 0)
 	if userMeta.Friendslist != nil {
 		for _, friend := range userMeta.Friendslist {

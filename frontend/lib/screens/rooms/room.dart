@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:bubble/bubble.dart';
 import 'package:flutter/material.dart';
+// import 'package:moor/moor.dart';
 import 'package:provider/provider.dart';
 import 'package:yaroom/blocs/rooms.dart';
 import '../components/msgBox.dart';
@@ -8,6 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../utils/messageExchange.dart';
 import '../../utils/types.dart';
 import '../../utils/guidePages.dart';
+import 'package:http/http.dart' as http;
 
 class Room extends StatefulWidget {
   @override
@@ -21,7 +24,8 @@ class Room extends StatefulWidget {
 class RoomState extends State<Room> {
   //  Current State of InnerDrawerState
   late var webSocketSubscription;
-
+  List<RoomsMessage> newmsgs = [];
+  bool moreload = true;
   @override
   void initState() {
     super.initState();
@@ -34,243 +38,511 @@ class RoomState extends State<Room> {
     super.dispose();
   }
 
-  Widget buildSingleMsg(RoomsMessage msg, var curUser, var dateStr, var time) {
-    if (msg.media != null && msg.content != null) {
-      return Row(
-        children: [
-          Flexible(
-              flex: 1,
-              // child: Padding(
-              //     padding: EdgeInsets.only(right: 5.0, top: 0),
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: CircleAvatar(
-                  backgroundColor: Colors.grey[350],
-                  foregroundImage: curUser.profileImg == null
-                      ? null
-                      : NetworkImage('${curUser.profileImg}'),
-                  backgroundImage: AssetImage('assets/no-profile.png'),
-                  radius: 20.0,
-                ),
-              )
-              // )
-              ),
-          Flexible(
-              flex: 10,
-              child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 10.0),
-                  // margin: EdgeInsets.only(top: 7.0, bottom: 7.0),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.all(Radius.circular(15.0)),
-                    // color: Colors.blueGrey,
+  Future<Widget> _buildSingleMsg(
+      RoomsMessage msg, var curUser, var dateStr, var time) async {
+    final userid = Provider.of<UserId>(context, listen: false);
+
+    if (msg.media == null) {
+      if (msg.content == null) {
+        return Container();
+      } else {
+        return Row(
+          children: [
+            Flexible(
+                flex: 1,
+                // child: Padding(
+                //     padding: EdgeInsets.only(right: 5.0, top: 0),
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: CircleAvatar(
+                    backgroundColor: Colors.grey[350],
+                    foregroundImage: curUser.profileImg == null
+                        ? null
+                        : NetworkImage('${curUser.profileImg}'),
+                    backgroundImage: AssetImage('assets/no-profile.png'),
+                    radius: 20.0,
                   ),
-                  child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Align(
-                            alignment: Alignment.topLeft,
-                            child: Row(
-                              children: [
-                                Text(
-                                  curUser.name,
-                                  style: TextStyle(
-                                      // color: Colors.grey,
-                                      fontSize: Theme.of(context)
-                                          .textTheme
-                                          .subtitle1!
-                                          .fontSize,
-                                      fontWeight: FontWeight.bold),
-                                ),
-                                SizedBox(
-                                  width: 5,
-                                ),
-                                Text(
-                                  dateStr + " at " + time,
-                                  style: TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: Theme.of(context)
-                                          .textTheme
-                                          .subtitle2!
-                                          .fontSize),
-                                )
-                              ],
-                            )),
-                        SizedBox(
-                          height: 10,
-                        ),
-                        Column(
-                          children: [
-                            Align(
+                )
+                // )
+                ),
+            Flexible(
+                flex: 10,
+                child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 10.0),
+                    // margin: EdgeInsets.only(top: 7.0, bottom: 7.0),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.all(Radius.circular(15.0)),
+                      // color: Colors.blueGrey,
+                    ),
+                    child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Align(
+                              alignment: Alignment.topLeft,
+                              child: Row(
+                                children: [
+                                  Text(
+                                    curUser.name,
+                                    style: TextStyle(
+                                        // color: Colors.grey,
+                                        fontSize: Theme.of(context)
+                                            .textTheme
+                                            .subtitle1!
+                                            .fontSize,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                  SizedBox(
+                                    width: 5,
+                                  ),
+                                  Text(
+                                    dateStr + " at " + time,
+                                    style: TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: Theme.of(context)
+                                            .textTheme
+                                            .subtitle2!
+                                            .fontSize),
+                                  )
+                                ],
+                              )),
+                          SizedBox(
+                            height: 10,
+                          ),
+                          Align(
                               alignment: Alignment.centerLeft,
                               child: Text(
                                 msg.content!,
                                 textAlign: TextAlign.left,
                                 style: TextStyle(color: Colors.white),
-                              ),
-                            ),
-                            Align(
+                              )),
+                        ]))),
+          ],
+        );
+      }
+    } else {
+      var media = await http.get(Uri.parse(
+          'http://localhost:8884/testing/' + userid + '/media/' + msg.media!));
+      var data = jsonDecode(media.body) as Map;
+      print(data);
+      if (msg.content == null) {
+        var temp = data['name'].split(".");
+        // if (['jpg', 'jpeg', 'png'].contains(temp.last)) {
+        return Row(
+          children: [
+            Flexible(
+                flex: 1,
+                // child: Padding(
+                //     padding: EdgeInsets.only(right: 5.0, top: 0),
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: CircleAvatar(
+                    backgroundColor: Colors.grey[350],
+                    foregroundImage: curUser.profileImg == null
+                        ? null
+                        : NetworkImage('${curUser.profileImg}'),
+                    backgroundImage: AssetImage('assets/no-profile.png'),
+                    radius: 20.0,
+                  ),
+                )
+                // )
+                ),
+            Flexible(
+                flex: 10,
+                child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 10.0),
+                    // margin: EdgeInsets.only(top: 7.0, bottom: 7.0),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.all(Radius.circular(15.0)),
+                      // color: Colors.blueGrey,
+                    ),
+                    child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Align(
+                              alignment: Alignment.topLeft,
+                              child: Row(
+                                children: [
+                                  Text(
+                                    curUser.name,
+                                    style: TextStyle(
+                                        // color: Colors.grey,
+                                        fontSize: Theme.of(context)
+                                            .textTheme
+                                            .subtitle1!
+                                            .fontSize,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                  SizedBox(
+                                    width: 5,
+                                  ),
+                                  Text(
+                                    dateStr + " at " + time,
+                                    style: TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: Theme.of(context)
+                                            .textTheme
+                                            .subtitle2!
+                                            .fontSize),
+                                  )
+                                ],
+                              )),
+                          SizedBox(
+                            height: 10,
+                          ),
+                          Align(
                               alignment: Alignment.centerLeft,
-                              child: Text(
-                                msg.media!,
-                                textAlign: TextAlign.left,
-                                style: TextStyle(color: Colors.white),
+                              child: ['jpg', 'jpeg', 'png'].contains(temp.last)
+                                  ? Image.memory(Uint8List.fromList(
+                                      data['bytes'].cast<int>()))
+                                  : Row(
+                                      children: [
+                                        Text(data['name']),
+                                        IconButton(
+                                          icon: const Icon(Icons.file_download),
+                                          tooltip: 'Increase volume by 10',
+                                          onPressed: () {},
+                                        ),
+                                      ],
+                                    )),
+                        ]))),
+          ],
+        );
+      } else {
+        var temp = data['name'].split(".");
+        return Row(
+          children: [
+            Flexible(
+                flex: 1,
+                // child: Padding(
+                //     padding: EdgeInsets.only(right: 5.0, top: 0),
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: CircleAvatar(
+                    backgroundColor: Colors.grey[350],
+                    foregroundImage: curUser.profileImg == null
+                        ? null
+                        : NetworkImage('${curUser.profileImg}'),
+                    backgroundImage: AssetImage('assets/no-profile.png'),
+                    radius: 20.0,
+                  ),
+                )
+                // )
+                ),
+            Flexible(
+                flex: 10,
+                child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 10.0),
+                    // margin: EdgeInsets.only(top: 7.0, bottom: 7.0),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.all(Radius.circular(15.0)),
+                      // color: Colors.blueGrey,
+                    ),
+                    child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Align(
+                              alignment: Alignment.topLeft,
+                              child: Row(
+                                children: [
+                                  Text(
+                                    curUser.name,
+                                    style: TextStyle(
+                                        // color: Colors.grey,
+                                        fontSize: Theme.of(context)
+                                            .textTheme
+                                            .subtitle1!
+                                            .fontSize,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                  SizedBox(
+                                    width: 5,
+                                  ),
+                                  Text(
+                                    dateStr + " at " + time,
+                                    style: TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: Theme.of(context)
+                                            .textTheme
+                                            .subtitle2!
+                                            .fontSize),
+                                  )
+                                ],
+                              )),
+                          SizedBox(
+                            height: 10,
+                          ),
+                          Column(
+                            children: [
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  msg.content!,
+                                  textAlign: TextAlign.left,
+                                  style: TextStyle(color: Colors.white),
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ]))),
-        ],
-      );
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: ['jpg', 'jpeg', 'png']
+                                        .contains(temp.last)
+                                    ? Image.memory(Uint8List.fromList(
+                                        data['bytes'].cast<int>()))
+                                    : Row(
+                                        children: [
+                                          Text(data['name']),
+                                          IconButton(
+                                            icon:
+                                                const Icon(Icons.file_download),
+                                            tooltip: 'Increase volume by 10',
+                                            onPressed: () {},
+                                          ),
+                                        ],
+                                      ),
+                              ),
+                            ],
+                          ),
+                        ]))),
+          ],
+        );
+      }
     }
-    if (msg.media != null && msg.content == null) {
-      return Row(
-        children: [
-          Flexible(
-              flex: 1,
-              // child: Padding(
-              //     padding: EdgeInsets.only(right: 5.0, top: 0),
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: CircleAvatar(
-                  backgroundColor: Colors.grey[350],
-                  foregroundImage: curUser.profileImg == null
-                      ? null
-                      : NetworkImage('${curUser.profileImg}'),
-                  backgroundImage: AssetImage('assets/no-profile.png'),
-                  radius: 20.0,
-                ),
-              )
-              // )
-              ),
-          Flexible(
-              flex: 10,
-              child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 10.0),
-                  // margin: EdgeInsets.only(top: 7.0, bottom: 7.0),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.all(Radius.circular(15.0)),
-                    // color: Colors.blueGrey,
-                  ),
-                  child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Align(
-                            alignment: Alignment.topLeft,
-                            child: Row(
-                              children: [
-                                Text(
-                                  curUser.name,
-                                  style: TextStyle(
-                                      // color: Colors.grey,
-                                      fontSize: Theme.of(context)
-                                          .textTheme
-                                          .subtitle1!
-                                          .fontSize,
-                                      fontWeight: FontWeight.bold),
-                                ),
-                                SizedBox(
-                                  width: 5,
-                                ),
-                                Text(
-                                  dateStr + " at " + time,
-                                  style: TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: Theme.of(context)
-                                          .textTheme
-                                          .subtitle2!
-                                          .fontSize),
-                                )
-                              ],
-                            )),
-                        SizedBox(
-                          height: 10,
-                        ),
-                        Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              msg.media!,
-                              textAlign: TextAlign.left,
-                              style: TextStyle(color: Colors.white),
-                            )),
-                      ]))),
-        ],
-      );
-    }
-    if (msg.media == null && msg.content != null) {
-      return Row(
-        children: [
-          Flexible(
-              flex: 1,
-              // child: Padding(
-              //     padding: EdgeInsets.only(right: 5.0, top: 0),
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: CircleAvatar(
-                  backgroundColor: Colors.grey[350],
-                  foregroundImage: curUser.profileImg == null
-                      ? null
-                      : NetworkImage('${curUser.profileImg}'),
-                  backgroundImage: AssetImage('assets/no-profile.png'),
-                  radius: 20.0,
-                ),
-              )
-              // )
-              ),
-          Flexible(
-              flex: 10,
-              child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 10.0),
-                  // margin: EdgeInsets.only(top: 7.0, bottom: 7.0),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.all(Radius.circular(15.0)),
-                    // color: Colors.blueGrey,
-                  ),
-                  child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Align(
-                            alignment: Alignment.topLeft,
-                            child: Row(
-                              children: [
-                                Text(
-                                  curUser.name,
-                                  style: TextStyle(
-                                      // color: Colors.grey,
-                                      fontSize: Theme.of(context)
-                                          .textTheme
-                                          .subtitle1!
-                                          .fontSize,
-                                      fontWeight: FontWeight.bold),
-                                ),
-                                SizedBox(
-                                  width: 5,
-                                ),
-                                Text(
-                                  dateStr + " at " + time,
-                                  style: TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: Theme.of(context)
-                                          .textTheme
-                                          .subtitle2!
-                                          .fontSize),
-                                )
-                              ],
-                            )),
-                        SizedBox(
-                          height: 10,
-                        ),
-                        Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              msg.content!,
-                              textAlign: TextAlign.left,
-                              style: TextStyle(color: Colors.white),
-                            )),
-                      ]))),
-        ],
-      );
-    }
-    return Container();
+
+    // if (msg.media != null && msg.content != null) {
+    //   return Row(
+    //     children: [
+    //       Flexible(
+    //           flex: 1,
+    //           // child: Padding(
+    //           //     padding: EdgeInsets.only(right: 5.0, top: 0),
+    //           child: Align(
+    //             alignment: Alignment.topCenter,
+    //             child: CircleAvatar(
+    //               backgroundColor: Colors.grey[350],
+    //               foregroundImage: curUser.profileImg == null
+    //                   ? null
+    //                   : NetworkImage('${curUser.profileImg}'),
+    //               backgroundImage: AssetImage('assets/no-profile.png'),
+    //               radius: 20.0,
+    //             ),
+    //           )
+    //           // )
+    //           ),
+    //       Flexible(
+    //           flex: 10,
+    //           child: Container(
+    //               padding: EdgeInsets.symmetric(horizontal: 10.0),
+    //               // margin: EdgeInsets.only(top: 7.0, bottom: 7.0),
+    //               decoration: BoxDecoration(
+    //                 borderRadius: BorderRadius.all(Radius.circular(15.0)),
+    //                 // color: Colors.blueGrey,
+    //               ),
+    //               child: Column(
+    //                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    //                   children: [
+    //                     Align(
+    //                         alignment: Alignment.topLeft,
+    //                         child: Row(
+    //                           children: [
+    //                             Text(
+    //                               curUser.name,
+    //                               style: TextStyle(
+    //                                   // color: Colors.grey,
+    //                                   fontSize: Theme.of(context)
+    //                                       .textTheme
+    //                                       .subtitle1!
+    //                                       .fontSize,
+    //                                   fontWeight: FontWeight.bold),
+    //                             ),
+    //                             SizedBox(
+    //                               width: 5,
+    //                             ),
+    //                             Text(
+    //                               dateStr + " at " + time,
+    //                               style: TextStyle(
+    //                                   color: Colors.grey,
+    //                                   fontSize: Theme.of(context)
+    //                                       .textTheme
+    //                                       .subtitle2!
+    //                                       .fontSize),
+    //                             )
+    //                           ],
+    //                         )),
+    //                     SizedBox(
+    //                       height: 10,
+    //                     ),
+    //                     Column(
+    //                       children: [
+    //                         Align(
+    //                           alignment: Alignment.centerLeft,
+    //                           child: Text(
+    //                             msg.content!,
+    //                             textAlign: TextAlign.left,
+    //                             style: TextStyle(color: Colors.white),
+    //                           ),
+    //                         ),
+    //                         Align(
+    //                           alignment: Alignment.centerLeft,
+    //                           child: Text(
+    //                             msg.media!,
+    //                             textAlign: TextAlign.left,
+    //                             style: TextStyle(color: Colors.white),
+    //                           ),
+    //                         ),
+    //                       ],
+    //                     ),
+    //                   ]))),
+    //     ],
+    //   );
+    // }
+    // if (msg.media != null && msg.content == null) {
+    //   return Row(
+    //     children: [
+    //       Flexible(
+    //           flex: 1,
+    //           // child: Padding(
+    //           //     padding: EdgeInsets.only(right: 5.0, top: 0),
+    //           child: Align(
+    //             alignment: Alignment.topCenter,
+    //             child: CircleAvatar(
+    //               backgroundColor: Colors.grey[350],
+    //               foregroundImage: curUser.profileImg == null
+    //                   ? null
+    //                   : NetworkImage('${curUser.profileImg}'),
+    //               backgroundImage: AssetImage('assets/no-profile.png'),
+    //               radius: 20.0,
+    //             ),
+    //           )
+    //           // )
+    //           ),
+    //       Flexible(
+    //           flex: 10,
+    //           child: Container(
+    //               padding: EdgeInsets.symmetric(horizontal: 10.0),
+    //               // margin: EdgeInsets.only(top: 7.0, bottom: 7.0),
+    //               decoration: BoxDecoration(
+    //                 borderRadius: BorderRadius.all(Radius.circular(15.0)),
+    //                 // color: Colors.blueGrey,
+    //               ),
+    //               child: Column(
+    //                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    //                   children: [
+    //                     Align(
+    //                         alignment: Alignment.topLeft,
+    //                         child: Row(
+    //                           children: [
+    //                             Text(
+    //                               curUser.name,
+    //                               style: TextStyle(
+    //                                   // color: Colors.grey,
+    //                                   fontSize: Theme.of(context)
+    //                                       .textTheme
+    //                                       .subtitle1!
+    //                                       .fontSize,
+    //                                   fontWeight: FontWeight.bold),
+    //                             ),
+    //                             SizedBox(
+    //                               width: 5,
+    //                             ),
+    //                             Text(
+    //                               dateStr + " at " + time,
+    //                               style: TextStyle(
+    //                                   color: Colors.grey,
+    //                                   fontSize: Theme.of(context)
+    //                                       .textTheme
+    //                                       .subtitle2!
+    //                                       .fontSize),
+    //                             )
+    //                           ],
+    //                         )),
+    //                     SizedBox(
+    //                       height: 10,
+    //                     ),
+    //                     Align(
+    //                         alignment: Alignment.centerLeft,
+    //                         child: Text(
+    //                           msg.media!,
+    //                           textAlign: TextAlign.left,
+    //                           style: TextStyle(color: Colors.white),
+    //                         )),
+    //                   ]))),
+    //     ],
+    //   );
+    // }
+    // if (msg.media == null && msg.content != null) {
+    //   return Row(
+    //     children: [
+    //       Flexible(
+    //           flex: 1,
+    //           // child: Padding(
+    //           //     padding: EdgeInsets.only(right: 5.0, top: 0),
+    //           child: Align(
+    //             alignment: Alignment.topCenter,
+    //             child: CircleAvatar(
+    //               backgroundColor: Colors.grey[350],
+    //               foregroundImage: curUser.profileImg == null
+    //                   ? null
+    //                   : NetworkImage('${curUser.profileImg}'),
+    //               backgroundImage: AssetImage('assets/no-profile.png'),
+    //               radius: 20.0,
+    //             ),
+    //           )
+    //           // )
+    //           ),
+    //       Flexible(
+    //           flex: 10,
+    //           child: Container(
+    //               padding: EdgeInsets.symmetric(horizontal: 10.0),
+    //               // margin: EdgeInsets.only(top: 7.0, bottom: 7.0),
+    //               decoration: BoxDecoration(
+    //                 borderRadius: BorderRadius.all(Radius.circular(15.0)),
+    //                 // color: Colors.blueGrey,
+    //               ),
+    //               child: Column(
+    //                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    //                   children: [
+    //                     Align(
+    //                         alignment: Alignment.topLeft,
+    //                         child: Row(
+    //                           children: [
+    //                             Text(
+    //                               curUser.name,
+    //                               style: TextStyle(
+    //                                   // color: Colors.grey,
+    //                                   fontSize: Theme.of(context)
+    //                                       .textTheme
+    //                                       .subtitle1!
+    //                                       .fontSize,
+    //                                   fontWeight: FontWeight.bold),
+    //                             ),
+    //                             SizedBox(
+    //                               width: 5,
+    //                             ),
+    //                             Text(
+    //                               dateStr + " at " + time,
+    //                               style: TextStyle(
+    //                                   color: Colors.grey,
+    //                                   fontSize: Theme.of(context)
+    //                                       .textTheme
+    //                                       .subtitle2!
+    //                                       .fontSize),
+    //                             )
+    //                           ],
+    //                         )),
+    //                     SizedBox(
+    //                       height: 10,
+    //                     ),
+    //                     Align(
+    //                         alignment: Alignment.centerLeft,
+    //                         child: Text(
+    //                           msg.content!,
+    //                           textAlign: TextAlign.left,
+    //                           style: TextStyle(color: Colors.white),
+    //                         )),
+    //                   ]))),
+    //     ],
+    //   );
+    // }
+    // return Container();
   }
 
   _buildMessage(BuildContext context, RoomsMessage msg, bool prevIsSame,
@@ -297,7 +569,18 @@ class RoomState extends State<Room> {
       margin: BubbleEdges.only(top: msgSpacing),
       alignment: Alignment.topLeft,
       // padding: BubbleEdges.all(10),
-      child: buildSingleMsg(msg, curUser, dateStr, time),
+      child: Builder(
+        builder: (context) {
+          return FutureBuilder(
+              future: _buildSingleMsg(msg, curUser, dateStr, time),
+              builder: (BuildContext context, AsyncSnapshot<Widget> snapshot) {
+                if (snapshot.hasData) {
+                  return snapshot.data!;
+                }
+                return CircularProgressIndicator();
+              });
+        },
+      ),
     );
     if (prependDay == null) {
       return msgContent;
@@ -377,35 +660,99 @@ class RoomState extends State<Room> {
             .stream
             .where((_) {
       return false;
-    }).listen((_) { });
+    }).listen((_) {});
     return SelectChannelPage();
+  }
+
+  loadMore(List<RoomsMessage> msgs) async {
+    if (moreload) {
+      final userid = Provider.of<UserId>(context, listen: false);
+      if (widget.channelId != null) {
+        var req = await http.get(Uri.parse('http://localhost:8884/testing/' +
+            userid +
+            '/getOlderMessages?msgType=RoomMessage&lastMsgId=' +
+            msgs[0].msgId +
+            '&exchangeId=' +
+            widget.roomId +
+            "@" +
+            widget.channelId! +
+            '&limit=15'));
+        print("here");
+        print("l" + req.body + "l");
+        if (req.body != "null" || req.body != "") {
+          if (req.body
+              .contains(new RegExp("{\"error\"", caseSensitive: false))) {
+            return;
+          }
+          var results = jsonDecode(req.body).cast<Map<String, dynamic>>();
+          List<RoomsMessage> temp = [];
+          for (int i = 0; i < results.length; i++) {
+            RoomsMessage msg = RoomsMessage(
+                fromUser: results[i]['fromUser'],
+                msgId: results[i]['msgId'],
+                roomId: results[i]['roomId'],
+                channelId: results[i]['channelId'],
+                time: DateTime.parse(results[i]['time']),
+                content: results[i]['content'],
+                media: results[i]['media']);
+            temp.add(msg);
+          }
+          temp.sort((a, b) => a.msgId.compareTo(b.msgId));
+          setState(() {
+            newmsgs = temp;
+          });
+        } else {
+          setState(() {
+            moreload = false;
+          });
+        }
+      }
+    }
   }
 
   Widget _buildMessagesView(List<RoomsMessage> msgs, String channelId) {
     msgs = msgs.where((element) => element.channelId == channelId).toList();
+    if (msgs.length < 15 && moreload) {
+      loadMore(msgs);
+      msgs.insertAll(0, newmsgs);
+    }
     return Expanded(
         child: Column(
       children: [
         Expanded(
-            child: ListView.builder(
-                reverse: true,
-                padding: EdgeInsets.only(top: 15.0),
-                itemCount: msgs.length,
-                itemBuilder: (BuildContext context, int index) {
-                  final bool prevIsSame = msgs.length - 2 - index >= 0
-                      ? (msgs[msgs.length - 2 - index].fromUser ==
-                          msgs[msgs.length - 1 - index].fromUser)
-                      : false;
-                  final bool prependDayCond = msgs.length - 2 - index >= 0
-                      ? (msgs[msgs.length - 2 - index].time.day !=
-                          msgs[msgs.length - 1 - index].time.day)
-                      : true;
-                  DateTime? prependDay = prependDayCond
-                      ? msgs[msgs.length - 1 - index].time
-                      : null;
-                  return _buildMessage(context, msgs[msgs.length - 1 - index],
-                      prevIsSame, prependDay);
-                }))
+            child: NotificationListener<ScrollNotification>(
+          onNotification: (ScrollNotification scrollInfo) {
+            if (scrollInfo.metrics.pixels ==
+                scrollInfo.metrics.maxScrollExtent) {
+              loadMore(msgs);
+              // newmsgs.addAll(msgs);
+              msgs.insertAll(0, newmsgs);
+              // setState(() {
+              //   newmsgs:[];
+              // });
+              return true;
+            }
+            return false;
+          },
+          child: ListView.builder(
+              reverse: true,
+              padding: EdgeInsets.only(top: 15.0),
+              itemCount: msgs.length,
+              itemBuilder: (BuildContext context, int index) {
+                final bool prevIsSame = msgs.length - 2 - index >= 0
+                    ? (msgs[msgs.length - 2 - index].fromUser ==
+                        msgs[msgs.length - 1 - index].fromUser)
+                    : false;
+                final bool prependDayCond = msgs.length - 2 - index >= 0
+                    ? (msgs[msgs.length - 2 - index].time.day !=
+                        msgs[msgs.length - 1 - index].time.day)
+                    : true;
+                DateTime? prependDay =
+                    prependDayCond ? msgs[msgs.length - 1 - index].time : null;
+                return _buildMessage(context, msgs[msgs.length - 1 - index],
+                    prevIsSame, prependDay);
+              }),
+        ))
       ],
     ));
   }

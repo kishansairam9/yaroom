@@ -1,4 +1,8 @@
+import 'dart:io';
 import 'dart:typed_data';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+
 import '../components/searchDelegate.dart';
 import 'package:bubble/bubble.dart';
 import 'package:flutter/material.dart';
@@ -27,7 +31,8 @@ class ChatPage extends StatefulWidget {
 
 class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   late final webSocketSubscription;
-
+  List<ChatMessage> newmsgs = [];
+  bool moreload = true;
   @override
   void initState() {
     super.initState();
@@ -56,16 +61,93 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     }
   }
 
+  Future<bool> _requestPermission(Permission permission) async {
+    if (await permission.isGranted) {
+      return true;
+    } else {
+      var result = await permission.request();
+      if (result == PermissionStatus.granted) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  void savefile(data) async {
+    final directory = await getTemporaryDirectory();
+    if (!await directory.exists()) {
+      await directory.create(recursive: true);
+    }
+    print(directory.path + '/' + data['name']);
+    var file = await File(directory.path + '/' + data['name'])
+        .writeAsBytes(Uint8List.fromList(data['bytes'].cast<int>()));
+
+    await saveFileToMediaStore(file, data['name']);
+    await file.delete();
+    print('done');
+    // Directory? directory;
+    // try {
+    //   if (Platform.isAndroid) {
+    //     if (await _requestPermission(Permission.storage)) {
+    //       directory = await getExternalStorageDirectory();
+    //       String newPath = "";
+    //       print(directory);
+    //       List<String> paths = directory!.path.split("/");
+    //       for (int x = 1; x < paths.length; x++) {
+    //         String folder = paths[x];
+    //         if (folder != "Android") {
+    //           newPath += "/" + folder;
+    //         } else {
+    //           break;
+    //         }
+    //       }
+    //       newPath = newPath + "/yaroom";
+    //       directory = Directory(newPath);
+    //     } else {
+    //       return;
+    //     }
+    //   } else {
+    //     if (await _requestPermission(Permission.photos)) {
+    //       directory = await getTemporaryDirectory();
+    //     } else {
+    //       return;
+    //     }
+    //   }
+
+    //   if (!await directory.exists()) {
+    //     await directory.create(recursive: true);
+    //   }
+    //   if (await directory.exists()) {
+    //     File saveFile = File(directory.path + "/" + data['name']);
+    //     // await dio.download(url, saveFile.path,
+    //     //     onReceiveProgress: (value1, value2) {
+    //     //       setState(() {
+    //     //         progress = value1 / value2;
+    //     //       });
+    //     //     });
+    //     await saveFile
+    //         .writeAsBytes(Uint8List.fromList(data['bytes'].cast<int>()));
+    //     //   if (Platform.isIOS) {
+    //     // await ImageGallerySaver.saveFile(saveFile.path,
+    //     //     isReturnPathOfIOS: true);
+    //   }
+    //   return;
+    // } catch (e) {
+    //   print(e);
+    // }
+    // return;
+  }
+
   Future<Widget> _buildSingleMessage(
       BuildContext context, ChatMessage msg, bool isMe) async {
-    // final String? accessToken =
-    //     await Provider.of<AuthorizationService>(context, listen: false)
-    //         .getValidAccessToken();
-    // print("hi");
-    // print("accessToken");
-    // print(accessToken);
     final userid = Provider.of<UserId>(context, listen: false);
-
+    String? accessToken =
+        await Provider.of<AuthorizationService>(context, listen: false)
+            .getValidAccessToken();
+    if (accessToken == null) {
+      // return Future.value('/signin');
+      Navigator.pushNamed(context, '/signin');
+    }
     if (msg.media == null) {
       if (msg.content == null) {
         return Container();
@@ -77,15 +159,54 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
         );
       }
     } else {
-      var media = await http.get(Uri.parse(
-          'http://localhost:8884/testing/' + userid + '/media/' + msg.media!));
+      // var media = await http.get(Uri.parse('http://localhost:8884/v1/testing/' +
+      //     userid +
+      //     '/media/' +
+      //     msg.media!));
+      var media = await http.get(
+          Uri.parse('http://localhost:8884/v1/media/' + msg.media!),
+          headers: <String, String>{
+            'Content-Type': 'application/json',
+            'Authorization': "Bearer $accessToken",
+          });
       var data = jsonDecode(media.body) as Map;
       if (msg.content == null) {
-        return Image.memory(Uint8List.fromList(data['bytes'].cast<int>()));
+        var temp = data['name'].split(".");
+        if (['jpg', 'jpeg', 'png'].contains(temp.last)) {
+          return Image.memory(Uint8List.fromList(data['bytes'].cast<int>()));
+        } else {
+          print('hi');
+          return Row(
+            children: [
+              Text(data['name']),
+              IconButton(
+                icon: const Icon(Icons.file_download),
+                tooltip: 'download',
+                onPressed: () {
+                  savefile(data);
+                },
+              ),
+            ],
+          );
+        }
       } else {
+        var temp = data['name'].split(".");
         return Column(
           children: [
-            Image.memory(Uint8List.fromList(data['bytes'].cast<int>())),
+            ['jpg', 'jpeg', 'png'].contains(temp.last)
+                ? Image.memory(Uint8List.fromList(data['bytes'].cast<int>()))
+                : Row(
+                    children: [
+                      Text(data['name']),
+                      IconButton(
+                        icon: const Icon(Icons.file_download),
+                        tooltip: 'download',
+                        onPressed: () {
+                          savefile(data);
+                        },
+                      ),
+                    ],
+                  ),
             Text(
               msg.content!,
               textAlign: isMe ? TextAlign.right : TextAlign.left,
@@ -180,30 +301,89 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
         });
   }
 
+  loadMore(List<ChatMessage> msgs) async {
+    if (moreload) {
+      final userid = Provider.of<UserId>(context, listen: false);
+      var req = await http.get(Uri.parse('http://localhost:8884/testing/' +
+          userid +
+          '/getOlderMessages?msgType=ChatMessage&lastMsgId=' +
+          msgs[0].msgId +
+          '&exchangeId=' +
+          getExchangeId() +
+          '&limit=15'));
+      if (req.body != "null") {
+        if (req.body.contains(new RegExp("{\"error\"", caseSensitive: false))) {
+          return;
+        }
+        print(req.body);
+        var results = jsonDecode(req.body).cast<Map<String, dynamic>>();
+        List<ChatMessage> temp = [];
+        for (int i = 0; i < results.length; i++) {
+          ChatMessage msg = ChatMessage(
+            fromUser: results[i]['fromUser'],
+            msgId: results[i]['msgId'],
+            toUser: results[i]['toUser'],
+            time: DateTime.parse(results[i]['time']),
+            content: results[i]['content'],
+            // media: results[i]['media']
+          );
+          temp.add(msg);
+        }
+        temp.sort((a, b) => a.msgId.compareTo(b.msgId));
+        setState(() {
+          newmsgs = temp;
+        });
+      } else {
+        setState(() {
+          moreload = false;
+        });
+      }
+    }
+  }
+
   Widget _buildMessagesView(List<ChatMessage> msgs) {
+    if (msgs.length < 15 && moreload) {
+      loadMore(msgs);
+      msgs.insertAll(0, newmsgs);
+    }
     return Expanded(
       child: Column(
         children: [
           Expanded(
-              child: ListView.builder(
-                  reverse: true,
-                  padding: EdgeInsets.only(bottom: 15.0),
-                  itemCount: msgs.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    final bool prevIsSame = msgs.length - 2 - index >= 0
-                        ? (msgs[msgs.length - 2 - index].fromUser ==
-                            msgs[msgs.length - 1 - index].fromUser)
-                        : false;
-                    final bool prependDayCond = msgs.length - 2 - index >= 0
-                        ? (msgs[msgs.length - 2 - index].time.day !=
-                            msgs[msgs.length - 1 - index].time.day)
-                        : true;
-                    DateTime? prependDay = prependDayCond
-                        ? msgs[msgs.length - 1 - index].time
-                        : null;
-                    return _buildMessage(msgs[msgs.length - 1 - index],
-                        prevIsSame && !prependDayCond, prependDay);
-                  }))
+              child: NotificationListener<ScrollNotification>(
+            onNotification: (ScrollNotification scrollInfo) {
+              if (scrollInfo.metrics.pixels ==
+                  scrollInfo.metrics.maxScrollExtent) {
+                loadMore(msgs);
+                // newmsgs.addAll(msgs);
+                msgs.insertAll(0, newmsgs);
+                // setState(() {
+                //   newmsgs:[];
+                // });
+                return true;
+              }
+              return false;
+            },
+            child: ListView.builder(
+                reverse: true,
+                padding: EdgeInsets.only(bottom: 15.0),
+                itemCount: msgs.length,
+                itemBuilder: (BuildContext context, int index) {
+                  final bool prevIsSame = msgs.length - 2 - index >= 0
+                      ? (msgs[msgs.length - 2 - index].fromUser ==
+                          msgs[msgs.length - 1 - index].fromUser)
+                      : false;
+                  final bool prependDayCond = msgs.length - 2 - index >= 0
+                      ? (msgs[msgs.length - 2 - index].time.day !=
+                          msgs[msgs.length - 1 - index].time.day)
+                      : true;
+                  DateTime? prependDay = prependDayCond
+                      ? msgs[msgs.length - 1 - index].time
+                      : null;
+                  return _buildMessage(msgs[msgs.length - 1 - index],
+                      prevIsSame && !prependDayCond, prependDay);
+                }),
+          ))
         ],
       ),
     );
@@ -235,6 +415,8 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
       'mediaData': media,
       'replyTo': replyTo,
     }));
+    print("hello");
+    print(widget.userId);
     // Provider.of<FilePickerDetails>(context, listen: false)
     //     .updateState(Map(), 0);
     BlocProvider.of<FilePickerCubit>(context, listen: false)
