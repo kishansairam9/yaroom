@@ -51,8 +51,9 @@ class ContentRouter {
         return MaterialPageRoute(
             builder: (context) => wrapWithUserId(context, HomePage(args)));
       case '/editgroup':
+        final args = settings.arguments;
         return MaterialPageRoute(
-            builder: (context) => wrapWithUserId(context, CreateGroup()));
+            builder: (context) => wrapWithUserId(context, CreateGroup(args)));
       default:
         return MaterialPageRoute(builder: (_) => ErrorPage());
     }

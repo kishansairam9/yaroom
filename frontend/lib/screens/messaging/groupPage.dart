@@ -16,12 +16,13 @@ import '../../blocs/groupChats.dart';
 
 class GroupChatPage extends StatefulWidget {
   late final String groupId, name;
-  late final String? image;
+  late final String? image, description;
 
   GroupChatPage(GroupChatPageArguments args) {
     this.groupId = args.groupId;
     this.name = args.name;
     this.image = args.image;
+    this.description = args.description;
   }
   GroupChatPageState createState() => new GroupChatPageState();
 }
@@ -55,7 +56,8 @@ class GroupChatPageState extends State<GroupChatPage>
             arguments: GroupChatPageArguments(
                 name: widget.name,
                 groupId: widget.groupId,
-                image: widget.image));
+                image: widget.image,
+                description: widget.description));
         break;
       default:
         break;
@@ -273,7 +275,7 @@ class GroupChatPageState extends State<GroupChatPage>
         .updateFilePicker(media: Map(), i: 0);
   }
 
-  DrawerHeader _getDrawerHeader() {
+  DrawerHeader _getDrawerHeader(members) {
     return DrawerHeader(
         child:
             Column(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
@@ -310,6 +312,9 @@ class GroupChatPageState extends State<GroupChatPage>
                                 child: Text("No"))
                           ]);
                     });
+              } else if (selection == 2) {
+                Navigator.pushNamed(context, '/editgroup',
+                    arguments: {"group": widget, "members": members});
               }
             },
             itemBuilder: (context) => [
@@ -433,7 +438,8 @@ class GroupChatPageState extends State<GroupChatPage>
                                 child: ListView(
                               padding: EdgeInsets.zero,
                               children: [
-                                _getDrawerHeader(),
+                                _getDrawerHeader(groupMembersSnapshot.data!
+                                    .map((User e) => e.userId)),
                                 ...groupMembersSnapshot.data!.map((User e) =>
                                     // for (var i = 0; i < widget.memberCount; i++)
                                     ListTile(

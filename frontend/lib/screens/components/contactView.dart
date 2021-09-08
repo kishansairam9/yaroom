@@ -15,7 +15,6 @@ class _ViewContactState extends State<ViewContact> {
   int status = 5;
   @override
   Widget build(BuildContext context) {
-    print(this.widget.contactData);
     return Container(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,

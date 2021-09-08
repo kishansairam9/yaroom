@@ -1,6 +1,8 @@
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
+import 'package:yaroom/screens/login.dart';
 import 'secureStorageService.dart';
 import 'package:auth0/auth0.dart';
 import 'dart:convert';
@@ -128,5 +130,7 @@ class AuthorizationService {
     }
     // Delete all tokens
     await this.secureStorageService.deleteAll();
+    Provider.of<LandingViewModel>(context, listen: false).signedIn = false;
+    Provider.of<LandingViewModel>(context, listen: false).signingIn = false;
   }
 }
