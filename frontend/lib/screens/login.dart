@@ -14,6 +14,9 @@ class LandingViewModel extends ChangeNotifier {
   bool _signingIn = false;
   bool _signedIn = false;
   bool get signingIn => _signingIn;
+  set signingIn(bool b) => _signingIn = b;
+  bool get signedIn => _signedIn;
+  set signedIn(bool b) => _signedIn = b;
   final AuthorizationService authorizationService;
   LandingViewModel(this.authorizationService);
   Future<bool> signIn() async {
@@ -46,7 +49,7 @@ class LandingPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
             Image(image: AssetImage('assets/yaroom_full_logo_200x200.png')),
-            viewModel.signingIn
+            viewModel.signingIn || viewModel.signedIn
                 ? CircularProgressIndicator()
                 : ElevatedButton(
                     style: ButtonStyle(

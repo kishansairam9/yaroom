@@ -2024,20 +2024,16 @@ class GroupChatMessagesTextIndex extends Table
 }
 
 class FriendRequest extends DataClass implements Insertable<FriendRequest> {
-  final String userId1;
-  final String userId2;
+  final String userId;
   final int status;
-  FriendRequest(
-      {required this.userId1, required this.userId2, required this.status});
+  FriendRequest({required this.userId, required this.status});
   factory FriendRequest.fromData(
       Map<String, dynamic> data, GeneratedDatabase db,
       {String? prefix}) {
     final effectivePrefix = prefix ?? '';
     return FriendRequest(
-      userId1: const StringType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}userId_1'])!,
-      userId2: const StringType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}userId_2'])!,
+      userId: const StringType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}userId'])!,
       status: const IntType()
           .mapFromDatabaseResponse(data['${effectivePrefix}status'])!,
     );
@@ -2045,16 +2041,14 @@ class FriendRequest extends DataClass implements Insertable<FriendRequest> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['userId_1'] = Variable<String>(userId1);
-    map['userId_2'] = Variable<String>(userId2);
+    map['userId'] = Variable<String>(userId);
     map['status'] = Variable<int>(status);
     return map;
   }
 
   FriendRequestsCompanion toCompanion(bool nullToAbsent) {
     return FriendRequestsCompanion(
-      userId1: Value(userId1),
-      userId2: Value(userId2),
+      userId: Value(userId),
       status: Value(status),
     );
   }
@@ -2063,8 +2057,7 @@ class FriendRequest extends DataClass implements Insertable<FriendRequest> {
       {ValueSerializer? serializer}) {
     serializer ??= moorRuntimeOptions.defaultSerializer;
     return FriendRequest(
-      userId1: serializer.fromJson<String>(json['userId_1']),
-      userId2: serializer.fromJson<String>(json['userId_2']),
+      userId: serializer.fromJson<String>(json['userId']),
       status: serializer.fromJson<int>(json['status']),
     );
   }
@@ -2072,73 +2065,60 @@ class FriendRequest extends DataClass implements Insertable<FriendRequest> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= moorRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'userId_1': serializer.toJson<String>(userId1),
-      'userId_2': serializer.toJson<String>(userId2),
+      'userId': serializer.toJson<String>(userId),
       'status': serializer.toJson<int>(status),
     };
   }
 
-  FriendRequest copyWith({String? userId1, String? userId2, int? status}) =>
-      FriendRequest(
-        userId1: userId1 ?? this.userId1,
-        userId2: userId2 ?? this.userId2,
+  FriendRequest copyWith({String? userId, int? status}) => FriendRequest(
+        userId: userId ?? this.userId,
         status: status ?? this.status,
       );
   @override
   String toString() {
     return (StringBuffer('FriendRequest(')
-          ..write('userId1: $userId1, ')
-          ..write('userId2: $userId2, ')
+          ..write('userId: $userId, ')
           ..write('status: $status')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      $mrjf($mrjc(userId1.hashCode, $mrjc(userId2.hashCode, status.hashCode)));
+  int get hashCode => $mrjf($mrjc(userId.hashCode, status.hashCode));
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is FriendRequest &&
-          other.userId1 == this.userId1 &&
-          other.userId2 == this.userId2 &&
+          other.userId == this.userId &&
           other.status == this.status);
 }
 
 class FriendRequestsCompanion extends UpdateCompanion<FriendRequest> {
-  final Value<String> userId1;
-  final Value<String> userId2;
+  final Value<String> userId;
   final Value<int> status;
   const FriendRequestsCompanion({
-    this.userId1 = const Value.absent(),
-    this.userId2 = const Value.absent(),
+    this.userId = const Value.absent(),
     this.status = const Value.absent(),
   });
   FriendRequestsCompanion.insert({
-    required String userId1,
-    required String userId2,
+    required String userId,
     required int status,
-  })  : userId1 = Value(userId1),
-        userId2 = Value(userId2),
+  })  : userId = Value(userId),
         status = Value(status);
   static Insertable<FriendRequest> custom({
-    Expression<String>? userId1,
-    Expression<String>? userId2,
+    Expression<String>? userId,
     Expression<int>? status,
   }) {
     return RawValuesInsertable({
-      if (userId1 != null) 'userId_1': userId1,
-      if (userId2 != null) 'userId_2': userId2,
+      if (userId != null) 'userId': userId,
       if (status != null) 'status': status,
     });
   }
 
   FriendRequestsCompanion copyWith(
-      {Value<String>? userId1, Value<String>? userId2, Value<int>? status}) {
+      {Value<String>? userId, Value<int>? status}) {
     return FriendRequestsCompanion(
-      userId1: userId1 ?? this.userId1,
-      userId2: userId2 ?? this.userId2,
+      userId: userId ?? this.userId,
       status: status ?? this.status,
     );
   }
@@ -2146,11 +2126,8 @@ class FriendRequestsCompanion extends UpdateCompanion<FriendRequest> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    if (userId1.present) {
-      map['userId_1'] = Variable<String>(userId1.value);
-    }
-    if (userId2.present) {
-      map['userId_2'] = Variable<String>(userId2.value);
+    if (userId.present) {
+      map['userId'] = Variable<String>(userId.value);
     }
     if (status.present) {
       map['status'] = Variable<int>(status.value);
@@ -2161,8 +2138,7 @@ class FriendRequestsCompanion extends UpdateCompanion<FriendRequest> {
   @override
   String toString() {
     return (StringBuffer('FriendRequestsCompanion(')
-          ..write('userId1: $userId1, ')
-          ..write('userId2: $userId2, ')
+          ..write('userId: $userId, ')
           ..write('status: $status')
           ..write(')'))
         .toString();
@@ -2174,18 +2150,12 @@ class FriendRequests extends Table
   final GeneratedDatabase _db;
   final String? _alias;
   FriendRequests(this._db, [this._alias]);
-  final VerificationMeta _userId1Meta = const VerificationMeta('userId1');
-  late final GeneratedColumn<String?> userId1 = GeneratedColumn<String?>(
-      'userId_1', aliasedName, false,
+  final VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  late final GeneratedColumn<String?> userId = GeneratedColumn<String?>(
+      'userId', aliasedName, false,
       typeName: 'TEXT',
       requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL REFERENCES Users(userId)');
-  final VerificationMeta _userId2Meta = const VerificationMeta('userId2');
-  late final GeneratedColumn<String?> userId2 = GeneratedColumn<String?>(
-      'userId_2', aliasedName, false,
-      typeName: 'TEXT',
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL REFERENCES Users(userId)');
+      $customConstraints: 'NOT NULL PRIMARY KEY REFERENCES Users(userId)');
   final VerificationMeta _statusMeta = const VerificationMeta('status');
   late final GeneratedColumn<int?> status = GeneratedColumn<int?>(
       'status', aliasedName, false,
@@ -2193,7 +2163,7 @@ class FriendRequests extends Table
       requiredDuringInsert: true,
       $customConstraints: 'NOT NULL');
   @override
-  List<GeneratedColumn> get $columns => [userId1, userId2, status];
+  List<GeneratedColumn> get $columns => [userId, status];
   @override
   String get aliasedName => _alias ?? 'FriendRequests';
   @override
@@ -2203,17 +2173,11 @@ class FriendRequests extends Table
       {bool isInserting = false}) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
-    if (data.containsKey('userId_1')) {
-      context.handle(_userId1Meta,
-          userId1.isAcceptableOrUnknown(data['userId_1']!, _userId1Meta));
+    if (data.containsKey('userId')) {
+      context.handle(_userIdMeta,
+          userId.isAcceptableOrUnknown(data['userId']!, _userIdMeta));
     } else if (isInserting) {
-      context.missing(_userId1Meta);
-    }
-    if (data.containsKey('userId_2')) {
-      context.handle(_userId2Meta,
-          userId2.isAcceptableOrUnknown(data['userId_2']!, _userId2Meta));
-    } else if (isInserting) {
-      context.missing(_userId2Meta);
+      context.missing(_userIdMeta);
     }
     if (data.containsKey('status')) {
       context.handle(_statusMeta,
@@ -2225,7 +2189,7 @@ class FriendRequests extends Table
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {userId1, userId2};
+  Set<GeneratedColumn> get $primaryKey => {userId};
   @override
   FriendRequest map(Map<String, dynamic> data, {String? tablePrefix}) {
     return FriendRequest.fromData(data, _db,
@@ -2237,9 +2201,6 @@ class FriendRequests extends Table
     return FriendRequests(_db, alias);
   }
 
-  @override
-  List<String> get customConstraints =>
-      const ['PRIMARY KEY(userId_1, userId_2)'];
   @override
   bool get dontWriteConstraints => true;
 }
@@ -3603,65 +3564,58 @@ abstract class _$AppDb extends GeneratedDatabase {
         }).map(users.mapFromRow);
   }
 
-  Selectable<User> getFriends({required String userId}) {
+  Selectable<User> getFriends() {
     return customSelect(
-        'SELECT U.* FROM Users AS U,(SELECT userId_1 AS id FROM FriendRequests WHERE(userId_2 = ?1)AND(status = 2)UNION SELECT userId_2 AS id FROM FriendRequests WHERE(userId_1 = ?1)AND(status = 2)) AS F WHERE(U.userId = F.id)',
-        variables: [
-          Variable<String>(userId)
-        ],
+        'SELECT U.* FROM Users AS U,(SELECT userId AS id FROM FriendRequests WHERE(status = 2)) AS F WHERE(U.userId = F.id)',
+        variables: [],
         readsFrom: {
           users,
           friendRequests,
         }).map(users.mapFromRow);
   }
 
-  Selectable<GetFriendRequestsResult> getFriendRequests(
-      {required String userId}) {
-    return customSelect(
-        'SELECT U.*, F.st FROM Users AS U,(SELECT userId_2 AS id, status AS st FROM FriendRequests WHERE(userId_1 = ?1)) AS F WHERE(U.userId = F.id)',
+  Selectable<int> getFriendStatus({required String userId}) {
+    return customSelect('SELECT status FROM FriendRequests WHERE(userId = ?1)',
         variables: [
           Variable<String>(userId)
         ],
         readsFrom: {
-          users,
           friendRequests,
+        }).map((QueryRow row) => row.read<int>('status'));
+  }
+
+  Selectable<GetFriendRequestsResult> getFriendRequests() {
+    return customSelect(
+        'SELECT U.*, F.status FROM Users AS U,(SELECT * FROM FriendRequests) AS F WHERE(U.userId = F.userId)',
+        variables: [],
+        readsFrom: {
+          friendRequests,
+          users,
         }).map((QueryRow row) {
       return GetFriendRequestsResult(
         userId: row.read<String>('userId'),
         name: row.read<String>('name'),
         about: row.read<String?>('about'),
         profileImg: row.read<String?>('profileImg'),
-        st: row.read<int>('st'),
+        status: row.read<int?>('status'),
       );
     });
   }
 
   Future<int> addNewFriendRequest(
-      {required String userId_1,
-      required String userId_2,
-      required int status}) {
+      {required String userId, required int status}) {
     return customInsert(
-      'INSERT INTO FriendRequests VALUES (?1, ?2, ?3)',
-      variables: [
-        Variable<String>(userId_1),
-        Variable<String>(userId_2),
-        Variable<int>(status)
-      ],
+      'INSERT INTO FriendRequests VALUES (?1, ?2)',
+      variables: [Variable<String>(userId), Variable<int>(status)],
       updates: {friendRequests},
     );
   }
 
   Future<int> updateFriendRequest(
-      {required int status,
-      required String userId_1,
-      required String userId_2}) {
+      {required int status, required String userId}) {
     return customUpdate(
-      'UPDATE FriendRequests SET status = ?1 WHERE(userId_1 = ?2)AND(userId_2 = ?3)',
-      variables: [
-        Variable<int>(status),
-        Variable<String>(userId_1),
-        Variable<String>(userId_2)
-      ],
+      'UPDATE FriendRequests SET status = ?1 WHERE(userId = ?2)',
+      variables: [Variable<int>(status), Variable<String>(userId)],
       updates: {friendRequests},
       updateKind: UpdateKind.update,
     );
@@ -3707,7 +3661,7 @@ abstract class _$AppDb extends GeneratedDatabase {
   Future<int> removeUserFromGroup(
       {required String userId, required String groupId}) {
     return customUpdate(
-      'DELETE FROM GroupUserMapping WHERE(userId = ?1)AND(groupId = ?2)',
+      'DELETE FROM GroupUserMapping WHERE((userId = ?1)AND(groupId = ?2))',
       variables: [Variable<String>(userId), Variable<String>(groupId)],
       updates: {groupUserMapping},
       updateKind: UpdateKind.delete,
@@ -3716,7 +3670,7 @@ abstract class _$AppDb extends GeneratedDatabase {
 
   Selectable<GroupDM> getGroupsOfUser({required String userID}) {
     return customSelect(
-        'SELECT DISTINCT G.groupId, G.name, G.description, G.groupIcon FROM GroupDMs AS G,GroupUserMapping AS GM WHERE GM.userId = ?1',
+        'SELECT DISTINCT G.groupId, G.name, G.description, G.groupIcon FROM GroupDMs AS G INNER JOIN GroupUserMapping AS GM ON G.groupId = GM.groupId WHERE GM.userId = ?1 ORDER BY G.groupId',
         variables: [
           Variable<String>(userID)
         ],
@@ -3887,7 +3841,7 @@ abstract class _$AppDb extends GeneratedDatabase {
 
   Selectable<RoomsListData> getRoomsOfUser({required String userID}) {
     return customSelect(
-        'SELECT DISTINCT R.roomId, R.name, R.description, R.roomIcon FROM RoomsList AS R,RoomsUserMapping AS RM WHERE RM.userId = ?1 AND RM.roomId = R.roomId',
+        'SELECT DISTINCT R.roomId, R.name, R.description, R.roomIcon FROM RoomsList AS R INNER JOIN RoomsUserMapping AS RM ON R.roomId = RM.roomId WHERE RM.userId = ?1',
         variables: [
           Variable<String>(userID)
         ],
@@ -4110,13 +4064,13 @@ class GetFriendRequestsResult {
   final String name;
   final String? about;
   final String? profileImg;
-  final int st;
+  final int? status;
   GetFriendRequestsResult({
     required this.userId,
     required this.name,
     this.about,
     this.profileImg,
-    required this.st,
+    this.status,
   });
 }
 

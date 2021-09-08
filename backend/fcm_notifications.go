@@ -31,7 +31,6 @@ func fcmTokenUpdateHandler(g *gin.Context) {
 	}
 }
 
-// TODO: Remove receiving name and image, backend should have it already
 func fcmTokenInvalidateHandler(g *gin.Context) {
 	var req fcmTokenUpdate
 	if err := g.BindJSON(&req); err != nil {

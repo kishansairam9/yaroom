@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart' show kIsWeb; // Web detection
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:yaroom/screens/components/msgBox.dart';
+import 'package:yaroom/screens/messaging/groupsView.dart';
 import '../components/contactView.dart';
 import '../components/searchDelegate.dart';
 import 'package:provider/provider.dart';
@@ -18,12 +19,13 @@ import 'package:http/http.dart' as http;
 
 class GroupChatPage extends StatefulWidget {
   late final String groupId, name;
-  late final String? image;
+  late final String? image, description;
 
   GroupChatPage(GroupChatPageArguments args) {
     this.groupId = args.groupId;
     this.name = args.name;
     this.image = args.image;
+    this.description = args.description;
   }
   GroupChatPageState createState() => new GroupChatPageState();
 }
@@ -58,7 +60,8 @@ class GroupChatPageState extends State<GroupChatPage>
             arguments: GroupChatPageArguments(
                 name: widget.name,
                 groupId: widget.groupId,
-                image: widget.image));
+                image: widget.image,
+                description: widget.description));
         break;
       default:
         break;
@@ -406,7 +409,7 @@ class GroupChatPageState extends State<GroupChatPage>
         .updateFilePicker(media: Map(), i: 0);
   }
 
-  DrawerHeader _getDrawerHeader() {
+  DrawerHeader _getDrawerHeader(members) {
     return DrawerHeader(
         child:
             Column(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
@@ -417,10 +420,11 @@ class GroupChatPageState extends State<GroupChatPage>
           backgroundImage: AssetImage('assets/no-profile.png'),
         ),
         tileColor: Colors.transparent,
-        trailing: PopupMenuButton<int>(
-          onSelected: (selection) => {
-            if (selection == 1)
-              {
+        trailing: Consumer<GroupChatData>(
+            builder: (_, GroupChatData groupChatData, __) {
+          return PopupMenuButton<int>(
+            onSelected: (selection) async {
+              if (selection == 1) {
                 showDialog(
                     context: context,
                     builder: (_) {
@@ -431,43 +435,42 @@ class GroupChatPageState extends State<GroupChatPage>
                           actions: [
                             TextButton(
                                 onPressed: () async {
-                                  print("7777777777777");
-                                  print(Provider.of<UserId>(context,
-                                      listen: false));
-                                  await RepositoryProvider.of<AppDb>(context)
-                                      .removeUserFromGroup(
-                                          groupId: widget.groupId,
-                                          userId: Provider.of<UserId>(context,
-                                              listen: false));
-                                  // await Navigator.pushReplacementNamed(
-                                  //     context, '/');
+
+                                  await groupChatData.removeGroup(
+                                      context, widget.groupId);
+                                  await Navigator.pushReplacementNamed(
+                                      context, '/');
                                 },
                                 child: Text("Yes")),
                             TextButton(
                                 onPressed: () => Navigator.pop(context),
                                 child: Text("No"))
                           ]);
-                    })
+                    });
+              } else if (selection == 2) {
+                Navigator.pushNamed(context, '/editgroup',
+                    arguments: {"group": widget, "members": members});
               }
-          },
-          itemBuilder: (context) => [
-            PopupMenuItem(
-              value: 1,
-              child: ListTile(
-                  title:
-                      Text("Exit Group", style: TextStyle(color: Colors.red)),
-                  leading: Icon(
-                    Icons.exit_to_app,
-                    color: Colors.red,
-                  )),
-            ),
-            PopupMenuItem(
-              value: 2,
-              child: ListTile(
-                  title: Text("Settings"), leading: Icon(Icons.settings)),
-            ),
-          ],
-        ),
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 1,
+                child: ListTile(
+                    title:
+                        Text("Exit Group", style: TextStyle(color: Colors.red)),
+                    leading: Icon(
+                      Icons.exit_to_app,
+                      color: Colors.red,
+                    )),
+              ),
+              PopupMenuItem(
+                value: 2,
+                child: ListTile(
+                    title: Text("Settings"), leading: Icon(Icons.settings)),
+              ),
+            ],
+          );
+        }),
         title: Text(
           widget.name,
           overflow: TextOverflow.ellipsis,
@@ -570,7 +573,8 @@ class GroupChatPageState extends State<GroupChatPage>
                                 child: ListView(
                               padding: EdgeInsets.zero,
                               children: [
-                                _getDrawerHeader(),
+                                _getDrawerHeader(groupMembersSnapshot.data!
+                                    .map((User e) => e.userId)),
                                 ...groupMembersSnapshot.data!.map((User e) =>
                                     // for (var i = 0; i < widget.memberCount; i++)
                                     ListTile(

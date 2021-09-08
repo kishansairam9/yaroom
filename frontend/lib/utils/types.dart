@@ -121,8 +121,11 @@ class FilePickerCubit extends Cubit<FilePickerDetails> {
 
 class GroupChatPageArguments {
   late final String groupId, name;
-  late final String? image;
+  late final String? image, description;
 
   GroupChatPageArguments(
-      {required this.groupId, required this.name, this.image});
+      {required this.groupId,
+      required this.name,
+      this.image,
+      this.description});
 }

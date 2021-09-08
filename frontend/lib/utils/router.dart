@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../screens/login.dart';
 import './types.dart';
 import './authorizationService.dart';
+import '../screens/createOrAdd/group.dart';
 
 Widget wrapWithUserId(BuildContext context, Widget child) {
   return FutureBuilder<String>(
@@ -49,6 +50,10 @@ class ContentRouter {
         final args = settings.arguments as RoomArguments;
         return MaterialPageRoute(
             builder: (context) => wrapWithUserId(context, HomePage(args)));
+      case '/editgroup':
+        final args = settings.arguments;
+        return MaterialPageRoute(
+            builder: (context) => wrapWithUserId(context, CreateGroup(args)));
       default:
         return MaterialPageRoute(builder: (_) => ErrorPage());
     }

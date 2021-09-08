@@ -1,6 +1,8 @@
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
+import 'package:yaroom/screens/login.dart';
 import 'secureStorageService.dart';
 import 'package:auth0/auth0.dart';
 import 'dart:convert';
@@ -34,6 +36,8 @@ class AuthorizationService {
               additionalParameters: {'audience': issuer + '/api/v2/'},
               scopes: ['openid', 'profile', 'offline_access', 'app_metadata']));
       await secureStorageService.saveIdToken(response?.idToken);
+      print("sign in ///////////");
+      print(response?.accessToken);
       await secureStorageService.saveAccessToken(response?.accessToken);
       await secureStorageService
           .saveAccessTokenExpiresIn(response?.accessTokenExpirationDateTime);
@@ -59,6 +63,7 @@ class AuthorizationService {
     final DateTime? expirationDate =
         await secureStorageService.getAccessTokenExpirationDateTime();
     int? cmp = expirationDate?.compareTo(DateTime.now());
+    
     if (cmp != null && cmp > 0) {
       return secureStorageService.getAccessToken();
     }
@@ -72,6 +77,8 @@ class AuthorizationService {
       final TokenResponse? response = await appAuth.token(TokenRequest(
           clientId, redirectUrl,
           issuer: issuer, refreshToken: refreshToken));
+      // print("refresh token ///////////");
+      // print(response?.accessToken);
       await secureStorageService.saveAccessToken(response?.accessToken);
       await secureStorageService
           .saveAccessTokenExpiresIn(response?.accessTokenExpirationDateTime);
@@ -85,6 +92,8 @@ class AuthorizationService {
 
   Future<void> logout(BuildContext context) async {
     String? accessToken = await secureStorageService.getAccessToken();
+    print("Accesss token ---- ");
+    print(accessToken);
     String? refreshToken = await secureStorageService.getRefreshToken();
     if (accessToken != null) {
       if (refreshToken != null) {
@@ -108,11 +117,13 @@ class AuthorizationService {
 
         String logoutUrl = issuer + '/v2/logout';
         if (await canLaunch(logoutUrl)) {
-          await launch(logoutUrl);
+          launch(logoutUrl);
         }
       }
     }
     // Delete all tokens
     await this.secureStorageService.deleteAll();
+    Provider.of<LandingViewModel>(context, listen: false).signedIn = false;
+    Provider.of<LandingViewModel>(context, listen: false).signingIn = false;
   }
 }
