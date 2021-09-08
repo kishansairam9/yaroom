@@ -57,7 +57,19 @@ class GroupChatViewState extends State<GroupChatView> {
                 }
                 return CircularProgressIndicator();
               }),
-          Align(alignment: Alignment.bottomRight, child: FloatingActionButton(child: Icon(Icons.people), onPressed: () => Navigator.of(context).pushNamed('/editgroup'), backgroundColor: Theme.of(context).primaryColor,), )
+          Align(
+            alignment: Alignment.bottomRight,
+            child: FloatingActionButton(
+              child: Icon(Icons.people),
+              onPressed: () =>
+                  Navigator.of(context).pushNamed('/editgroup', arguments: {
+                "group": GroupChatPageArguments(
+                    groupId: "", name: "", image: "", description: ""),
+                "members": []
+              }),
+              backgroundColor: Theme.of(context).primaryColor,
+            ),
+          )
         ],
       );
     });
@@ -66,7 +78,7 @@ class GroupChatViewState extends State<GroupChatView> {
 
 class GroupProfileTile extends StatefulWidget {
   late final String groupId;
-  late final String? image;
+  late final String? image, description;
   late final String name;
 
   late final List<dynamic> _preParams;
@@ -79,6 +91,7 @@ class GroupProfileTile extends StatefulWidget {
       {required this.groupId,
       required this.name,
       this.image,
+      this.description,
       int? unread,
       String? showText,
       Function? preShowChat,
@@ -120,7 +133,10 @@ class GroupProfileTileState extends State<GroupProfileTile> {
     }
     Navigator.of(context).pushNamed('/groupchat',
         arguments: GroupChatPageArguments(
-            groupId: widget.groupId, name: widget.name, image: widget.image));
+            groupId: widget.groupId,
+            name: widget.name,
+            image: widget.image,
+            description: widget.description));
   }
 
   @override
