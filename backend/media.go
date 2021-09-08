@@ -51,7 +51,7 @@ func mediaServerHandler(g *gin.Context) {
 		if hasAccess {
 			break
 		}
-		room_id_split := strings.Split(split_exchange_id[0], "#")
+		room_id_split := strings.Split(split_exchange_id[0], "@")
 		for _, room := range userMeta.Roomslist {
 			if room_id_split[0] == room {
 				hasAccess = true

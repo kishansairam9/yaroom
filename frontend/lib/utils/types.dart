@@ -1,5 +1,12 @@
 export '../moor/db.dart';
 
+import 'dart:io';
+import 'package:flutter/services.dart';
+import 'package:moor/moor.dart';
+import 'dart:async';
+
+import 'package:path_provider/path_provider.dart';
+
 import 'package:bloc/bloc.dart';
 
 typedef UserId = String;
@@ -14,6 +21,53 @@ class HomePageArguments {
 
   HomePageArguments(
       {this.index, this.roomId, this.roomName, this.channelId, this.roomIcon});
+}
+
+class MediaStore {
+  static const _channel = MethodChannel('flutter_media_store');
+
+  Future<void> addItem({required File file, required String name}) async {
+    await _channel.invokeMethod('addItem', {'path': file.path, 'name': name});
+  }
+}
+
+Future<void> saveFileToMediaStore(File file, String name) async {
+  final mediaStore = MediaStore();
+  await mediaStore.addItem(file: file, name: name);
+}
+
+class CounterStorage {
+  Future<String> get _localPath async {
+    final directory = await getApplicationDocumentsDirectory();
+
+    return directory.path;
+  }
+
+  Future<File> _localFile(String filename) async {
+    final path = await _localPath;
+    return File('$path/' + filename);
+  }
+
+  Future<int> readCounter(String filename) async {
+    try {
+      final file = await _localFile(filename);
+
+      // Read the file
+      final contents = await file.readAsString();
+
+      return int.parse(contents);
+    } catch (e) {
+      // If encountering an error, return 0
+      return 0;
+    }
+  }
+
+  Future<File> writeCounter(String filename, Uint8List bytes) async {
+    final file = await _localFile(filename);
+
+    // Write the file
+    return file.writeAsBytes(bytes);
+  }
 }
 
 class RoomArguments extends HomePageArguments {

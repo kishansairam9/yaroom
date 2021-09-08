@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:yaroom/blocs/activeStatus.dart';
 import '../blocs/fcmToken.dart';
 import '../utils/messageExchange.dart';
 import '../utils/authorizationService.dart';
@@ -78,7 +79,11 @@ class LandingPage extends StatelessWidget {
       // Start web socket
       Provider.of<MessageExchangeStream>(context, listen: false)
           .start('ws://localhost:8884/v1/ws', accessToken!);
-
+      final userid =
+          await Provider.of<AuthorizationService>(context, listen: false)
+              .getUserId();
+      Provider.of<ActiveStatusMap>(context,listen: false).add(userid);
+      Provider.of<ActiveStatusMap>(context,listen: false).update(userid, true);
       // Handle fcm token update
       await notifyFCMToken(
           BlocProvider.of<FcmTokenCubit>(context, listen: false), accessToken);

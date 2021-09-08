@@ -11,7 +11,7 @@ type testingUser struct {
 
 type testingActiveStatus struct {
 	UserId string `json:"userId" binding:"required"`
-	Active bool   `json:"active" binding:"required"`
+	Active bool   `json:"active"`
 }
 
 type mediaRequest struct {
@@ -40,6 +40,30 @@ type fcmTokenUpdate struct {
 	Token string `json:"fcm_token" binding:"required"`
 }
 
+type roomDetails struct {
+	RoomId       string              `json:"roomId" binding:"required"`
+	Name         string              `json:"name" binding:"required"`
+	Description  string              `json:"description"`
+	RoomIcon     string              `json:"roomIcon"`
+	RoomMembers  map[string]User_udt `json:"roomMembers"`
+	ChannelsList map[string]string   `json:"channelsList"`
+}
+
+func updateRoomHandler(g *gin.Context) {
+	var req roomDetails
+	if err := g.BindJSON(&req); err != nil {
+		log.Info().Str("where", "bind json").Str("type", "failed to parse body to json").Msg(err.Error())
+		return
+	}
+
+	data, err := updateRoomMetadata(&RoomMetadata{Roomid: req.RoomId, Name: req.Name, Image: &req.RoomIcon, Description: &req.Description, Userslist: req.RoomMembers, Channelslist: req.ChannelsList})
+	if err != nil {
+		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	g.JSON(200, roomDetails{RoomId: data.Roomid, Name: data.Name, Description: *data.Description, RoomIcon: *data.Image, RoomMembers: data.Userslist, ChannelsList: data.Channelslist})
+}
+
 func getUserDetailsHandler(g *gin.Context) {
 	rawUserId, exists := g.Get("userId")
 	if !exists {
@@ -50,7 +74,7 @@ func getUserDetailsHandler(g *gin.Context) {
 
 	data, err := getUserDetails(userId)
 	if err != nil {
-		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
+		g.AbortWithStatusJSON(400, gin.H{"error": err.Error()})
 		return
 	}
 	g.JSON(200, data)
@@ -76,7 +100,7 @@ func getLaterMessageHandler(g *gin.Context) {
 
 	msgs, err := getLaterMessages(userId, req.LastMsgId)
 	if err != nil {
-		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
+		g.AbortWithStatusJSON(400, gin.H{"error": err.Error()})
 		return
 	}
 	g.JSON(200, msgs)
@@ -102,7 +126,7 @@ func getOlderMessageHandler(g *gin.Context) {
 
 	msgs, err := getOlderMessages(userId, req.LastMsgId, req.ExchangeId, req.MsgType, req.Limit)
 	if err != nil {
-		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
+		g.AbortWithStatusJSON(400, gin.H{"error": err.Error()})
 		return
 	}
 	g.JSON(200, msgs)
@@ -129,7 +153,7 @@ func searchQueryHandler(g *gin.Context) {
 
 	msgs, err := searchQuery(userId, req.SearchString, req.ExchangeId, req.MsgType, req.Limit)
 	if err != nil {
-		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
+		g.AbortWithStatusJSON(400, gin.H{"error": err.Error()})
 		return
 	}
 	g.JSON(200, msgs)

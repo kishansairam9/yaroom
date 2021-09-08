@@ -59,7 +59,7 @@ class AuthorizationService {
     final DateTime? expirationDate =
         await secureStorageService.getAccessTokenExpirationDateTime();
     int? cmp = expirationDate?.compareTo(DateTime.now());
-    if (cmp != null && cmp < 0) {
+    if (cmp != null && cmp > 0) {
       return secureStorageService.getAccessToken();
     }
     return _refreshAccessToken();

@@ -2,9 +2,11 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 
 	"github.com/gocql/gocql"
+	"github.com/rs/xid"
 	"github.com/rs/zerolog/log"
 	"github.com/scylladb/gocqlx/qb"
 	"github.com/scylladb/gocqlx/v2"
@@ -28,6 +30,16 @@ var RoomTableMetadata = table.Metadata{
 	Columns: []string{"rooomid", "name", "image", "description", "userslist", "channelslist"},
 	PartKey: []string{"roomid"},
 }
+
+var AddRoomToUser *gocqlx.Queryx
+var DeleteRoomFromUser *gocqlx.Queryx
+var SelectRoomsOfUser *gocqlx.Queryx
+
+// var AddUserToRoom *gocqlx.Queryx
+var DeleteUserFromRoom *gocqlx.Queryx
+var SelectUsersOfRoom *gocqlx.Queryx
+
+
 
 var UserMetadataTable *table.Table
 var UpdateUserMetadata *gocqlx.Queryx
@@ -63,6 +75,7 @@ func setupDB() {
 
 	RoomMetadataTable = table.New(RoomTableMetadata)
 	SelectRoomMetadata = RoomMetadataTable.SelectQuery(dbSession)
+	UpdateRoomMetadata = RoomMetadataTable.UpdateQuery(dbSession)
 
 	AddUserFCMToken = UserMetadataTable.UpdateBuilder().Add("tokens").Query(dbSession)
 	DeleteUserFCMToken = UserMetadataTable.UpdateBuilder().Remove("tokens").Query(dbSession)
@@ -81,13 +94,22 @@ func setupDB() {
 	InsertGroupMessage = GroupMessageTable.InsertQuery(dbSession)
 	RoomMessageTable = table.New(RoomMessageMetadata)
 	InsertRoomMessage = RoomMessageTable.InsertQuery(dbSession)
+
+	AddRoomToUser = UserMetadataTable.UpdateBuilder().Add("groupslist").Query(dbSession)
+	DeleteRoomFromUser = UserMetadataTable.UpdateBuilder().Remove("groupslist").Query(dbSession)
+	SelectRoomsOfUser = UserMetadataTable.SelectBuilder("groupslist").Query(dbSession)
+
+	// AddUserToRoom = RoomMetadataTable.UpdateBuilder().Add("userslist").Query(dbSession)
+	DeleteUserFromRoom = RoomMetadataTable.UpdateBuilder().Remove("userslist").Query(dbSession)
+	SelectUsersOfRoom = RoomMetadataTable.SelectBuilder("userslist").Query(dbSession)
+
 }
 
 type User_udt struct {
 	gocqlx.UDT
-	Userid string
-	Name   string
-	Image  *string
+	Userid string  `json:"userId"`
+	Name   string  `json:"name"`
+	Image  *string `json:"profileImg"`
 }
 
 // MarshalUDT implements UDTMarshaler.
@@ -137,6 +159,26 @@ type UserDetails struct {
 	RoomData  []RoomMetadata
 }
 
+type RoomsListOfUserUpdate struct {
+	Userid     string
+	Roomslist []string
+}
+
+type FriendsListOfUserUpdate struct {
+	Userid      string
+	FriendsList []string
+}
+
+type PendingListOfUserUpdate struct {
+	Userid      string
+	Pendinglist []string
+}
+
+type UsersListOfRoomUpdate struct {
+	Roomid   string
+	Userslist map[string]User_udt
+}
+
 func updateUserMetadata(data *UserMetadata) error {
 	if q := UpdateUserMetadata.BindStruct(data); q.Err() != nil {
 		log.Error().Str("where", "update user metadata").Str("type", "failed to bind struct").Msg(q.Err().Error())
@@ -173,6 +215,128 @@ func getGroupMetadata(groupId string) (*GroupMetadata, error) {
 		return nil, errors.New("internal server error")
 	}
 	return rows[0], nil
+}
+
+func convertMapToString(data map[string]User_udt) string {
+	var s string
+	s += "{"
+	for key, val := range data {
+		fmt.Println(key, val)
+		if val.Image != nil {
+			s += fmt.Sprintf("'%s':{userid:'%s', name:'%s', image:'%s'},", key, val.Userid, val.Name, *val.Image)
+		} else {
+			s += fmt.Sprintf("'%s':{userid:'%s', name:'%s', image:''},", key, val.Userid, val.Name)
+		}
+	}
+	s = s[:len(s)-1]
+	s += "}"
+	return s
+}
+func updateRoomMetadata(data *RoomMetadata) (*RoomMetadata, error) {
+	if data.Roomid == "" {
+		data.Roomid = xid.New().String()
+	}
+	paddedRoomId := "'" + data.Roomid + "'"
+	roomMeta, err := getRoomMetadata(paddedRoomId)
+	if err != nil {
+		log.Error().Str("where", "get room details").Str("type", "error occured in retrieving room metadata").Msg(err.Error())
+		return nil, err
+	}
+	if roomMeta == nil {
+		in := dbSession.Query(qb.Insert("yaroom.rooms").LitColumn("roomid", paddedRoomId).LitColumn("name", "'"+data.Name+"'").LitColumn("image", "'"+*data.Image+"'").LitColumn("description", "'"+*data.Description+"'").LitColumn("userslist", convertMapToString(data.Userslist)).ToCql())
+		if err := in.ExecRelease(); err != nil {
+			return nil, err
+		}
+		for key, _ := range data.Userslist {
+			if err := addRoomToUser(&RoomsListOfUserUpdate{Userid: key, Roomslist: []string{data.Roomid}}); err != nil {
+				return nil, err
+			}
+		}
+		if err := addUserToRoom(&UsersListOfRoomUpdate{Roomid: data.Roomid, Userslist: data.Userslist}); err != nil {
+			return nil, err
+		}
+	} else {
+		if q := UpdateRoomMetadata.BindStruct(data); q.Err() != nil {
+			log.Error().Str("where", "update Room metadata").Str("type", "failed to bind struct").Msg(q.Err().Error())
+			return nil, errors.New("internal server error")
+		}
+		if err := UpdateRoomMetadata.Exec(); err != nil {
+			log.Error().Str("where", "update Room metadata").Str("type", "failed to execute query").Msg(err.Error())
+			return nil, errors.New("internal server error")
+		}
+	}
+	return data, nil
+}
+
+func addRoomToUser(user *RoomsListOfUserUpdate) error {
+	if q := AddRoomToUser.BindStruct(user); q.Err() != nil {
+		log.Error().Str("where", "add room to user").Str("type", "failed to bind struct").Msg(q.Err().Error())
+		return errors.New("internal server error")
+	}
+	if err := AddRoomToUser.Exec(); err != nil {
+		log.Error().Str("where", "add room to user").Str("type", "failed to execute query").Msg(err.Error())
+		return errors.New("internal server error")
+	}
+	return nil
+}
+
+func deleteRoomFromUser(user *RoomsListOfUserUpdate) error {
+	if q := DeleteRoomFromUser.BindStruct(user); q.Err() != nil {
+		log.Error().Str("where", "delete room from user").Str("type", "failed to bind struct").Msg(q.Err().Error())
+		return errors.New("internal server error")
+	}
+	if err := DeleteRoomFromUser.Exec(); err != nil {
+		log.Error().Str("where", "delete room from user").Str("type", "failed to execute query").Msg(err.Error())
+		return errors.New("internal server error")
+	}
+	return nil
+}
+
+func selectRoomsOfUser(userId string) ([]RoomsListOfUserUpdate, error) {
+	if q := SelectRoomsOfUser.BindMap(qb.M{"userid": userId}); q.Err() != nil {
+		log.Error().Str("where", "get rooms of user").Str("type", "failed to bind struct").Msg(q.Err().Error())
+		return nil, errors.New("internal server error")
+	}
+	rows := make([]RoomsListOfUserUpdate, 1)
+	if err := SelectRoomsOfUser.Select(&rows); err != nil {
+		log.Error().Str("where", "get rooms of user").Str("type", "failed to execute query").Msg(err.Error())
+		return nil, errors.New("internal server error")
+	}
+	return rows, nil
+}
+
+func addUserToRoom(room *UsersListOfRoomUpdate) error {
+	in := dbSession.Query(qb.Update("yaroom.rooms").AddLit("userslist", convertMapToString(room.Userslist)).Where(qb.EqLit("roomid", "'"+room.Roomid+"'")).ToCql())
+	if err := in.ExecRelease(); err != nil {
+		log.Error().Str("where", "add user to room").Str("type", "failed to execute query").Msg(err.Error())
+		return err
+	}
+	return nil
+}
+
+func deleteUserFromRoom(user *UsersListOfRoomUpdate) error {
+	if q := DeleteUserFromRoom.BindStruct(user); q.Err() != nil {
+		log.Error().Str("where", "delete user from room").Str("type", "failed to bind struct").Msg(q.Err().Error())
+		return errors.New("internal server error")
+	}
+	if err := DeleteUserFromRoom.Exec(); err != nil {
+		log.Error().Str("where", "delete user from room").Str("type", "failed to execute query").Msg(err.Error())
+		return errors.New("internal server error")
+	}
+	return nil
+}
+
+func selectUsersFromRoom(userId string) ([]UsersListOfRoomUpdate, error) {
+	if q := SelectUsersOfRoom.BindMap(qb.M{"userid": userId}); q.Err() != nil {
+		log.Error().Str("where", "get users of room").Str("type", "failed to bind struct").Msg(q.Err().Error())
+		return nil, errors.New("internal server error")
+	}
+	rows := make([]UsersListOfRoomUpdate, 1)
+	if err := SelectUsersOfRoom.Select(&rows); err != nil {
+		log.Error().Str("where", "get users of room").Str("type", "failed to execute query").Msg(err.Error())
+		return nil, errors.New("internal server error")
+	}
+	return rows, nil
 }
 
 func getRoomMetadata(roomId string) (*RoomMetadata, error) {

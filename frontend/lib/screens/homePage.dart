@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:bottom_navy_bar/bottom_navy_bar.dart';
 import 'package:provider/provider.dart';
+import 'package:yaroom/blocs/activeStatus.dart';
 import 'package:yaroom/blocs/rooms.dart';
+import 'package:yaroom/moor/platforms/native.dart';
 import 'components/searchDelegate.dart';
 import 'package:yaroom/blocs/fcmToken.dart';
 import 'package:yaroom/screens/components/contactView.dart';
@@ -168,7 +170,7 @@ class HomePageState extends State<HomePage> {
                           accessToken: Provider.of<UserId>(context,
                               listen:
                                   false), // Passing userId for now TODO FIX ONCE FIXED AUTH0 BUG
-                          exchangeId: roomId + "#" + channelId,
+                          exchangeId: roomId + "@" + channelId,
                           msgType: "RoomMessage",
                           limit: 100))
                 },
@@ -199,6 +201,9 @@ class HomePageState extends State<HomePage> {
                 builder: (BuildContext context,
                     AsyncSnapshot<List<RoomsListData>> Roomsnapshot) {
                   if (Roomsnapshot.hasData) {
+                    // roomMembersSnapshot.data!.map((e) =>
+                    //     Provider.of<ActiveStatusMap>(context, listen: false)
+                    //         .add(e.userId));
                     return Drawer(
                       child: ListView(padding: EdgeInsets.zero, children: [
                         DrawerHeader(
@@ -236,37 +241,52 @@ class HomePageState extends State<HomePage> {
                                     )
                                   ])
                             ])),
-                        ...roomMembersSnapshot.data!.map((User e) => ListTile(
-                            onTap: () => showModalBottomSheet(
-                                context: context,
-                                builder: (BuildContext c) {
-                                  return ViewContact(e);
-                                }),
-                            tileColor: Colors.transparent,
-                            leading: Stack(
-                              children: [
-                                CircleAvatar(
-                                  backgroundColor: Colors.grey[350],
-                                  foregroundImage:
-                                      NetworkImage('${e.profileImg}'),
-                                  backgroundImage:
-                                      AssetImage('assets/no-profile.png'),
-                                ),
-                                Positioned(
-                                    bottom: 0,
-                                    right: 0,
-                                    child: Container(
-                                        width: 15,
-                                        height: 15,
-                                        decoration: new BoxDecoration(
-                                          color: Colors.white,
-                                          shape: BoxShape.circle,
-                                        )))
-                              ],
-                            ),
-                            title: Text(
-                              e.name,
-                            )))
+                        ...roomMembersSnapshot.data!.map((User e) =>
+                            // BlocProvider(
+                            //   create: (context) =>
+                            //       ActiveStatusCubit(initialState: false),
+                            //   child: Builder(
+                            //     builder: (context) {
+                            //       return
+                            BlocBuilder<ActiveStatusCubit, bool>(
+                              bloc: Provider.of<ActiveStatusMap>(context)
+                                  .get(e.userId),
+                              builder: (context, state) {
+                                return ListTile(
+                                    onTap: () => showModalBottomSheet(
+                                        context: context,
+                                        builder: (BuildContext c) {
+                                          return ViewContact(e);
+                                        }),
+                                    tileColor: Colors.transparent,
+                                    leading: Stack(
+                                      children: [
+                                        CircleAvatar(
+                                          backgroundColor: Colors.grey[350],
+                                          foregroundImage:
+                                              NetworkImage('${e.profileImg}'),
+                                          backgroundImage: AssetImage(
+                                              'assets/no-profile.png'),
+                                        ),
+                                        Positioned(
+                                            bottom: 0,
+                                            right: 0,
+                                            child: Container(
+                                                width: 15,
+                                                height: 15,
+                                                decoration: new BoxDecoration(
+                                                  color: state
+                                                      ? Colors.green
+                                                      : Colors.grey,
+                                                  shape: BoxShape.circle,
+                                                )))
+                                      ],
+                                    ),
+                                    title: Text(
+                                      e.name,
+                                    ));
+                              },
+                            ))
                       ]),
                     );
                   } else if (Roomsnapshot.hasError) {
@@ -284,6 +304,38 @@ class HomePageState extends State<HomePage> {
           }
           return CircularProgressIndicator();
         });
+  }
+  Widget addChannel() {
+    var ChannelController = TextEditingController();
+    return AlertDialog(
+      scrollable: true,
+      title: Text('Add Channel'),
+      content: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Form(
+          child: Column(
+            children: <Widget>[
+              TextFormField(
+                controller: ChannelController,
+                decoration: InputDecoration(
+                  labelText: 'Name',
+                  icon: Icon(Icons.create),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        ElevatedButton(
+            child: Text("Submit"),
+            onPressed: () {
+              if (ChannelController.text != '') {
+                
+              }
+            }),
+      ],
+    );
   }
 
   @override
@@ -336,7 +388,7 @@ class HomePageState extends State<HomePage> {
                           await Provider.of<AuthorizationService>(context,
                                   listen: false)
                               .logout(context);
-
+                          await deleteDb();
                           await Navigator.of(context)
                               .pushNamedAndRemoveUntil('/signin', (_) => false);
                         },
@@ -345,7 +397,8 @@ class HomePageState extends State<HomePage> {
                       ),
                     ),
                     IconButton(
-                        onPressed: () => {}, icon: Icon(Icons.fingerprint))
+                        onPressed: () => {},
+                        icon: Icon(Icons.fingerprint))
                   ],
                 ),
           drawer: currentIndex == 0
@@ -361,6 +414,18 @@ class HomePageState extends State<HomePage> {
                                 roomId: roomId!,
                               )),
                       ),
+                      Expanded(child: ListTile(
+                        minVerticalPadding: 5,
+                        leading: Text("+"),
+                        title: Text("Add Channel"),
+                        onTap: (){
+                          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return addChannel();
+            });
+                        },
+                      ),),
                     ],
                   ),
                 )

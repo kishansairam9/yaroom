@@ -79,6 +79,13 @@ func wsHandler(g *gin.Context) {
 	}
 
 	activeStatusStreams := make([]string, 0)
+	activeStatusStreams = append(activeStatusStreams, "USER:15")
+	activeStatusStreams = append(activeStatusStreams, "USER:16")
+	activeStatusStreams = append(activeStatusStreams, "USER:17")
+	activeStatusStreams = append(activeStatusStreams, "USER:18")
+	activeStatusStreams = append(activeStatusStreams, "USER:19")
+	activeStatusStreams = append(activeStatusStreams, "USER:20")
+
 	if userMeta.Friendslist != nil {
 		for _, friend := range userMeta.Friendslist {
 			activeStatusStreams = append(activeStatusStreams, fmt.Sprintf("USER:%v", friend))

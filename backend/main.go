@@ -110,6 +110,8 @@ func main() {
 		// User Details
 		secured.GET("/getUserDetails", getUserDetailsHandler)
 
+
+		secured.GET("/editRoomDetails",updateRoomHandler)
 		// Get messages
 		secured.GET("/getLaterMessages", getLaterMessageHandler)
 		secured.GET("/getOlderMessages", getOlderMessageHandler)
