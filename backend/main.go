@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -153,34 +154,72 @@ func main() {
 		testing.GET("/getOlderMessages", getOlderMessageHandler)
 		testing.GET("/search", searchQueryHandler)
 
-		// Send active status
-		testing.POST("/status", func(g *gin.Context) {
-			var status testingActiveStatus
-			if err := g.BindJSON(&status); err != nil {
-				log.Info().Str("where", "bind json").Str("type", "failed to parse body to json").Msg(err.Error())
-				return
-			}
-
+		// Send data on user related streams
+		testing.POST("/stream", func(g *gin.Context) {
 			rawUserId, _ := g.Get("userId")
 			userId := rawUserId.(string)
-			if userId != status.UserId {
-				g.AbortWithStatusJSON(400, gin.H{"error": "Request sender and msg fromUser don't match"})
+			// Get metadata of user
+			userMeta, err := getUserMetadata(userId)
+			if err != nil {
+				log.Error().Str("where", "get user metadata").Str("type", "error occured in retrieving data").Msg(err.Error())
+				g.AbortWithStatus(500)
+				return
+			}
+			if userMeta == nil {
+				log.Error().Str("where", "get user metadata").Str("type", "no metadata in user tables")
+				g.AbortWithStatus(500)
 				return
 			}
 
-			stream := []string{fmt.Sprintf("USER:%v", userId)}
-			if err = ensureActiveStatusStreamsExist(stream); err != nil {
-				log.Error().Str("where", "ensure stream").Str("type", "failed to ensure stream exists").Msg(err.Error())
-				g.AbortWithStatusJSON(500, gin.H{"error": "internal server error"})
-				return
+			backendStreams := make([]string, 0)
+			if userMeta.Friendslist != nil {
+				for _, friend := range userMeta.Friendslist {
+					backendStreams = append(backendStreams, fmt.Sprintf("USER:%v", friend))
+				}
 			}
-			fmt.Printf("Published %v to %v\n", fmt.Sprintf("%v:%v", userId, status.Active), stream[0])
-			_, err = jsContext.Publish(stream[0], []byte(fmt.Sprintf("%v:%v", userId, status.Active)))
+			if userMeta.Groupslist != nil {
+				for _, group := range userMeta.Groupslist {
+					backendStreams = append(backendStreams, fmt.Sprintf("GROUP:%v", group))
+				}
+			}
+			if userMeta.Roomslist != nil {
+				for _, room := range userMeta.Roomslist {
+					backendStreams = append(backendStreams, fmt.Sprintf("ROOM:%v", room))
+				}
+			}
+			err = ensureStreamsExist(backendStreams)
 			if err != nil {
-				log.Error().Str("where", "active send to user").Str("type", "failed to send activity status").Msg(err.Error())
-				g.AbortWithStatusJSON(500, gin.H{"error": "internal server error"})
+				log.Error().Str("where", "ensure backend streams exist").Str("type", "error occured in adding streams").Msg(err.Error())
+				g.AbortWithStatus(500)
 				return
 			}
+
+			buf := make([]byte, 2048)
+			num, _ := g.Request.Body.Read(buf)
+			data := buf[0:num]
+
+			err = nil
+			// send to current user's stream
+			err = ensureStreamsExist([]string{"USER:" + userId})
+			if err != nil {
+				log.Warn().Msg(err.Error())
+			}
+			_, err = jsContext.Publish("USER:"+userId, data)
+			if err != nil {
+				log.Warn().Str("where", "send data on stream").Str("type", "failed to add messsage to stream "+"USER:"+userId).Msg(err.Error())
+			}
+			for _, st := range backendStreams {
+				// Send only to groups and rooms other than current user
+				split := strings.Split(st, ":")
+				if split[0] == "USER" {
+					continue
+				}
+				_, err = jsContext.Publish(st, data)
+				if err != nil {
+					log.Warn().Str("where", "send data on stream").Str("type", "failed to add messsage to stream "+st).Msg(err.Error())
+				}
+			}
+			g.String(200, "Check if any errors on server side!, not returning proper status codes")
 		})
 
 		// Message handler

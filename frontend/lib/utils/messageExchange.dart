@@ -37,7 +37,8 @@ class MessageExchangeStream {
     WebSocketChannel? ret = await connectWs();
     if (ret == null) {
       onCallInit = false;
-      Future.delayed(Duration(milliseconds: 10000), initWebSocketConnection);
+      await Future.delayed(Duration(milliseconds: 3000));
+      initWebSocketConnection();
       return;
     }
     this.channel = ret;
@@ -53,14 +54,10 @@ class MessageExchangeStream {
       streamController.add(streamData);
     }, onDone: () async {
       print("Connection aborted");
-      await Future.delayed(Duration(milliseconds: 5000));
-      this.close();
-      initWebSocketConnection();
+      await _onDisconnected();
     }, onError: (e) async {
       print('Server error: $e');
-      this.close();
-      await Future.delayed(Duration(milliseconds: 5000));
-      initWebSocketConnection();
+      await _onDisconnected();
     });
   }
 
@@ -77,12 +74,14 @@ class MessageExchangeStream {
     }
   }
 
-  void _onDisconnected() {
+  Future<void> _onDisconnected() async {
+    this.close();
+    await Future.delayed(Duration(milliseconds: 5000));
     initWebSocketConnection();
   }
 
   void dispose() {
-    close();
+    this.close();
   }
 
   void close() {
