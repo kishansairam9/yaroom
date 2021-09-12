@@ -223,7 +223,7 @@ func convertMapToString(data map[string]User_udt) string {
 	var s string
 	s += "{"
 	for key, val := range data {
-		fmt.Println(key, val)
+		// fmt.Println(key, val)
 		if val.Image != nil {
 			s += fmt.Sprintf("'%s':{userid:'%s', name:'%s', image:'%s'},", key, val.Userid, val.Name, *val.Image)
 		} else {
@@ -239,7 +239,7 @@ func updateGroupMetadata(data *GroupMetadata) (*GroupMetadata, error) {
 		data.Groupid = xid.New().String()
 	}
 	paddedGroupId := "'" + data.Groupid + "'"
-	groupMeta, err := getGroupMetadata(paddedGroupId)
+	groupMeta, err := getGroupMetadata(data.Groupid)
 	if err != nil {
 		log.Error().Str("where", "get group details").Str("type", "error occured in retrieving group metadata").Msg(err.Error())
 		return nil, err
@@ -258,13 +258,18 @@ func updateGroupMetadata(data *GroupMetadata) (*GroupMetadata, error) {
 			return nil, err
 		}
 	} else {
-		if q := UpdateGroupMetadata.BindStruct(data); q.Err() != nil {
-			log.Error().Str("where", "update Group metadata").Str("type", "failed to bind struct").Msg(q.Err().Error())
-			return nil, errors.New("internal server error")
-		}
-		if err := UpdateGroupMetadata.Exec(); err != nil {
+		in := dbSession.Query(qb.Update("yaroom.groups").SetLit("name", "'"+data.Name+"'").SetLit("description", "'"+*data.Description+"'").SetLit("image", "'"+*data.Image+"'").Where(qb.EqLit("groupid", "'"+data.Groupid+"'")).ToCql())
+		if err := in.ExecRelease(); err != nil {
 			log.Error().Str("where", "update Group metadata").Str("type", "failed to execute query").Msg(err.Error())
 			return nil, errors.New("internal server error")
+		}
+		for key, _ := range data.Userslist {
+			if err := addGroupToUser(&GroupsListOfUserUpdate{Userid: key, Groupslist: []string{data.Groupid}}); err != nil {
+				return nil, err
+			}
+		}
+		if err := addUserToGroup(&UsersListOfGroupUpdate{Groupid: data.Groupid, Userslist: data.Userslist}); err != nil {
+			return nil, err
 		}
 	}
 	return data, nil
