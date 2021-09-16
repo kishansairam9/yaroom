@@ -13,6 +13,11 @@ type mediaRequest struct {
 	ObjectId string `uri:"objectid" binding:"required"`
 }
 
+type iconUploadRequest struct {
+	ObjectId  string        `uri:"objectid" binding:"required"`
+	JpegBytes JSONableSlice `json:"jpegbytes"`
+}
+
 type getLaterMessagesRequest struct {
 	LastMsgId string `form:"lastMsgId" binding:"required"`
 }

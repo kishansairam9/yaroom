@@ -62,7 +62,6 @@ class _FriendsViewState extends State<FriendsView> {
                           User f = User(
                               name: result.name,
                               about: result.about,
-                              profileImg: result.profileImg,
                               userId: result.userId);
                           if (result.status != 2)
                             return const SizedBox(
@@ -71,11 +70,7 @@ class _FriendsViewState extends State<FriendsView> {
                           return ListTile(
                             onTap: () => _showContact(context, f),
                             leading: CircleAvatar(
-                                backgroundImage:
-                                    AssetImage('assets/no-profile.png'),
-                                foregroundImage: f.profileImg == null
-                                    ? null
-                                    : NetworkImage('${f.profileImg}')),
+                                foregroundImage: IconImageWrapper(f.userId),
                             title: Text(f.name),
                             subtitle: Text("Active"),
                             trailing: IconButton(
@@ -83,8 +78,7 @@ class _FriendsViewState extends State<FriendsView> {
                                     .pushNamed('/chat',
                                         arguments: ChatPageArguments(
                                             userId: f.userId,
-                                            name: f.name,
-                                            image: f.profileImg)),
+                                            name: f.name),
                                 icon: Icon(Icons.message_rounded)),
                           );
                         }),
@@ -120,7 +114,6 @@ class _FriendsViewState extends State<FriendsView> {
                                   User f = User(
                                       name: result.name,
                                       about: result.about,
-                                      profileImg: result.profileImg,
                                       userId: result.userId);
                                   if (result.status != 1)
                                     return const SizedBox(
@@ -168,12 +161,7 @@ class _FriendsViewState extends State<FriendsView> {
                                     child: ListTile(
                                       onTap: () => _showContact(context, f),
                                       leading: CircleAvatar(
-                                          backgroundImage: AssetImage(
-                                              'assets/no-profile.png'),
-                                          foregroundImage: f.profileImg == null
-                                              ? null
-                                              : NetworkImage(
-                                                  '${f.profileImg}')),
+                                          foregroundImage: IconImageWrapper(f.userId),
                                       title: Text(f.name),
                                     ),
                                   );

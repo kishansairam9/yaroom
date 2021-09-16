@@ -25,7 +25,6 @@ class HomePage extends StatefulWidget {
   late final int initIndex;
   late final String? roomId;
   late final String? roomName;
-  late final String? roomIcon;
   late final String? channelId;
 
   HomePage(HomePageArguments args) {
@@ -33,14 +32,12 @@ class HomePage extends StatefulWidget {
       initIndex = 1;
       this.roomId = null;
       this.roomName = null;
-      this.roomIcon = null;
       this.channelId = null;
       return;
     }
     if (args.index == 0) {
       this.roomId = args.roomId!;
       this.roomName = args.roomName!;
-      this.roomIcon = args.roomIcon!;
       this.channelId = args.channelId;
     }
     this.initIndex = args.index!;
@@ -73,8 +70,7 @@ class HomePageState extends State<HomePage> {
       Navigator.pushNamed(context, '/chat',
           arguments: ChatPageArguments(
               userId: data[0].userId,
-              name: data[0].name,
-              image: data[0].profileImg));
+              name: data[0].name));
     }
 
     // Also handle any interaction when the app is in the background via a
@@ -87,8 +83,7 @@ class HomePageState extends State<HomePage> {
         Navigator.pushNamed(context, '/chat',
             arguments: ChatPageArguments(
                 userId: data[0].userId,
-                name: data[0].name,
-                image: data[0].profileImg));
+                name: data[0].name));
       }
     });
   }
@@ -144,10 +139,7 @@ class HomePageState extends State<HomePage> {
             return IconButton(
                 icon: CircleAvatar(
                   backgroundColor: Colors.grey[350],
-                  foregroundImage: snapshot.data![0].roomIcon == null
-                      ? null
-                      : NetworkImage('${snapshot.data![0].roomIcon!}'),
-                  backgroundImage: AssetImage('assets/no-profile.png'),
+                  foregroundImage: IconImageWrapper(snapshot.data![0].roomId)
                 ),
                 onPressed: () => Scaffold.of(context).openDrawer());
           }
@@ -264,9 +256,7 @@ class HomePageState extends State<HomePage> {
                                         CircleAvatar(
                                           backgroundColor: Colors.grey[350],
                                           foregroundImage:
-                                              NetworkImage('${e.profileImg}'),
-                                          backgroundImage: AssetImage(
-                                              'assets/no-profile.png'),
+                                              IconImageWrapper(e.userId),
                                         ),
                                         Positioned(
                                             bottom: 0,

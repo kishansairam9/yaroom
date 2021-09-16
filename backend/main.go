@@ -93,6 +93,10 @@ func main() {
 	r.Use(cors.Default())
 	wsUpgrader.CheckOrigin = func(r *http.Request) bool { return true }
 
+	// Un protected routes
+	r.GET("/icon", iconServeHandler)
+	r.POST("/updateIcon", iconUploadHandler)
+
 	// Protected routes
 	secured := r.Group("/v1", jwtHandler)
 	{
@@ -111,8 +115,6 @@ func main() {
 		// User Details
 		secured.GET("/getUserDetails", getUserDetailsHandler)
 
-
-		secured.GET("/editRoomDetails",updateRoomHandler)
 		// Group Details
 		secured.POST("/editGroupDetails", updateGroupHandler)
 

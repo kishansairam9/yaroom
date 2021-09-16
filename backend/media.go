@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"io"
 	"strings"
 
@@ -13,6 +15,7 @@ import (
 func mediaServerHandler(g *gin.Context) {
 	var req mediaRequest
 	if err := g.BindUri(&req); err != nil {
+		g.AbortWithStatusJSON(400, gin.H{"error": "invalid request"})
 		return
 	}
 
@@ -84,4 +87,43 @@ func mediaServerHandler(g *gin.Context) {
 	}
 	g.Header("Content-Type", "application/json")
 	io.Copy(g.Writer, obj)
+}
+
+func iconServeHandler(g *gin.Context) {
+	var req mediaRequest
+	if err := g.BindUri(&req); err != nil {
+		return
+	}
+	// Get object from minio
+	obj, err := minioClient.GetObject(context.Background(), miniobucket, req.ObjectId, minio.GetObjectOptions{})
+	if err != nil {
+		// TODO: if minio server failure don't return err to client,
+		// TODO: then report internal server error and set status 500
+		g.AbortWithStatusJSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	g.Header("Content-Type", "image/jpeg")
+	io.Copy(g.Writer, obj)
+}
+
+func iconUploadHandler(g *gin.Context) {
+	var req iconUploadRequest
+	if err := g.BindUri(&req); err != nil {
+		g.AbortWithStatusJSON(400, gin.H{"error": "invalid request"})
+		return
+	}
+
+	if req.ObjectId == "" || len(req.JpegBytes) == 0 {
+		g.AbortWithStatusJSON(400, gin.H{"error": "invalid request"})
+		return
+	}
+
+	mediaBytes, _ := json.Marshal(req.JpegBytes)
+	mediaId := req.ObjectId
+
+	if _, err := minioClient.PutObject(context.Background(), miniobucket, mediaId, bytes.NewReader(mediaBytes), -1, minio.PutObjectOptions{ContentType: "image/jpeg"}); err != nil {
+		log.Error().Str("where", "icon upload").Str("type", "uploading to minio failed at put object").Msg(err.Error())
+		g.AbortWithStatusJSON(500, gin.H{"error": "internal server error"})
+		return
+	}
 }

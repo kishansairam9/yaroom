@@ -12,15 +12,45 @@ import 'package:bloc/bloc.dart';
 typedef UserId = String;
 typedef FCMTokenStream = Stream<String>;
 
+class IconImageWrapper {
+  bool _loaded = false;
+  var img;
+  var placeholder = AssetImage('assets/no-profile.png')
+
+  NetworkImageWrapper(String? src) {
+    String base = 'localhost:8884/icon/';
+    if(src != null) {
+      base = base + src;
+    }
+    img = Image.network(src);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    img.image.resolve(ImageConfiguration()).addListener((i, b) {
+      if (mounted) {
+        setState(() => _loaded = true);
+      }
+    });     
+  }
+
+  @override
+  Widget build(BuildContext context) { 
+    return YourWidget(
+      child: _loaded ? img : placeholder,
+    );
+  }
+}
+
 class HomePageArguments {
   late final int? index;
   late final String? roomId;
   late final String? roomName;
-  late final String? roomIcon;
   late final String? channelId;
 
   HomePageArguments(
-      {this.index, this.roomId, this.roomName, this.channelId, this.roomIcon});
+      {this.index, this.roomId, this.roomName, this.channelId});
 }
 
 class MediaStore {
@@ -71,20 +101,18 @@ class CounterStorage {
 }
 
 class RoomArguments extends HomePageArguments {
-  RoomArguments({roomId, roomName, channelId, roomIcon})
+  RoomArguments({roomId, roomName, channelId})
       : super(
             index: 0,
             roomId: roomId,
             roomName: roomName,
-            channelId: channelId,
-            roomIcon: roomIcon);
+            channelId: channelId);
 }
 
 class ChatPageArguments {
   late final String userId, name;
-  late final String? image;
 
-  ChatPageArguments({required this.userId, required this.name, this.image});
+  ChatPageArguments({required this.userId, required this.name});
 }
 
 class FilePickerDetails {

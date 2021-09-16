@@ -56,10 +56,7 @@ class RoomState extends State<Room> {
                   alignment: Alignment.topCenter,
                   child: CircleAvatar(
                     backgroundColor: Colors.grey[350],
-                    foregroundImage: curUser.profileImg == null
-                        ? null
-                        : NetworkImage('${curUser.profileImg}'),
-                    backgroundImage: AssetImage('assets/no-profile.png'),
+                    foregroundImage: IconImageWrapper(curUser.userId),
                     radius: 20.0,
                   ),
                 )
@@ -137,10 +134,7 @@ class RoomState extends State<Room> {
                   alignment: Alignment.topCenter,
                   child: CircleAvatar(
                     backgroundColor: Colors.grey[350],
-                    foregroundImage: curUser.profileImg == null
-                        ? null
-                        : NetworkImage('${curUser.profileImg}'),
-                    backgroundImage: AssetImage('assets/no-profile.png'),
+                    foregroundImage: IconImageWrapper(curUser.userId),
                     radius: 20.0,
                   ),
                 )
@@ -219,10 +213,7 @@ class RoomState extends State<Room> {
                   alignment: Alignment.topCenter,
                   child: CircleAvatar(
                     backgroundColor: Colors.grey[350],
-                    foregroundImage: curUser.profileImg == null
-                        ? null
-                        : NetworkImage('${curUser.profileImg}'),
-                    backgroundImage: AssetImage('assets/no-profile.png'),
+                    foregroundImage: IconImageWrapper(curUser.userId),
                     radius: 20.0,
                   ),
                 )

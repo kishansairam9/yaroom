@@ -26,6 +26,7 @@ import 'utils/authorizationService.dart';
 import 'moor/utils.dart';
 import 'screens/messaging/groupsView.dart';
 import 'utils/fetchBackendData.dart';
+import 'package:connectivity/connectivity.dart';
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print("Handling a background message: ${message.messageId}");
@@ -108,8 +109,39 @@ Future<void> main() async {
     fakeInsert(db, "ef8a936c-888f-4863-8d30-8a62c7c20c29"); // kishan
   }
 
-  runApp(
-      MyApp(db, msgStream, secureStorageService, fcmTokenCubit, activeStatus));
+  runApp(ConnectivityCheck(MyApp(db, msgStream, secureStorageService, fcmTokenCubit, activeStatus)));
+}
+
+class ConnectivityCheck extends StatelessWidget {
+  final Widget child;
+
+  ConnectivityCheck({@required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<ConnectivityResult>(
+        stream: Connectivity().onConnectivityChanged,
+        builder: (context, snapshot) {
+          if (!snapshot.hasData ||
+              snapshot.data == ConnectivityResult.none) {
+            return Container(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: <Widget>[
+                          Image(image: AssetImage('assets/yaroom_full_logo_200x200.png')),
+                          Text('No network!'),
+                        ],
+                      ),
+                    ),
+                  );
+          } else {
+            return child;
+          }
+        });
+  }
 }
 
 class MyApp extends StatelessWidget {

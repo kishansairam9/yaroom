@@ -296,8 +296,7 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
         builder: (BuildContext c) {
           return ViewContact(User(
               userId: widget.userId,
-              name: widget.name,
-              profileImg: widget.image));
+              name: widget.name,));
         });
   }
 
@@ -488,10 +487,7 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                       tileColor: Colors.transparent,
                       leading: CircleAvatar(
                         backgroundColor: Colors.grey[350],
-                        foregroundImage: widget.image == null
-                            ? null
-                            : NetworkImage('${widget.image}'),
-                        backgroundImage: AssetImage('assets/no-profile.png'),
+                        foregroundImage: IconImageWrapper(widget.userId),
                       ),
                       title: Text(
                         widget.name,

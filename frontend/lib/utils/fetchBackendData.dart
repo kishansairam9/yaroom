@@ -15,8 +15,7 @@ Future<void> populateUserData(data, context) async {
   var userIdList = [];
   await RepositoryProvider.of<AppDb>(context, listen: false).addUser(
       userId: userData['Userid'],
-      name: userData['Name'],
-      profileImg: (userData['Image'] == null ? "" : userData['Image']));
+      name: userData['Name']);
 
   userIdList.add(userData['Userid']);
 
@@ -40,7 +39,6 @@ Future<void> populateUserData(data, context) async {
         await RepositoryProvider.of<AppDb>(context, listen: false).createGroup(
           groupId: groupData['Groupid'],
           name: groupData['Name'],
-          groupIcon: (groupData['Image'] == null ? null : groupData['Image']),
           description: (groupData['Description'] == null
               ? null
               : groupData['Description']),
@@ -51,8 +49,7 @@ Future<void> populateUserData(data, context) async {
               await RepositoryProvider.of<AppDb>(context, listen: false)
                   .addUser(
                       userId: user['Userid'],
-                      name: user['Name'],
-                      profileImg: user['Image'] == null ? "" : user['Image']);
+                      name: user['Name']);
             }
             await RepositoryProvider.of<AppDb>(context, listen: false)
                 .addUserToGroup(
@@ -68,15 +65,13 @@ Future<void> populateUserData(data, context) async {
       await RepositoryProvider.of<AppDb>(context, listen: false).createRoom(
           roomId: room['Roomid'],
           name: room['Name'],
-          description: room['Description'],
-          roomIcon: room['Image']);
+          description: room['Description']);
       if (room['Userslist'] != null) {
         for (var user in room['Userslist']) {
           if (!userIdList.contains(user['Userid'])) {
             await RepositoryProvider.of<AppDb>(context, listen: false).addUser(
                 userId: user['Userid'],
-                name: user['Name'],
-                profileImg: user['Image'] == null ? "" : user['Image']);
+                name: user['Name']);
           }
           await RepositoryProvider.of<AppDb>(context, listen: false)
               .addUserToRoom(roomsId: room['Roomid'], userId: user['Userid']);

@@ -28,7 +28,7 @@ class ChatViewState extends State<ChatView> {
                   .where((e) =>
                       e.userId != Provider.of<UserId>(context, listen: false))
                   .map((e) => ProfileTile(
-                      userId: e.userId, name: e.name, image: e.profileImg)),
+                      userId: e.userId, name: e.name)),
             ).toList());
           } else if (snapshot.hasError) {
             print(snapshot.error);
@@ -108,8 +108,7 @@ class ProfileTileState extends State<ProfileTile> {
       leading: CircleAvatar(
         backgroundColor: Colors.grey[350],
         foregroundImage:
-            widget.image == null ? null : NetworkImage('${widget.image}'),
-        backgroundImage: AssetImage('assets/no-profile.png'),
+            IconImageWrapper(widget.image),
         radius: 28.0,
       ),
       title: Text(widget.name),

@@ -416,8 +416,7 @@ class GroupChatPageState extends State<GroupChatPage>
       ListTile(
         leading: CircleAvatar(
           backgroundColor: Colors.grey[350],
-          foregroundImage: NetworkImage('${widget.image}'),
-          backgroundImage: AssetImage('assets/no-profile.png'),
+          foregroundImage: IconImageWrapper(widget.image),
         ),
         tileColor: Colors.transparent,
         trailing: Consumer<GroupChatData>(
@@ -583,9 +582,7 @@ class GroupChatPageState extends State<GroupChatPage>
                                         leading: CircleAvatar(
                                           backgroundColor: Colors.grey[350],
                                           foregroundImage:
-                                              NetworkImage('${e.profileImg}'),
-                                          backgroundImage: AssetImage(
-                                              'assets/no-profile.png'),
+                                              IconImageWrapper(e.userId),
                                         ),
                                         title: Text(
                                           e.name,
@@ -608,9 +605,7 @@ class GroupChatPageState extends State<GroupChatPage>
                                         leading: CircleAvatar(
                                           backgroundColor: Colors.grey[350],
                                           foregroundImage:
-                                              NetworkImage('${widget.image}'),
-                                          backgroundImage: AssetImage(
-                                              'assets/no-profile.png'),
+                                              IconImageWrapper(widget.image),
                                         ),
                                         title: Text(
                                           widget.name,
