@@ -68,7 +68,7 @@ Future<void> main() async {
         : await getApplicationDocumentsDirectory(),
   );
 
-  final removeExistingDB = false;
+  final removeExistingDB = true;
   AppDb db = constructDb(logStatements: true, removeExisting: removeExistingDB);
 
   var activeStatus = ActiveStatusMap(statusMap: Map());
@@ -101,42 +101,44 @@ Future<void> main() async {
       SecureStorageService(secureStorage);
 
   if (removeExistingDB) {
-    // ef8a936c-888f-4863-8d30-8a62c7c20c29 kishan
-    // aa616733-4e1b-4899-950f-48ea990d8db2 kalyan
-    // 5baa6f0d-0705-4740-b4a1-ae1b44bbd10b abhi
-    //fakeInsert(db, "5baa6f0d-0705-4740-b4a1-ae1b44bbd10b");
+    //fakeInsert(db, "5baa6f0d-0705-4740-b4a1-ae1b44bbd10b"); // abhi
     // fakeInsert(db, "aa616733-4e1b-4899-950f-48ea990d8db2"); // kalyan
     fakeInsert(db, "ef8a936c-888f-4863-8d30-8a62c7c20c29"); // kishan
   }
 
-  runApp(ConnectivityCheck(MyApp(db, msgStream, secureStorageService, fcmTokenCubit, activeStatus)));
+  runApp(
+      MyApp(db, msgStream, secureStorageService, fcmTokenCubit, activeStatus));
 }
 
 class ConnectivityCheck extends StatelessWidget {
   final Widget child;
 
-  ConnectivityCheck({@required this.child});
+  ConnectivityCheck({required this.child});
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<ConnectivityResult>(
         stream: Connectivity().onConnectivityChanged,
         builder: (context, snapshot) {
-          if (!snapshot.hasData ||
-              snapshot.data == ConnectivityResult.none) {
+          if (!snapshot.hasData || snapshot.data == ConnectivityResult.none) {
             return Container(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: <Widget>[
-                          Image(image: AssetImage('assets/yaroom_full_logo_200x200.png')),
-                          Text('No network!'),
-                        ],
-                      ),
-                    ),
-                  );
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: <Widget>[
+                    Image(
+                        image:
+                            AssetImage('assets/yaroom_full_logo_200x200.png')),
+                    Container(
+                      child:
+                          Text('No network!', textDirection: TextDirection.ltr),
+                    )
+                  ],
+                ),
+              ),
+            );
           } else {
             return child;
           }
@@ -203,7 +205,8 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
+    return ConnectivityCheck(
+        child: MultiProvider(
       providers: [
         Provider<ActiveStatusMap>.value(value: activeStatus),
         Provider<FlutterAppAuth>(
@@ -244,7 +247,7 @@ class MyApp extends StatelessWidget {
           );
         },
       ),
-    );
+    ));
   }
 }
 

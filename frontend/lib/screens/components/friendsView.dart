@@ -70,15 +70,14 @@ class _FriendsViewState extends State<FriendsView> {
                           return ListTile(
                             onTap: () => _showContact(context, f),
                             leading: CircleAvatar(
-                                foregroundImage: IconImageWrapper(f.userId),
+                                foregroundImage: iconImageWrapper(f.userId)),
                             title: Text(f.name),
                             subtitle: Text("Active"),
                             trailing: IconButton(
                                 onPressed: () => Navigator.of(context)
                                     .pushNamed('/chat',
                                         arguments: ChatPageArguments(
-                                            userId: f.userId,
-                                            name: f.name),
+                                            userId: f.userId, name: f.name)),
                                 icon: Icon(Icons.message_rounded)),
                           );
                         }),
@@ -161,7 +160,8 @@ class _FriendsViewState extends State<FriendsView> {
                                     child: ListTile(
                                       onTap: () => _showContact(context, f),
                                       leading: CircleAvatar(
-                                          foregroundImage: IconImageWrapper(f.userId),
+                                          foregroundImage:
+                                              iconImageWrapper(f.userId)),
                                       title: Text(f.name),
                                     ),
                                   );

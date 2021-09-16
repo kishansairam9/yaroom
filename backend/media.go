@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -91,7 +92,10 @@ func mediaServerHandler(g *gin.Context) {
 
 func iconServeHandler(g *gin.Context) {
 	var req mediaRequest
-	if err := g.BindUri(&req); err != nil {
+	if err := g.ShouldBind(&req); err != nil {
+		dat, _ := os.ReadFile("assets/no-profile.png")
+		g.Header("Content-Type", "image/png")
+		io.Copy(g.Writer, bytes.NewReader(dat))
 		return
 	}
 	// Get object from minio
@@ -108,18 +112,59 @@ func iconServeHandler(g *gin.Context) {
 
 func iconUploadHandler(g *gin.Context) {
 	var req iconUploadRequest
-	if err := g.BindUri(&req); err != nil {
-		g.AbortWithStatusJSON(400, gin.H{"error": "invalid request"})
+	if err := g.BindJSON(&req); err != nil {
+		g.AbortWithStatusJSON(400, gin.H{"error": "invalid request type"})
 		return
 	}
 
-	if req.ObjectId == "" || len(req.JpegBytes) == 0 {
+	if req.IconId == "" || len(req.JpegBytes) == 0 {
 		g.AbortWithStatusJSON(400, gin.H{"error": "invalid request"})
+		return
+	}
+	rawUserId, exists := g.Get("userId")
+	if !exists {
+		g.AbortWithStatusJSON(400, gin.H{"error": "not authenticated"})
+		return
+	}
+	userId := rawUserId.(string)
+
+	// Check upload access
+	switch 1 {
+	default:
+		if userId == req.IconId {
+			break
+		}
+		userMeta, err := getUserMetadata(userId)
+		if err != nil {
+			log.Error().Str("where", "media metadata check").Str("type", "error occured in retrieving data").Msg(err.Error())
+			g.AbortWithStatusJSON(500, gin.H{"error": "internal server error"})
+			return
+		}
+		hasAccess := false
+		for _, group := range userMeta.Groupslist {
+			if req.IconId == group {
+				hasAccess = true
+				break
+			}
+		}
+		if hasAccess {
+			break
+		}
+		for _, room := range userMeta.Roomslist {
+			if req.IconId == room {
+				hasAccess = true
+				break
+			}
+		}
+		if hasAccess {
+			break
+		}
+		g.AbortWithStatusJSON(400, gin.H{"error": "user doesn't have access to upload"})
 		return
 	}
 
 	mediaBytes, _ := json.Marshal(req.JpegBytes)
-	mediaId := req.ObjectId
+	mediaId := req.IconId
 
 	if _, err := minioClient.PutObject(context.Background(), miniobucket, mediaId, bytes.NewReader(mediaBytes), -1, minio.PutObjectOptions{ContentType: "image/jpeg"}); err != nil {
 		log.Error().Str("where", "icon upload").Str("type", "uploading to minio failed at put object").Msg(err.Error())

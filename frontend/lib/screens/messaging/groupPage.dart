@@ -311,10 +311,9 @@ class GroupChatPageState extends State<GroupChatPage>
           widget.groupId +
           '&limit=15'));
       if (req.body != "null") {
-        if (req.body
-              .contains(new RegExp("{\"error\"", caseSensitive: false))) {
-            return;
-          }
+        if (req.body.contains(new RegExp("{\"error\"", caseSensitive: false))) {
+          return;
+        }
         print(req.body);
         var results = jsonDecode(req.body).cast<Map<String, dynamic>>();
         List<GroupChatMessage> temp = [];
@@ -416,7 +415,7 @@ class GroupChatPageState extends State<GroupChatPage>
       ListTile(
         leading: CircleAvatar(
           backgroundColor: Colors.grey[350],
-          foregroundImage: IconImageWrapper(widget.image),
+          foregroundImage: iconImageWrapper(widget.image),
         ),
         tileColor: Colors.transparent,
         trailing: Consumer<GroupChatData>(
@@ -434,7 +433,6 @@ class GroupChatPageState extends State<GroupChatPage>
                           actions: [
                             TextButton(
                                 onPressed: () async {
-
                                   await groupChatData.removeGroup(
                                       context, widget.groupId);
                                   await Navigator.pushReplacementNamed(
@@ -582,7 +580,7 @@ class GroupChatPageState extends State<GroupChatPage>
                                         leading: CircleAvatar(
                                           backgroundColor: Colors.grey[350],
                                           foregroundImage:
-                                              IconImageWrapper(e.userId),
+                                              iconImageWrapper(e.userId),
                                         ),
                                         title: Text(
                                           e.name,
@@ -605,7 +603,7 @@ class GroupChatPageState extends State<GroupChatPage>
                                         leading: CircleAvatar(
                                           backgroundColor: Colors.grey[350],
                                           foregroundImage:
-                                              IconImageWrapper(widget.image),
+                                              iconImageWrapper(widget.image),
                                         ),
                                         title: Text(
                                           widget.name,

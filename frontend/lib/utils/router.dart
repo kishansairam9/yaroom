@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../screens/homePage.dart';
+import '../screens/settingsPage.dart';
 import '../screens/messaging/chatPage.dart';
 import '../screens/messaging/groupPage.dart';
 import 'guidePages.dart';
@@ -54,6 +55,11 @@ class ContentRouter {
         final args = settings.arguments;
         return MaterialPageRoute(
             builder: (context) => wrapWithUserId(context, CreateGroup(args)));
+
+      case '/settings':
+        return MaterialPageRoute(
+            builder: (context) => wrapWithUserId(context, SettingsPage()));
+
       default:
         return MaterialPageRoute(builder: (_) => ErrorPage());
     }

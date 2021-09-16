@@ -11,8 +11,7 @@ class User extends DataClass implements Insertable<User> {
   final String userId;
   final String name;
   final String? about;
-  final String? profileImg;
-  User({required this.userId, required this.name, this.about, this.profileImg});
+  User({required this.userId, required this.name, this.about});
   factory User.fromData(Map<String, dynamic> data, GeneratedDatabase db,
       {String? prefix}) {
     final effectivePrefix = prefix ?? '';
@@ -23,8 +22,6 @@ class User extends DataClass implements Insertable<User> {
           .mapFromDatabaseResponse(data['${effectivePrefix}name'])!,
       about: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}about']),
-      profileImg: const StringType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}profileImg']),
     );
   }
   @override
@@ -35,9 +32,6 @@ class User extends DataClass implements Insertable<User> {
     if (!nullToAbsent || about != null) {
       map['about'] = Variable<String?>(about);
     }
-    if (!nullToAbsent || profileImg != null) {
-      map['profileImg'] = Variable<String?>(profileImg);
-    }
     return map;
   }
 
@@ -47,9 +41,6 @@ class User extends DataClass implements Insertable<User> {
       name: Value(name),
       about:
           about == null && nullToAbsent ? const Value.absent() : Value(about),
-      profileImg: profileImg == null && nullToAbsent
-          ? const Value.absent()
-          : Value(profileImg),
     );
   }
 
@@ -60,7 +51,6 @@ class User extends DataClass implements Insertable<User> {
       userId: serializer.fromJson<String>(json['userId']),
       name: serializer.fromJson<String>(json['name']),
       about: serializer.fromJson<String?>(json['about']),
-      profileImg: serializer.fromJson<String?>(json['profileImg']),
     );
   }
   @override
@@ -70,87 +60,73 @@ class User extends DataClass implements Insertable<User> {
       'userId': serializer.toJson<String>(userId),
       'name': serializer.toJson<String>(name),
       'about': serializer.toJson<String?>(about),
-      'profileImg': serializer.toJson<String?>(profileImg),
     };
   }
 
   User copyWith(
           {String? userId,
           String? name,
-          Value<String?> about = const Value.absent(),
-          Value<String?> profileImg = const Value.absent()}) =>
+          Value<String?> about = const Value.absent()}) =>
       User(
         userId: userId ?? this.userId,
         name: name ?? this.name,
         about: about.present ? about.value : this.about,
-        profileImg: profileImg.present ? profileImg.value : this.profileImg,
       );
   @override
   String toString() {
     return (StringBuffer('User(')
           ..write('userId: $userId, ')
           ..write('name: $name, ')
-          ..write('about: $about, ')
-          ..write('profileImg: $profileImg')
+          ..write('about: $about')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => $mrjf($mrjc(userId.hashCode,
-      $mrjc(name.hashCode, $mrjc(about.hashCode, profileImg.hashCode))));
+  int get hashCode =>
+      $mrjf($mrjc(userId.hashCode, $mrjc(name.hashCode, about.hashCode)));
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is User &&
           other.userId == this.userId &&
           other.name == this.name &&
-          other.about == this.about &&
-          other.profileImg == this.profileImg);
+          other.about == this.about);
 }
 
 class UsersCompanion extends UpdateCompanion<User> {
   final Value<String> userId;
   final Value<String> name;
   final Value<String?> about;
-  final Value<String?> profileImg;
   const UsersCompanion({
     this.userId = const Value.absent(),
     this.name = const Value.absent(),
     this.about = const Value.absent(),
-    this.profileImg = const Value.absent(),
   });
   UsersCompanion.insert({
     required String userId,
     required String name,
     this.about = const Value.absent(),
-    this.profileImg = const Value.absent(),
   })  : userId = Value(userId),
         name = Value(name);
   static Insertable<User> custom({
     Expression<String>? userId,
     Expression<String>? name,
     Expression<String?>? about,
-    Expression<String?>? profileImg,
   }) {
     return RawValuesInsertable({
       if (userId != null) 'userId': userId,
       if (name != null) 'name': name,
       if (about != null) 'about': about,
-      if (profileImg != null) 'profileImg': profileImg,
     });
   }
 
   UsersCompanion copyWith(
-      {Value<String>? userId,
-      Value<String>? name,
-      Value<String?>? about,
-      Value<String?>? profileImg}) {
+      {Value<String>? userId, Value<String>? name, Value<String?>? about}) {
     return UsersCompanion(
       userId: userId ?? this.userId,
       name: name ?? this.name,
       about: about ?? this.about,
-      profileImg: profileImg ?? this.profileImg,
     );
   }
 
@@ -166,9 +142,6 @@ class UsersCompanion extends UpdateCompanion<User> {
     if (about.present) {
       map['about'] = Variable<String?>(about.value);
     }
-    if (profileImg.present) {
-      map['profileImg'] = Variable<String?>(profileImg.value);
-    }
     return map;
   }
 
@@ -177,8 +150,7 @@ class UsersCompanion extends UpdateCompanion<User> {
     return (StringBuffer('UsersCompanion(')
           ..write('userId: $userId, ')
           ..write('name: $name, ')
-          ..write('about: $about, ')
-          ..write('profileImg: $profileImg')
+          ..write('about: $about')
           ..write(')'))
         .toString();
   }
@@ -204,12 +176,8 @@ class Users extends Table with TableInfo<Users, User> {
   late final GeneratedColumn<String?> about = GeneratedColumn<String?>(
       'about', aliasedName, true,
       typeName: 'TEXT', requiredDuringInsert: false, $customConstraints: '');
-  final VerificationMeta _profileImgMeta = const VerificationMeta('profileImg');
-  late final GeneratedColumn<String?> profileImg = GeneratedColumn<String?>(
-      'profileImg', aliasedName, true,
-      typeName: 'TEXT', requiredDuringInsert: false, $customConstraints: '');
   @override
-  List<GeneratedColumn> get $columns => [userId, name, about, profileImg];
+  List<GeneratedColumn> get $columns => [userId, name, about];
   @override
   String get aliasedName => _alias ?? 'Users';
   @override
@@ -234,12 +202,6 @@ class Users extends Table with TableInfo<Users, User> {
     if (data.containsKey('about')) {
       context.handle(
           _aboutMeta, about.isAcceptableOrUnknown(data['about']!, _aboutMeta));
-    }
-    if (data.containsKey('profileImg')) {
-      context.handle(
-          _profileImgMeta,
-          profileImg.isAcceptableOrUnknown(
-              data['profileImg']!, _profileImgMeta));
     }
     return context;
   }
@@ -641,12 +603,7 @@ class GroupDM extends DataClass implements Insertable<GroupDM> {
   final String groupId;
   final String name;
   final String? description;
-  final String? groupIcon;
-  GroupDM(
-      {required this.groupId,
-      required this.name,
-      this.description,
-      this.groupIcon});
+  GroupDM({required this.groupId, required this.name, this.description});
   factory GroupDM.fromData(Map<String, dynamic> data, GeneratedDatabase db,
       {String? prefix}) {
     final effectivePrefix = prefix ?? '';
@@ -657,8 +614,6 @@ class GroupDM extends DataClass implements Insertable<GroupDM> {
           .mapFromDatabaseResponse(data['${effectivePrefix}name'])!,
       description: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}description']),
-      groupIcon: const StringType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}groupIcon']),
     );
   }
   @override
@@ -668,9 +623,6 @@ class GroupDM extends DataClass implements Insertable<GroupDM> {
     map['name'] = Variable<String>(name);
     if (!nullToAbsent || description != null) {
       map['description'] = Variable<String?>(description);
-    }
-    if (!nullToAbsent || groupIcon != null) {
-      map['groupIcon'] = Variable<String?>(groupIcon);
     }
     return map;
   }
@@ -682,9 +634,6 @@ class GroupDM extends DataClass implements Insertable<GroupDM> {
       description: description == null && nullToAbsent
           ? const Value.absent()
           : Value(description),
-      groupIcon: groupIcon == null && nullToAbsent
-          ? const Value.absent()
-          : Value(groupIcon),
     );
   }
 
@@ -695,7 +644,6 @@ class GroupDM extends DataClass implements Insertable<GroupDM> {
       groupId: serializer.fromJson<String>(json['groupId']),
       name: serializer.fromJson<String>(json['name']),
       description: serializer.fromJson<String?>(json['description']),
-      groupIcon: serializer.fromJson<String?>(json['groupIcon']),
     );
   }
   @override
@@ -705,87 +653,75 @@ class GroupDM extends DataClass implements Insertable<GroupDM> {
       'groupId': serializer.toJson<String>(groupId),
       'name': serializer.toJson<String>(name),
       'description': serializer.toJson<String?>(description),
-      'groupIcon': serializer.toJson<String?>(groupIcon),
     };
   }
 
   GroupDM copyWith(
           {String? groupId,
           String? name,
-          Value<String?> description = const Value.absent(),
-          Value<String?> groupIcon = const Value.absent()}) =>
+          Value<String?> description = const Value.absent()}) =>
       GroupDM(
         groupId: groupId ?? this.groupId,
         name: name ?? this.name,
         description: description.present ? description.value : this.description,
-        groupIcon: groupIcon.present ? groupIcon.value : this.groupIcon,
       );
   @override
   String toString() {
     return (StringBuffer('GroupDM(')
           ..write('groupId: $groupId, ')
           ..write('name: $name, ')
-          ..write('description: $description, ')
-          ..write('groupIcon: $groupIcon')
+          ..write('description: $description')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => $mrjf($mrjc(groupId.hashCode,
-      $mrjc(name.hashCode, $mrjc(description.hashCode, groupIcon.hashCode))));
+  int get hashCode => $mrjf(
+      $mrjc(groupId.hashCode, $mrjc(name.hashCode, description.hashCode)));
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is GroupDM &&
           other.groupId == this.groupId &&
           other.name == this.name &&
-          other.description == this.description &&
-          other.groupIcon == this.groupIcon);
+          other.description == this.description);
 }
 
 class GroupDMsCompanion extends UpdateCompanion<GroupDM> {
   final Value<String> groupId;
   final Value<String> name;
   final Value<String?> description;
-  final Value<String?> groupIcon;
   const GroupDMsCompanion({
     this.groupId = const Value.absent(),
     this.name = const Value.absent(),
     this.description = const Value.absent(),
-    this.groupIcon = const Value.absent(),
   });
   GroupDMsCompanion.insert({
     required String groupId,
     required String name,
     this.description = const Value.absent(),
-    this.groupIcon = const Value.absent(),
   })  : groupId = Value(groupId),
         name = Value(name);
   static Insertable<GroupDM> custom({
     Expression<String>? groupId,
     Expression<String>? name,
     Expression<String?>? description,
-    Expression<String?>? groupIcon,
   }) {
     return RawValuesInsertable({
       if (groupId != null) 'groupId': groupId,
       if (name != null) 'name': name,
       if (description != null) 'description': description,
-      if (groupIcon != null) 'groupIcon': groupIcon,
     });
   }
 
   GroupDMsCompanion copyWith(
       {Value<String>? groupId,
       Value<String>? name,
-      Value<String?>? description,
-      Value<String?>? groupIcon}) {
+      Value<String?>? description}) {
     return GroupDMsCompanion(
       groupId: groupId ?? this.groupId,
       name: name ?? this.name,
       description: description ?? this.description,
-      groupIcon: groupIcon ?? this.groupIcon,
     );
   }
 
@@ -801,9 +737,6 @@ class GroupDMsCompanion extends UpdateCompanion<GroupDM> {
     if (description.present) {
       map['description'] = Variable<String?>(description.value);
     }
-    if (groupIcon.present) {
-      map['groupIcon'] = Variable<String?>(groupIcon.value);
-    }
     return map;
   }
 
@@ -812,8 +745,7 @@ class GroupDMsCompanion extends UpdateCompanion<GroupDM> {
     return (StringBuffer('GroupDMsCompanion(')
           ..write('groupId: $groupId, ')
           ..write('name: $name, ')
-          ..write('description: $description, ')
-          ..write('groupIcon: $groupIcon')
+          ..write('description: $description')
           ..write(')'))
         .toString();
   }
@@ -840,12 +772,8 @@ class GroupDMs extends Table with TableInfo<GroupDMs, GroupDM> {
   late final GeneratedColumn<String?> description = GeneratedColumn<String?>(
       'description', aliasedName, true,
       typeName: 'TEXT', requiredDuringInsert: false, $customConstraints: '');
-  final VerificationMeta _groupIconMeta = const VerificationMeta('groupIcon');
-  late final GeneratedColumn<String?> groupIcon = GeneratedColumn<String?>(
-      'groupIcon', aliasedName, true,
-      typeName: 'TEXT', requiredDuringInsert: false, $customConstraints: '');
   @override
-  List<GeneratedColumn> get $columns => [groupId, name, description, groupIcon];
+  List<GeneratedColumn> get $columns => [groupId, name, description];
   @override
   String get aliasedName => _alias ?? 'GroupDMs';
   @override
@@ -872,10 +800,6 @@ class GroupDMs extends Table with TableInfo<GroupDMs, GroupDM> {
           _descriptionMeta,
           description.isAcceptableOrUnknown(
               data['description']!, _descriptionMeta));
-    }
-    if (data.containsKey('groupIcon')) {
-      context.handle(_groupIconMeta,
-          groupIcon.isAcceptableOrUnknown(data['groupIcon']!, _groupIconMeta));
     }
     return context;
   }
@@ -2396,12 +2320,7 @@ class RoomsListData extends DataClass implements Insertable<RoomsListData> {
   final String roomId;
   final String name;
   final String? description;
-  final String? roomIcon;
-  RoomsListData(
-      {required this.roomId,
-      required this.name,
-      this.description,
-      this.roomIcon});
+  RoomsListData({required this.roomId, required this.name, this.description});
   factory RoomsListData.fromData(
       Map<String, dynamic> data, GeneratedDatabase db,
       {String? prefix}) {
@@ -2413,8 +2332,6 @@ class RoomsListData extends DataClass implements Insertable<RoomsListData> {
           .mapFromDatabaseResponse(data['${effectivePrefix}name'])!,
       description: const StringType()
           .mapFromDatabaseResponse(data['${effectivePrefix}description']),
-      roomIcon: const StringType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}roomIcon']),
     );
   }
   @override
@@ -2424,9 +2341,6 @@ class RoomsListData extends DataClass implements Insertable<RoomsListData> {
     map['name'] = Variable<String>(name);
     if (!nullToAbsent || description != null) {
       map['description'] = Variable<String?>(description);
-    }
-    if (!nullToAbsent || roomIcon != null) {
-      map['roomIcon'] = Variable<String?>(roomIcon);
     }
     return map;
   }
@@ -2438,9 +2352,6 @@ class RoomsListData extends DataClass implements Insertable<RoomsListData> {
       description: description == null && nullToAbsent
           ? const Value.absent()
           : Value(description),
-      roomIcon: roomIcon == null && nullToAbsent
-          ? const Value.absent()
-          : Value(roomIcon),
     );
   }
 
@@ -2451,7 +2362,6 @@ class RoomsListData extends DataClass implements Insertable<RoomsListData> {
       roomId: serializer.fromJson<String>(json['roomId']),
       name: serializer.fromJson<String>(json['name']),
       description: serializer.fromJson<String?>(json['description']),
-      roomIcon: serializer.fromJson<String?>(json['roomIcon']),
     );
   }
   @override
@@ -2461,87 +2371,75 @@ class RoomsListData extends DataClass implements Insertable<RoomsListData> {
       'roomId': serializer.toJson<String>(roomId),
       'name': serializer.toJson<String>(name),
       'description': serializer.toJson<String?>(description),
-      'roomIcon': serializer.toJson<String?>(roomIcon),
     };
   }
 
   RoomsListData copyWith(
           {String? roomId,
           String? name,
-          Value<String?> description = const Value.absent(),
-          Value<String?> roomIcon = const Value.absent()}) =>
+          Value<String?> description = const Value.absent()}) =>
       RoomsListData(
         roomId: roomId ?? this.roomId,
         name: name ?? this.name,
         description: description.present ? description.value : this.description,
-        roomIcon: roomIcon.present ? roomIcon.value : this.roomIcon,
       );
   @override
   String toString() {
     return (StringBuffer('RoomsListData(')
           ..write('roomId: $roomId, ')
           ..write('name: $name, ')
-          ..write('description: $description, ')
-          ..write('roomIcon: $roomIcon')
+          ..write('description: $description')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => $mrjf($mrjc(roomId.hashCode,
-      $mrjc(name.hashCode, $mrjc(description.hashCode, roomIcon.hashCode))));
+  int get hashCode =>
+      $mrjf($mrjc(roomId.hashCode, $mrjc(name.hashCode, description.hashCode)));
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is RoomsListData &&
           other.roomId == this.roomId &&
           other.name == this.name &&
-          other.description == this.description &&
-          other.roomIcon == this.roomIcon);
+          other.description == this.description);
 }
 
 class RoomsListCompanion extends UpdateCompanion<RoomsListData> {
   final Value<String> roomId;
   final Value<String> name;
   final Value<String?> description;
-  final Value<String?> roomIcon;
   const RoomsListCompanion({
     this.roomId = const Value.absent(),
     this.name = const Value.absent(),
     this.description = const Value.absent(),
-    this.roomIcon = const Value.absent(),
   });
   RoomsListCompanion.insert({
     required String roomId,
     required String name,
     this.description = const Value.absent(),
-    this.roomIcon = const Value.absent(),
   })  : roomId = Value(roomId),
         name = Value(name);
   static Insertable<RoomsListData> custom({
     Expression<String>? roomId,
     Expression<String>? name,
     Expression<String?>? description,
-    Expression<String?>? roomIcon,
   }) {
     return RawValuesInsertable({
       if (roomId != null) 'roomId': roomId,
       if (name != null) 'name': name,
       if (description != null) 'description': description,
-      if (roomIcon != null) 'roomIcon': roomIcon,
     });
   }
 
   RoomsListCompanion copyWith(
       {Value<String>? roomId,
       Value<String>? name,
-      Value<String?>? description,
-      Value<String?>? roomIcon}) {
+      Value<String?>? description}) {
     return RoomsListCompanion(
       roomId: roomId ?? this.roomId,
       name: name ?? this.name,
       description: description ?? this.description,
-      roomIcon: roomIcon ?? this.roomIcon,
     );
   }
 
@@ -2557,9 +2455,6 @@ class RoomsListCompanion extends UpdateCompanion<RoomsListData> {
     if (description.present) {
       map['description'] = Variable<String?>(description.value);
     }
-    if (roomIcon.present) {
-      map['roomIcon'] = Variable<String?>(roomIcon.value);
-    }
     return map;
   }
 
@@ -2568,8 +2463,7 @@ class RoomsListCompanion extends UpdateCompanion<RoomsListData> {
     return (StringBuffer('RoomsListCompanion(')
           ..write('roomId: $roomId, ')
           ..write('name: $name, ')
-          ..write('description: $description, ')
-          ..write('roomIcon: $roomIcon')
+          ..write('description: $description')
           ..write(')'))
         .toString();
   }
@@ -2596,12 +2490,8 @@ class RoomsList extends Table with TableInfo<RoomsList, RoomsListData> {
   late final GeneratedColumn<String?> description = GeneratedColumn<String?>(
       'description', aliasedName, true,
       typeName: 'TEXT', requiredDuringInsert: false, $customConstraints: '');
-  final VerificationMeta _roomIconMeta = const VerificationMeta('roomIcon');
-  late final GeneratedColumn<String?> roomIcon = GeneratedColumn<String?>(
-      'roomIcon', aliasedName, true,
-      typeName: 'TEXT', requiredDuringInsert: false, $customConstraints: '');
   @override
-  List<GeneratedColumn> get $columns => [roomId, name, description, roomIcon];
+  List<GeneratedColumn> get $columns => [roomId, name, description];
   @override
   String get aliasedName => _alias ?? 'RoomsList';
   @override
@@ -2628,10 +2518,6 @@ class RoomsList extends Table with TableInfo<RoomsList, RoomsListData> {
           _descriptionMeta,
           description.isAcceptableOrUnknown(
               data['description']!, _descriptionMeta));
-    }
-    if (data.containsKey('roomIcon')) {
-      context.handle(_roomIconMeta,
-          roomIcon.isAcceptableOrUnknown(data['roomIcon']!, _roomIconMeta));
     }
     return context;
   }
@@ -3523,17 +3409,13 @@ abstract class _$AppDb extends GeneratedDatabase {
   late final RoomsChannels roomsChannels = RoomsChannels(this);
   late final RoomsMessages roomsMessages = RoomsMessages(this);
   Future<int> addUser(
-      {required String userId,
-      required String name,
-      String? about,
-      String? profileImg}) {
+      {required String userId, required String name, String? about}) {
     return customInsert(
-      'INSERT INTO Users VALUES (?1, ?2, ?3, ?4)',
+      'INSERT INTO Users VALUES (?1, ?2, ?3)',
       variables: [
         Variable<String>(userId),
         Variable<String>(name),
-        Variable<String?>(about),
-        Variable<String?>(profileImg)
+        Variable<String?>(about)
       ],
       updates: {users},
     );
@@ -3596,7 +3478,6 @@ abstract class _$AppDb extends GeneratedDatabase {
         userId: row.read<String>('userId'),
         name: row.read<String>('name'),
         about: row.read<String?>('about'),
-        profileImg: row.read<String?>('profileImg'),
         status: row.read<int?>('status'),
       );
     });
@@ -3622,17 +3503,13 @@ abstract class _$AppDb extends GeneratedDatabase {
   }
 
   Future<int> createGroup(
-      {required String groupId,
-      required String name,
-      String? description,
-      String? groupIcon}) {
+      {required String groupId, required String name, String? description}) {
     return customInsert(
-      'INSERT INTO GroupDMs VALUES (?1, ?2, ?3, ?4)',
+      'INSERT INTO GroupDMs VALUES (?1, ?2, ?3)',
       variables: [
         Variable<String>(groupId),
         Variable<String>(name),
-        Variable<String?>(description),
-        Variable<String?>(groupIcon)
+        Variable<String?>(description)
       ],
       updates: {groupDMs},
     );
@@ -3670,7 +3547,7 @@ abstract class _$AppDb extends GeneratedDatabase {
 
   Selectable<GroupDM> getGroupsOfUser({required String userID}) {
     return customSelect(
-        'SELECT DISTINCT G.groupId, G.name, G.description, G.groupIcon FROM GroupDMs AS G INNER JOIN GroupUserMapping AS GM ON G.groupId = GM.groupId WHERE GM.userId = ?1 ORDER BY G.groupId',
+        'SELECT DISTINCT G.groupId, G.name, G.description FROM GroupDMs AS G INNER JOIN GroupUserMapping AS GM ON G.groupId = GM.groupId WHERE GM.userId = ?1 ORDER BY G.groupId',
         variables: [
           Variable<String>(userID)
         ],
@@ -3777,7 +3654,6 @@ abstract class _$AppDb extends GeneratedDatabase {
         userId: row.read<String>('userId'),
         name: row.read<String>('name'),
         about: row.read<String?>('about'),
-        profileImg: row.read<String?>('profileImg'),
       );
     });
   }
@@ -3799,23 +3675,18 @@ abstract class _$AppDb extends GeneratedDatabase {
         groupId: row.read<String>('groupId'),
         name: row.read<String>('name'),
         description: row.read<String?>('description'),
-        groupIcon: row.read<String?>('groupIcon'),
       );
     });
   }
 
   Future<int> createRoom(
-      {required String roomId,
-      required String name,
-      String? description,
-      String? roomIcon}) {
+      {required String roomId, required String name, String? description}) {
     return customInsert(
-      'INSERT INTO RoomsList VALUES (?1, ?2, ?3, ?4)',
+      'INSERT INTO RoomsList VALUES (?1, ?2, ?3)',
       variables: [
         Variable<String>(roomId),
         Variable<String>(name),
-        Variable<String?>(description),
-        Variable<String?>(roomIcon)
+        Variable<String?>(description)
       ],
       updates: {roomsList},
     );
@@ -3841,7 +3712,7 @@ abstract class _$AppDb extends GeneratedDatabase {
 
   Selectable<RoomsListData> getRoomsOfUser({required String userID}) {
     return customSelect(
-        'SELECT DISTINCT R.roomId, R.name, R.description, R.roomIcon FROM RoomsList AS R INNER JOIN RoomsUserMapping AS RM ON R.roomId = RM.roomId WHERE RM.userId = ?1',
+        'SELECT DISTINCT R.roomId, R.name, R.description FROM RoomsList AS R INNER JOIN RoomsUserMapping AS RM ON R.roomId = RM.roomId WHERE RM.userId = ?1',
         variables: [
           Variable<String>(userID)
         ],
@@ -4063,13 +3934,11 @@ class GetFriendRequestsResult {
   final String userId;
   final String name;
   final String? about;
-  final String? profileImg;
   final int? status;
   GetFriendRequestsResult({
     required this.userId,
     required this.name,
     this.about,
-    this.profileImg,
     this.status,
   });
 }
@@ -4079,13 +3948,11 @@ class SearchChatMessagesResult {
   final String userId;
   final String name;
   final String? about;
-  final String? profileImg;
   SearchChatMessagesResult({
     required this.content,
     required this.userId,
     required this.name,
     this.about,
-    this.profileImg,
   });
 }
 
@@ -4094,12 +3961,10 @@ class SearchGroupChatMessagesResult {
   final String groupId;
   final String name;
   final String? description;
-  final String? groupIcon;
   SearchGroupChatMessagesResult({
     required this.content,
     required this.groupId,
     required this.name,
     this.description,
-    this.groupIcon,
   });
 }

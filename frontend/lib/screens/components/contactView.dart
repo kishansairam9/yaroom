@@ -21,7 +21,7 @@ class _ViewContactState extends State<ViewContact> {
         children: [
           Column(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
             CircleAvatar(
-              foregroundImage: IconImageWrapper(this.widget.contactData.userId),
+              foregroundImage: iconImageWrapper(this.widget.contactData.userId),
               radius: 80,
             ),
             Padding(padding: EdgeInsets.only(top: 10, bottom: 10)),

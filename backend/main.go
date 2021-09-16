@@ -95,7 +95,6 @@ func main() {
 
 	// Un protected routes
 	r.GET("/icon", iconServeHandler)
-	r.POST("/updateIcon", iconUploadHandler)
 
 	// Protected routes
 	secured := r.Group("/v1", jwtHandler)
@@ -111,6 +110,7 @@ func main() {
 
 		// Media handler
 		secured.GET("/media/:objectid", mediaServerHandler)
+		secured.POST("/updateIcon", iconUploadHandler)
 
 		// User Details
 		secured.GET("/getUserDetails", getUserDetailsHandler)
@@ -146,6 +146,7 @@ func main() {
 
 		// Media handler
 		testing.GET("/media/:objectid", mediaServerHandler)
+		testing.POST("/updateIcon", iconUploadHandler)
 
 		// User Details
 		testing.GET("/getUserDetails", getUserDetailsHandler)

@@ -68,9 +68,8 @@ class HomePageState extends State<HomePage> {
           .getUserById(userId: initialMessage.data['fromUser'])
           .get();
       Navigator.pushNamed(context, '/chat',
-          arguments: ChatPageArguments(
-              userId: data[0].userId,
-              name: data[0].name));
+          arguments:
+              ChatPageArguments(userId: data[0].userId, name: data[0].name));
     }
 
     // Also handle any interaction when the app is in the background via a
@@ -81,9 +80,8 @@ class HomePageState extends State<HomePage> {
             .getUserById(userId: message.data['fromUser'])
             .get();
         Navigator.pushNamed(context, '/chat',
-            arguments: ChatPageArguments(
-                userId: data[0].userId,
-                name: data[0].name));
+            arguments:
+                ChatPageArguments(userId: data[0].userId, name: data[0].name));
       }
     });
   }
@@ -138,9 +136,9 @@ class HomePageState extends State<HomePage> {
           if (snapshot.hasData) {
             return IconButton(
                 icon: CircleAvatar(
-                  backgroundColor: Colors.grey[350],
-                  foregroundImage: IconImageWrapper(snapshot.data![0].roomId)
-                ),
+                    backgroundColor: Colors.grey[350],
+                    foregroundImage:
+                        iconImageWrapper(snapshot.data![0].roomId)),
                 onPressed: () => Scaffold.of(context).openDrawer());
           }
           return IconButton(
@@ -256,7 +254,7 @@ class HomePageState extends State<HomePage> {
                                         CircleAvatar(
                                           backgroundColor: Colors.grey[350],
                                           foregroundImage:
-                                              IconImageWrapper(e.userId),
+                                              iconImageWrapper(e.userId),
                                         ),
                                         Positioned(
                                             bottom: 0,
@@ -295,6 +293,7 @@ class HomePageState extends State<HomePage> {
           return CircularProgressIndicator();
         });
   }
+
   Widget addChannel() {
     var ChannelController = TextEditingController();
     return AlertDialog(
@@ -320,9 +319,7 @@ class HomePageState extends State<HomePage> {
         ElevatedButton(
             child: Text("Submit"),
             onPressed: () {
-              if (ChannelController.text != '') {
-                
-              }
+              if (ChannelController.text != '') {}
             }),
       ],
     );
@@ -387,8 +384,10 @@ class HomePageState extends State<HomePage> {
                       ),
                     ),
                     IconButton(
-                        onPressed: () => {},
-                        icon: Icon(Icons.fingerprint))
+                        onPressed: () async {
+                          await Navigator.of(context).pushNamed("/settings");
+                        },
+                        icon: Icon(Icons.settings))
                   ],
                 ),
           drawer: currentIndex == 0
@@ -404,18 +403,20 @@ class HomePageState extends State<HomePage> {
                                 roomId: roomId!,
                               )),
                       ),
-                      Expanded(child: ListTile(
-                        minVerticalPadding: 5,
-                        leading: Text("+"),
-                        title: Text("Add Channel"),
-                        onTap: (){
-                          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return addChannel();
-            });
-                        },
-                      ),),
+                      Expanded(
+                        child: ListTile(
+                          minVerticalPadding: 5,
+                          leading: Text("+"),
+                          title: Text("Add Channel"),
+                          onTap: () {
+                            showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return addChannel();
+                                });
+                          },
+                        ),
+                      ),
                     ],
                   ),
                 )

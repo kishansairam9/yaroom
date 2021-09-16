@@ -47,8 +47,8 @@ class GroupChatViewState extends State<GroupChatView> {
                   return ListView(
                       children: ListTile.divideTiles(
                     context: context,
-                    tiles: groupChatData.groupData.map((e) => GroupProfileTile(
-                        groupId: e.groupId, name: e.name)),
+                    tiles: groupChatData.groupData.map((e) =>
+                        GroupProfileTile(groupId: e.groupId, name: e.name)),
                   ).toList());
                 } else if (snapshot.hasError) {
                   print(snapshot.error);
@@ -147,8 +147,7 @@ class GroupProfileTileState extends State<GroupProfileTile> {
       onTap: _showChat,
       leading: CircleAvatar(
         backgroundColor: Colors.grey[350],
-        foregroundImage:
-            IconImageWrapper(widget.image),
+        foregroundImage: iconImageWrapper(widget.image),
         radius: 28.0,
       ),
       title: Text(widget.name),

@@ -27,8 +27,7 @@ class ChatViewState extends State<ChatView> {
               tiles: snapshot.data!
                   .where((e) =>
                       e.userId != Provider.of<UserId>(context, listen: false))
-                  .map((e) => ProfileTile(
-                      userId: e.userId, name: e.name)),
+                  .map((e) => ProfileTile(userId: e.userId, name: e.name)),
             ).toList());
           } else if (snapshot.hasError) {
             print(snapshot.error);
@@ -95,8 +94,7 @@ class ProfileTileState extends State<ProfileTile> {
       Function.apply(widget._preShowChat!, widget._preParams);
     }
     Navigator.of(context).pushNamed('/chat',
-        arguments: ChatPageArguments(
-            userId: widget.userId, name: widget.name, image: widget.image));
+        arguments: ChatPageArguments(userId: widget.userId, name: widget.name));
   }
 
   @override
@@ -107,8 +105,7 @@ class ProfileTileState extends State<ProfileTile> {
       onTap: _showChat,
       leading: CircleAvatar(
         backgroundColor: Colors.grey[350],
-        foregroundImage:
-            IconImageWrapper(widget.image),
+        foregroundImage: iconImageWrapper(widget.image),
         radius: 28.0,
       ),
       title: Text(widget.name),

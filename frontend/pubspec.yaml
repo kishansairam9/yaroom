@@ -39,7 +39,7 @@ dependencies:
   url_launcher: ^6.0.9
   file_picker: ^3.0.3
   permission_handler: ^8.1.4+2
-  # downloads_path_provider: ^0.1.0
+  connectivity: ^3.0.6
 
 dev_dependencies:
   flutter_test:

@@ -1,46 +1,23 @@
 export '../moor/db.dart';
 
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moor/moor.dart';
 import 'dart:async';
 
 import 'package:path_provider/path_provider.dart';
-
 import 'package:bloc/bloc.dart';
 
 typedef UserId = String;
 typedef FCMTokenStream = Stream<String>;
 
-class IconImageWrapper {
-  bool _loaded = false;
-  var img;
-  var placeholder = AssetImage('assets/no-profile.png')
-
-  NetworkImageWrapper(String? src) {
-    String base = 'localhost:8884/icon/';
-    if(src != null) {
-      base = base + src;
-    }
-    img = Image.network(src);
+ImageProvider iconImageWrapper(String? src) {
+  String url = "http://localhost:8884/icon";
+  if (src != null) {
+    url += "?objectid=" + src;
   }
-
-  @override
-  void initState() {
-    super.initState();
-    img.image.resolve(ImageConfiguration()).addListener((i, b) {
-      if (mounted) {
-        setState(() => _loaded = true);
-      }
-    });     
-  }
-
-  @override
-  Widget build(BuildContext context) { 
-    return YourWidget(
-      child: _loaded ? img : placeholder,
-    );
-  }
+  return NetworkImage(url);
 }
 
 class HomePageArguments {
@@ -49,8 +26,7 @@ class HomePageArguments {
   late final String? roomName;
   late final String? channelId;
 
-  HomePageArguments(
-      {this.index, this.roomId, this.roomName, this.channelId});
+  HomePageArguments({this.index, this.roomId, this.roomName, this.channelId});
 }
 
 class MediaStore {
@@ -103,10 +79,7 @@ class CounterStorage {
 class RoomArguments extends HomePageArguments {
   RoomArguments({roomId, roomName, channelId})
       : super(
-            index: 0,
-            roomId: roomId,
-            roomName: roomName,
-            channelId: channelId);
+            index: 0, roomId: roomId, roomName: roomName, channelId: channelId);
 }
 
 class ChatPageArguments {

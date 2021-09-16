@@ -56,7 +56,7 @@ class RoomState extends State<Room> {
                   alignment: Alignment.topCenter,
                   child: CircleAvatar(
                     backgroundColor: Colors.grey[350],
-                    foregroundImage: IconImageWrapper(curUser.userId),
+                    foregroundImage: iconImageWrapper(curUser.userId),
                     radius: 20.0,
                   ),
                 )
@@ -134,7 +134,7 @@ class RoomState extends State<Room> {
                   alignment: Alignment.topCenter,
                   child: CircleAvatar(
                     backgroundColor: Colors.grey[350],
-                    foregroundImage: IconImageWrapper(curUser.userId),
+                    foregroundImage: iconImageWrapper(curUser.userId),
                     radius: 20.0,
                   ),
                 )
@@ -213,7 +213,7 @@ class RoomState extends State<Room> {
                   alignment: Alignment.topCenter,
                   child: CircleAvatar(
                     backgroundColor: Colors.grey[350],
-                    foregroundImage: IconImageWrapper(curUser.userId),
+                    foregroundImage: iconImageWrapper(curUser.userId),
                     radius: 20.0,
                   ),
                 )

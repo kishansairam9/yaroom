@@ -1,9 +1,24 @@
 package main
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 )
+
+type JSONableSlice []uint8
+
+func (u JSONableSlice) MarshalJSON() ([]byte, error) {
+	var result string
+	if u == nil {
+		result = "null"
+	} else {
+		result = strings.Join(strings.Fields(fmt.Sprintf("%d", u)), ",")
+	}
+	return []byte(result), nil
+}
 
 type testingUser struct {
 	UserId string `uri:"userId" binding:"required"`
@@ -14,8 +29,8 @@ type mediaRequest struct {
 }
 
 type iconUploadRequest struct {
-	ObjectId  string        `uri:"objectid" binding:"required"`
-	JpegBytes JSONableSlice `json:"jpegbytes"`
+	IconId    string        `json:"iconId" binding:"required"`
+	JpegBytes JSONableSlice `json:"jpegBytes"`
 }
 
 type getLaterMessagesRequest struct {

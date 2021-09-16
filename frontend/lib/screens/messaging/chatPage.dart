@@ -24,7 +24,6 @@ class ChatPage extends StatefulWidget {
   ChatPage(ChatPageArguments args) {
     this.userId = args.userId;
     this.name = args.name;
-    this.image = args.image;
   }
   ChatPageState createState() => new ChatPageState();
 }
@@ -53,8 +52,8 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     switch (state) {
       case AppLifecycleState.resumed:
         Navigator.of(context).pushReplacementNamed('/chat',
-            arguments: ChatPageArguments(
-                name: widget.name, userId: widget.userId, image: widget.image));
+            arguments:
+                ChatPageArguments(name: widget.name, userId: widget.userId));
         break;
       default:
         break;
@@ -295,8 +294,9 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
         context: context,
         builder: (BuildContext c) {
           return ViewContact(User(
-              userId: widget.userId,
-              name: widget.name,));
+            userId: widget.userId,
+            name: widget.name,
+          ));
         });
   }
 
@@ -487,7 +487,7 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                       tileColor: Colors.transparent,
                       leading: CircleAvatar(
                         backgroundColor: Colors.grey[350],
-                        foregroundImage: IconImageWrapper(widget.userId),
+                        foregroundImage: iconImageWrapper(widget.userId),
                       ),
                       title: Text(
                         widget.name,
