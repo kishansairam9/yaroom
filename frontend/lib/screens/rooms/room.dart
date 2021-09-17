@@ -642,7 +642,7 @@ class RoomState extends State<Room> {
       'replyTo': replyTo,
     }));
     BlocProvider.of<FilePickerCubit>(context, listen: false)
-        .updateFilePicker(media: Map(), i: 0);
+        .updateFilePicker(media: Map(), filesAttached: 0);
   }
 
   Widget getSelectChannelPage() {

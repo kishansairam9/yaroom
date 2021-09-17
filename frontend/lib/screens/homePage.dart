@@ -157,9 +157,6 @@ class HomePageState extends State<HomePage> {
                   showSearch(
                       context: context,
                       delegate: ExchangeSearchDelegate(
-                          accessToken: Provider.of<UserId>(context,
-                              listen:
-                                  false), // Passing userId for now TODO FIX ONCE FIXED AUTH0 BUG
                           exchangeId: roomId + "@" + channelId,
                           msgType: "RoomMessage",
                           limit: 100))

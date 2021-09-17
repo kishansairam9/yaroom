@@ -15,8 +15,9 @@ typedef FCMTokenStream = Stream<String>;
 ImageProvider iconImageWrapper(String? src) {
   String url = "http://localhost:8884/icon";
   if (src != null) {
-    url += "?objectid=" + src;
+    url += "/" + src;
   }
+  print("Sent image request to $url");
   return NetworkImage(url);
 }
 
@@ -113,10 +114,8 @@ class FilePickerCubit extends Cubit<FilePickerDetails> {
       : super(initialState);
 
   void updateFilePicker(
-      {required Map<dynamic, dynamic> media, required int i}) {
-    print(i);
-    print(media);
-    emit(FilePickerDetails(media: media, filesAttached: i));
+      {required Map<dynamic, dynamic> media, required int filesAttached}) {
+    emit(FilePickerDetails(media: media, filesAttached: filesAttached));
   }
 }
 

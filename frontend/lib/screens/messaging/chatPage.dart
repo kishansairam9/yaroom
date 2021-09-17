@@ -419,7 +419,7 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     // Provider.of<FilePickerDetails>(context, listen: false)
     //     .updateState(Map(), 0);
     BlocProvider.of<FilePickerCubit>(context, listen: false)
-        .updateFilePicker(media: Map(), i: 0);
+        .updateFilePicker(media: Map(), filesAttached: 0);
   }
 
   Future<bool> onBackPress() {
@@ -500,9 +500,6 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                           showSearch(
                               context: context,
                               delegate: ExchangeSearchDelegate(
-                                  accessToken: Provider.of<UserId>(context,
-                                      listen:
-                                          false), // Passing userId for now TODO FIX ONCE FIXED AUTH0 BUG
                                   exchangeId: getExchangeId(),
                                   msgType: "ChatMessage",
                                   limit: 100))

@@ -4,6 +4,7 @@ import '../screens/settingsPage.dart';
 import '../screens/messaging/chatPage.dart';
 import '../screens/messaging/groupPage.dart';
 import 'guidePages.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import '../screens/login.dart';
 import './types.dart';
@@ -58,7 +59,16 @@ class ContentRouter {
 
       case '/settings':
         return MaterialPageRoute(
-            builder: (context) => wrapWithUserId(context, SettingsPage()));
+            builder: (context) => wrapWithUserId(
+                context,
+                BlocProvider(
+                  create: (context) {
+                    return FilePickerCubit(
+                        initialState:
+                            FilePickerDetails(media: Map(), filesAttached: 0));
+                  },
+                  child: SettingsPage(),
+                )));
 
       default:
         return MaterialPageRoute(builder: (_) => ErrorPage());

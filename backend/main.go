@@ -95,6 +95,7 @@ func main() {
 
 	// Un protected routes
 	r.GET("/icon", iconServeHandler)
+	r.GET("/icon/:objectid", iconServeHandler)
 
 	// Protected routes
 	secured := r.Group("/v1", jwtHandler)

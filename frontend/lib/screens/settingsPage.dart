@@ -1,9 +1,16 @@
+import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:yaroom/utils/types.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../utils/authorizationService.dart';
 import 'package:provider/provider.dart';
+import 'dart:io';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:image_cropper/image_cropper.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({Key? key}) : super(key: key);
@@ -14,16 +21,46 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   var media = new Map();
+  bool errOnUpload = false;
+  StreamController<bool> updateImage = StreamController();
+
+  @override
+  void initState() {
+    updateImage.add(true);
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    updateImage.close();
+    super.dispose();
+  }
 
   Future<void> _openFileExplorer() async {
-    FilePickerResult? _paths =
-        await FilePicker.platform.pickFiles(withData: true);
+    FilePickerResult? _paths = await FilePicker.platform
+        .pickFiles(type: FileType.image, allowMultiple: false, withData: false);
     if (_paths != null) {
-      media['name'] = _paths.files.first.name;
-      media['bytes'] = _paths.files.first.bytes;
+      media['iconId'] = Provider.of<UserId>(context, listen: false);
+      File? croppedFile = await ImageCropper.cropImage(
+          sourcePath: _paths.files.first.path!,
+          compressFormat: ImageCompressFormat.jpg,
+          compressQuality: 94,
+          aspectRatioPresets: [
+            CropAspectRatioPreset.square,
+          ],
+          androidUiSettings: AndroidUiSettings(
+              toolbarTitle: 'Cropper',
+              toolbarColor: Colors.deepOrange,
+              toolbarWidgetColor: Colors.white,
+              initAspectRatio: CropAspectRatioPreset.square,
+              lockAspectRatio: true),
+          iosUiSettings: IOSUiSettings(
+            minimumAspectRatio: 1.0,
+          ));
+      media['jpegBytes'] = croppedFile!.readAsBytesSync();
 
       BlocProvider.of<FilePickerCubit>(context, listen: false)
-          .updateFilePicker(media: media, i: 1);
+          .updateFilePicker(media: media, filesAttached: 1);
     }
     // Use as
     // BlocProvider.of<FilePickerCubit>(context, listen: false).state.media;
@@ -38,13 +75,55 @@ class _SettingsPageState extends State<SettingsPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
-            Image(image: iconImageWrapper(Provider.of<UserId>(context))),
+            errOnUpload
+                ? SnackBar(
+                    content: Text('Error occured while uploading retry!'))
+                : Container(),
+            StreamBuilder(
+                stream: updateImage.stream,
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    return Image(
+                        image: iconImageWrapper(
+                            Provider.of<UserId>(context, listen: false)));
+                  }
+                  return CircularProgressIndicator();
+                }),
             Container(
               child: TextButton(
                 child: Text("Update Image"),
                 onPressed: () async {
                   await _openFileExplorer();
-                  // TODO USE DATA FROM CUBIT AND THEN UPLOAD using backend route, UPDATE STUFF
+                  String encData = jsonEncode(
+                      BlocProvider.of<FilePickerCubit>(context, listen: false)
+                          .state
+                          .media);
+                  final String? accessToken =
+                      await Provider.of<AuthorizationService>(context,
+                              listen: false)
+                          .getValidAccessToken();
+                  try {
+                    var response = await http.post(
+                        Uri.parse('http://localhost:8884/v1/updateIcon'),
+                        body: encData,
+                        headers: <String, String>{
+                          'Content-Type': 'application/json',
+                          'Authorization': "Bearer $accessToken",
+                        });
+                    print(
+                        "Update icon response ${response.statusCode} ${response.body}");
+                    setState(() {
+                      errOnUpload = false;
+                    });
+                    BlocProvider.of<FilePickerCubit>(context, listen: false)
+                        .updateFilePicker(media: Map(), filesAttached: 0);
+                    updateImage.sink.add(true);
+                  } catch (e) {
+                    print("Exception occured in update icon $e");
+                    setState(() {
+                      errOnUpload = true;
+                    });
+                  }
                 },
               ),
             )

@@ -405,7 +405,7 @@ class GroupChatPageState extends State<GroupChatPage>
       'replyTo': replyTo,
     }));
     BlocProvider.of<FilePickerCubit>(context, listen: false)
-        .updateFilePicker(media: Map(), i: 0);
+        .updateFilePicker(media: Map(), filesAttached: 0);
   }
 
   DrawerHeader _getDrawerHeader(members) {
@@ -616,10 +616,6 @@ class GroupChatPageState extends State<GroupChatPage>
                                     showSearch(
                                         context: context,
                                         delegate: ExchangeSearchDelegate(
-                                            accessToken: Provider.of<UserId>(
-                                                context,
-                                                listen:
-                                                    false), // Passing userId for now TODO FIX ONCE FIXED AUTH0 BUG
                                             exchangeId: widget.groupId,
                                             msgType: "GroupMessage",
                                             limit: 100))

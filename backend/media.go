@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"io"
 	"os"
 	"strings"
@@ -92,7 +91,15 @@ func mediaServerHandler(g *gin.Context) {
 
 func iconServeHandler(g *gin.Context) {
 	var req mediaRequest
-	if err := g.ShouldBind(&req); err != nil {
+	if err := g.ShouldBindUri(&req); err != nil {
+		dat, _ := os.ReadFile("assets/no-profile.png")
+		g.Header("Content-Type", "image/png")
+		io.Copy(g.Writer, bytes.NewReader(dat))
+		return
+	}
+	_, err := minioClient.StatObject(context.Background(), miniobucket, req.ObjectId, minio.StatObjectOptions{})
+	if err != nil {
+		// File doesn't exist, return default profile
 		dat, _ := os.ReadFile("assets/no-profile.png")
 		g.Header("Content-Type", "image/png")
 		io.Copy(g.Writer, bytes.NewReader(dat))
@@ -163,7 +170,7 @@ func iconUploadHandler(g *gin.Context) {
 		return
 	}
 
-	mediaBytes, _ := json.Marshal(req.JpegBytes)
+	mediaBytes := []byte(req.JpegBytes)
 	mediaId := req.IconId
 
 	if _, err := minioClient.PutObject(context.Background(), miniobucket, mediaId, bytes.NewReader(mediaBytes), -1, minio.PutObjectOptions{ContentType: "image/jpeg"}); err != nil {
