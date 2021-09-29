@@ -7,13 +7,12 @@
 CREATE TABLE Users (
     userId TEXT NOT NULL PRIMARY KEY,
     name TEXT NOT NULL,
-    about TEXT,
-    profileImg TEXT
+    about TEXT
 );
 
 -------------
 -- FriendRequests Table
--- Status = 1 (pending (sent to user)), 2 (Accepted), 3 (Rejected/Cancelled), 4 (pending (sent from user))
+-- Status = 1 (pending (sent to user)), 2 (Accepted), 3 (Rejected/Cancelled), 4 remove friend, 5 (pending (sent from user))
 -------------
 CREATE TABLE FriendRequests(
     userId TEXT NOT NULL PRIMARY KEY REFERENCES Users(userId),
@@ -40,8 +39,7 @@ CREATE TABLE ChatMessages (
 CREATE TABLE GroupDMs (
     groupId TEXT NOT NULL PRIMARY KEY,
     name TEXT NOT NULL,
-    description TEXT,
-    groupIcon TEXT
+    description TEXT
 );
 
 -------------
@@ -113,8 +111,7 @@ END;
 CREATE TABLE RoomsList (
     roomId TEXT NOT NULL PRIMARY KEY,
     name TEXT NOT NULL,
-    description TEXT,
-    roomIcon TEXT
+    description TEXT
 );
 
 -------------
@@ -163,7 +160,7 @@ CREATE TABLE RoomsMessages (
 -------------
 -- User Table
 -------------
-addUser(:userId AS TEXT, :name AS TEXT, :about AS TEXT OR NULL, :profileImg AS TEXT OR NULL): INSERT into Users VALUES (:userId, :name, :about, :profileImg);
+addUser(:userId AS TEXT, :name AS TEXT, :about AS TEXT OR NULL): INSERT into Users VALUES (:userId, :name, :about);
 
 getAllUsers: SELECT * FROM Users;
 getUserById(:userId AS TEXT): SELECT * FROM Users WHERE userId = :userId;
@@ -181,7 +178,7 @@ updateFriendRequest(:userId as TEXT, :status as INT): UPDATE FriendRequests SET 
 -------------
 -- Groups Table
 -------------
-createGroup(:groupId AS TEXT, :name AS TEXT, :description AS TEXT OR NULL, :groupIcon AS TEXT OR NULL): INSERT into GroupDMs VALUES (:groupId, :name, :description, :groupIcon);
+createGroup(:groupId AS TEXT, :name AS TEXT, :description AS TEXT OR NULL): INSERT into GroupDMs VALUES (:groupId, :name, :description);
 getGroupsNameMatching(:match AS TEXT): SELECT * FROM GroupDMs WHERE LOWER(name) LIKE '%' || :match || '%';
 
 
@@ -192,7 +189,7 @@ addUserToGroup(:groupId AS TEXT, :userId AS TEXT): INSERT into GroupUserMapping 
 removeUserFromGroup(:groupId AS TEXT, :userId AS TEXT): DELETE from GroupUserMapping WHERE ((userId = :userId) AND (groupId = :groupId));
 
 
-getGroupsOfUser(:userID AS TEXT): SELECT DISTINCT G.groupId, G.name, G.description, G.groupIcon FROM GroupDMs AS G INNER JOIN GroupUserMapping as GM ON G.groupId = GM.groupId WHERE GM.userId = :userID ORDER BY G.groupId;   
+getGroupsOfUser(:userID AS TEXT): SELECT DISTINCT G.groupId, G.name, G.description FROM GroupDMs AS G INNER JOIN GroupUserMapping as GM ON G.groupId = GM.groupId WHERE GM.userId = :userID ORDER BY G.groupId;   
 getGroupMembers(:groupID AS TEXT): SELECT U.* FROM Users AS U, (SELECT DISTINCT userId FROM GroupUserMapping AS GM WHERE GM.groupId = :groupID) AS UID WHERE U.userId = UID.userId; 
 
 
@@ -219,7 +216,7 @@ searchGroupChatMessages(:query AS TEXT, :limit AS INT OR NULL): SELECT c.content
 --------
 -- Rooms
 --------
-createRoom(:roomId AS TEXT, :name AS TEXT, :description AS TEXT OR NULL, :roomIcon AS TEXT OR NULL): INSERT into RoomsList VALUES (:roomId, :name, :description, :roomIcon);
+createRoom(:roomId AS TEXT, :name AS TEXT, :description AS TEXT OR NULL): INSERT into RoomsList VALUES (:roomId, :name, :description);
 
 getRoomDetails(:roomId AS TEXT): SELECT * FROM RoomsList WHERE roomId = :roomId;
 
@@ -228,7 +225,7 @@ getRoomDetails(:roomId AS TEXT): SELECT * FROM RoomsList WHERE roomId = :roomId;
 -------------
 addUserToRoom(:roomId AS TEXT, :userId AS TEXT): INSERT into RoomsUserMapping VALUES (:roomsId, :userId);
 
-getRoomsOfUser(:userID AS TEXT): SELECT DISTINCT R.roomId, R.name, R.description, R.roomIcon FROM RoomsList AS R INNER JOIN RoomsUserMapping as RM ON R.roomId = RM.roomId WHERE RM.userId = :userID;   
+getRoomsOfUser(:userID AS TEXT): SELECT DISTINCT R.roomId, R.name, R.description FROM RoomsList AS R INNER JOIN RoomsUserMapping as RM ON R.roomId = RM.roomId WHERE RM.userId = :userID;   
 
 getRoomMembers(:roomID AS TEXT): SELECT U.* FROM Users AS U, (SELECT DISTINCT userId FROM RoomsUserMapping AS RM WHERE RM.roomId = :roomID) AS UID WHERE U.userId = UID.userId; 
 

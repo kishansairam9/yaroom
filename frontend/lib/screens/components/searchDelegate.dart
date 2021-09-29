@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../../utils/authorizationService.dart';
+import 'package:provider/provider.dart';
 
 class ExchangeSearchDelegate extends SearchDelegate {
   late final String exchangeId;
   late final String msgType;
   late final int limit;
-  late final String accessToken;
 
   ExchangeSearchDelegate(
-      {required this.exchangeId,
-      required this.msgType,
-      required this.limit,
-      required this.accessToken})
+      {required this.exchangeId, required this.msgType, required this.limit})
       : super();
 
   @override
@@ -40,20 +38,20 @@ class ExchangeSearchDelegate extends SearchDelegate {
       );
     }
     // print("Queried ${query.toLowerCase()}");
-    final userid = accessToken; // TODO FIX THIS AFTER AUTH0 BUG FIX
-    var req = await http.post(
-      Uri.parse('http://localhost:8884/testing/' + userid + '/search'),
-      body: jsonEncode(<String, dynamic>{
-        'exchangeId': exchangeId,
-        'msgType': msgType,
-        'limit': limit,
-        'searchString': query.toLowerCase()
-      }),
-      //   headers: <String, String>{
-      //   'Content-Type': 'application/json',
-      //   'Authorization': "Bearer $accessToken",
-      // }
-    );
+    final String? accessToken =
+        await Provider.of<AuthorizationService>(context, listen: false)
+            .getValidAccessToken();
+    var req = await http.post(Uri.parse('http://localhost:8884/v1/search'),
+        body: jsonEncode(<String, dynamic>{
+          'exchangeId': exchangeId,
+          'msgType': msgType,
+          'limit': limit,
+          'searchString': query.toLowerCase()
+        }),
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+          'Authorization': "Bearer $accessToken",
+        });
     print(req.body);
     if (req.body == "null") {
       return Center(

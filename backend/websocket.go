@@ -3,25 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/rs/zerolog/log"
 )
-
-type JSONableSlice []uint8
-
-func (u JSONableSlice) MarshalJSON() ([]byte, error) {
-	var result string
-	if u == nil {
-		result = "null"
-	} else {
-		result = strings.Join(strings.Fields(fmt.Sprintf("%d", u)), ",")
-	}
-	return []byte(result), nil
-}
 
 var wsUpgrader = websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024}
 
@@ -70,7 +57,6 @@ func wsHandler(g *gin.Context) {
 		g.AbortWithStatus(500)
 		return
 	}
-
 
 	backendStreams := make([]string, 0)
 	if userMeta.Friendslist != nil {

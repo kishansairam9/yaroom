@@ -311,10 +311,9 @@ class GroupChatPageState extends State<GroupChatPage>
           widget.groupId +
           '&limit=15'));
       if (req.body != "null") {
-        if (req.body
-              .contains(new RegExp("{\"error\"", caseSensitive: false))) {
-            return;
-          }
+        if (req.body.contains(new RegExp("{\"error\"", caseSensitive: false))) {
+          return;
+        }
         print(req.body);
         var results = jsonDecode(req.body).cast<Map<String, dynamic>>();
         List<GroupChatMessage> temp = [];
@@ -406,7 +405,7 @@ class GroupChatPageState extends State<GroupChatPage>
       'replyTo': replyTo,
     }));
     BlocProvider.of<FilePickerCubit>(context, listen: false)
-        .updateFilePicker(media: Map(), i: 0);
+        .updateFilePicker(media: Map(), filesAttached: 0);
   }
 
   DrawerHeader _getDrawerHeader(members) {
@@ -416,8 +415,7 @@ class GroupChatPageState extends State<GroupChatPage>
       ListTile(
         leading: CircleAvatar(
           backgroundColor: Colors.grey[350],
-          foregroundImage: NetworkImage('${widget.image}'),
-          backgroundImage: AssetImage('assets/no-profile.png'),
+          foregroundImage: iconImageWrapper(widget.image),
         ),
         tileColor: Colors.transparent,
         trailing: Consumer<GroupChatData>(
@@ -435,7 +433,6 @@ class GroupChatPageState extends State<GroupChatPage>
                           actions: [
                             TextButton(
                                 onPressed: () async {
-
                                   await groupChatData.removeGroup(
                                       context, widget.groupId);
                                   await Navigator.pushReplacementNamed(
@@ -583,9 +580,7 @@ class GroupChatPageState extends State<GroupChatPage>
                                         leading: CircleAvatar(
                                           backgroundColor: Colors.grey[350],
                                           foregroundImage:
-                                              NetworkImage('${e.profileImg}'),
-                                          backgroundImage: AssetImage(
-                                              'assets/no-profile.png'),
+                                              iconImageWrapper(e.userId),
                                         ),
                                         title: Text(
                                           e.name,
@@ -608,9 +603,7 @@ class GroupChatPageState extends State<GroupChatPage>
                                         leading: CircleAvatar(
                                           backgroundColor: Colors.grey[350],
                                           foregroundImage:
-                                              NetworkImage('${widget.image}'),
-                                          backgroundImage: AssetImage(
-                                              'assets/no-profile.png'),
+                                              iconImageWrapper(widget.image),
                                         ),
                                         title: Text(
                                           widget.name,
@@ -623,10 +616,6 @@ class GroupChatPageState extends State<GroupChatPage>
                                     showSearch(
                                         context: context,
                                         delegate: ExchangeSearchDelegate(
-                                            accessToken: Provider.of<UserId>(
-                                                context,
-                                                listen:
-                                                    false), // Passing userId for now TODO FIX ONCE FIXED AUTH0 BUG
                                             exchangeId: widget.groupId,
                                             msgType: "GroupMessage",
                                             limit: 100))

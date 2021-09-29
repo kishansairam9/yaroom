@@ -25,7 +25,6 @@ class HomePage extends StatefulWidget {
   late final int initIndex;
   late final String? roomId;
   late final String? roomName;
-  late final String? roomIcon;
   late final String? channelId;
 
   HomePage(HomePageArguments args) {
@@ -33,14 +32,12 @@ class HomePage extends StatefulWidget {
       initIndex = 1;
       this.roomId = null;
       this.roomName = null;
-      this.roomIcon = null;
       this.channelId = null;
       return;
     }
     if (args.index == 0) {
       this.roomId = args.roomId!;
       this.roomName = args.roomName!;
-      this.roomIcon = args.roomIcon!;
       this.channelId = args.channelId;
     }
     this.initIndex = args.index!;
@@ -71,10 +68,8 @@ class HomePageState extends State<HomePage> {
           .getUserById(userId: initialMessage.data['fromUser'])
           .get();
       Navigator.pushNamed(context, '/chat',
-          arguments: ChatPageArguments(
-              userId: data[0].userId,
-              name: data[0].name,
-              image: data[0].profileImg));
+          arguments:
+              ChatPageArguments(userId: data[0].userId, name: data[0].name));
     }
 
     // Also handle any interaction when the app is in the background via a
@@ -85,10 +80,8 @@ class HomePageState extends State<HomePage> {
             .getUserById(userId: message.data['fromUser'])
             .get();
         Navigator.pushNamed(context, '/chat',
-            arguments: ChatPageArguments(
-                userId: data[0].userId,
-                name: data[0].name,
-                image: data[0].profileImg));
+            arguments:
+                ChatPageArguments(userId: data[0].userId, name: data[0].name));
       }
     });
   }
@@ -143,12 +136,9 @@ class HomePageState extends State<HomePage> {
           if (snapshot.hasData) {
             return IconButton(
                 icon: CircleAvatar(
-                  backgroundColor: Colors.grey[350],
-                  foregroundImage: snapshot.data![0].roomIcon == null
-                      ? null
-                      : NetworkImage('${snapshot.data![0].roomIcon!}'),
-                  backgroundImage: AssetImage('assets/no-profile.png'),
-                ),
+                    backgroundColor: Colors.grey[350],
+                    foregroundImage:
+                        iconImageWrapper(snapshot.data![0].roomId)),
                 onPressed: () => Scaffold.of(context).openDrawer());
           }
           return IconButton(
@@ -167,9 +157,6 @@ class HomePageState extends State<HomePage> {
                   showSearch(
                       context: context,
                       delegate: ExchangeSearchDelegate(
-                          accessToken: Provider.of<UserId>(context,
-                              listen:
-                                  false), // Passing userId for now TODO FIX ONCE FIXED AUTH0 BUG
                           exchangeId: roomId + "@" + channelId,
                           msgType: "RoomMessage",
                           limit: 100))
@@ -264,9 +251,7 @@ class HomePageState extends State<HomePage> {
                                         CircleAvatar(
                                           backgroundColor: Colors.grey[350],
                                           foregroundImage:
-                                              NetworkImage('${e.profileImg}'),
-                                          backgroundImage: AssetImage(
-                                              'assets/no-profile.png'),
+                                              iconImageWrapper(e.userId),
                                         ),
                                         Positioned(
                                             bottom: 0,
@@ -305,6 +290,7 @@ class HomePageState extends State<HomePage> {
           return CircularProgressIndicator();
         });
   }
+
   Widget addChannel() {
     var ChannelController = TextEditingController();
     return AlertDialog(
@@ -330,9 +316,7 @@ class HomePageState extends State<HomePage> {
         ElevatedButton(
             child: Text("Submit"),
             onPressed: () {
-              if (ChannelController.text != '') {
-                
-              }
+              if (ChannelController.text != '') {}
             }),
       ],
     );
@@ -397,8 +381,10 @@ class HomePageState extends State<HomePage> {
                       ),
                     ),
                     IconButton(
-                        onPressed: () => {},
-                        icon: Icon(Icons.fingerprint))
+                        onPressed: () async {
+                          await Navigator.of(context).pushNamed("/settings");
+                        },
+                        icon: Icon(Icons.settings))
                   ],
                 ),
           drawer: currentIndex == 0
@@ -414,18 +400,20 @@ class HomePageState extends State<HomePage> {
                                 roomId: roomId!,
                               )),
                       ),
-                      Expanded(child: ListTile(
-                        minVerticalPadding: 5,
-                        leading: Text("+"),
-                        title: Text("Add Channel"),
-                        onTap: (){
-                          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return addChannel();
-            });
-                        },
-                      ),),
+                      Expanded(
+                        child: ListTile(
+                          minVerticalPadding: 5,
+                          leading: Text("+"),
+                          title: Text("Add Channel"),
+                          onTap: () {
+                            showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return addChannel();
+                                });
+                          },
+                        ),
+                      ),
                     ],
                   ),
                 )

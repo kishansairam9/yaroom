@@ -60,7 +60,7 @@ var DeleteGroupFromUser *gocqlx.Queryx
 var SelectGroupsOfUser *gocqlx.Queryx
 
 // var AddUserToGroup *gocqlx.Queryx
-var DeleteUserFromGroup *gocqlx.Queryx
+// var DeleteUserFromGroup *gocqlx.Queryx
 var SelectUsersOfGroup *gocqlx.Queryx
 
 func setupDB() {
@@ -91,7 +91,7 @@ func setupDB() {
 	SelectGroupsOfUser = UserMetadataTable.SelectBuilder("groupslist").Query(dbSession)
 
 	// AddUserToGroup = GroupMetadataTable.UpdateBuilder().Add("userslist").Query(dbSession)
-	DeleteUserFromGroup = GroupMetadataTable.UpdateBuilder().Remove("userslist").Query(dbSession)
+	// DeleteUserFromGroup = GroupMetadataTable.UpdateBuilder().Remove("userslist").Query(dbSession)
 	SelectUsersOfGroup = GroupMetadataTable.SelectBuilder("userslist").Query(dbSession)
 
 	ChatMessageTable = table.New(ChatMessageMetadata)
@@ -138,7 +138,7 @@ type GroupMetadata struct {
 	Name        string
 	Description *string
 	Image       *string
-	Userslist   map[string]User_udt
+	Userslist   []User_udt
 }
 
 type RoomMetadata struct {
@@ -178,7 +178,7 @@ type PendingListOfUserUpdate struct {
 
 type UsersListOfGroupUpdate struct {
 	Groupid   string
-	Userslist map[string]User_udt
+	Userslist []User_udt
 }
 
 func updateUserMetadata(data *UserMetadata) error {
@@ -219,15 +219,15 @@ func getGroupMetadata(groupId string) (*GroupMetadata, error) {
 	return rows[0], nil
 }
 
-func convertMapToString(data map[string]User_udt) string {
+func convertSetToString(data []User_udt) string {
 	var s string
 	s += "{"
-	for key, val := range data {
-		fmt.Println(key, val)
+	for _, val := range data {
+		// fmt.Println(key, val)
 		if val.Image != nil {
-			s += fmt.Sprintf("'%s':{userid:'%s', name:'%s', image:'%s'},", key, val.Userid, val.Name, *val.Image)
+			s += fmt.Sprintf("{userid:'%s', name:'%s', image:'%s'},", val.Userid, val.Name, *val.Image)
 		} else {
-			s += fmt.Sprintf("'%s':{userid:'%s', name:'%s', image:''},", key, val.Userid, val.Name)
+			s += fmt.Sprintf("{userid:'%s', name:'%s', image:''},", val.Userid, val.Name)
 		}
 	}
 	s = s[:len(s)-1]
@@ -239,18 +239,18 @@ func updateGroupMetadata(data *GroupMetadata) (*GroupMetadata, error) {
 		data.Groupid = xid.New().String()
 	}
 	paddedGroupId := "'" + data.Groupid + "'"
-	groupMeta, err := getGroupMetadata(paddedGroupId)
+	groupMeta, err := getGroupMetadata(data.Groupid)
 	if err != nil {
 		log.Error().Str("where", "get group details").Str("type", "error occured in retrieving group metadata").Msg(err.Error())
 		return nil, err
 	}
 	if groupMeta == nil {
-		in := dbSession.Query(qb.Insert("yaroom.groups").LitColumn("groupid", paddedGroupId).LitColumn("name", "'"+data.Name+"'").LitColumn("image", "'"+*data.Image+"'").LitColumn("description", "'"+*data.Description+"'").LitColumn("userslist", convertMapToString(data.Userslist)).ToCql())
+		in := dbSession.Query(qb.Insert("yaroom.groups").LitColumn("groupid", paddedGroupId).LitColumn("name", "'"+data.Name+"'").LitColumn("image", "'"+*data.Image+"'").LitColumn("description", "'"+*data.Description+"'").LitColumn("userslist", convertSetToString(data.Userslist)).ToCql())
 		if err := in.ExecRelease(); err != nil {
 			return nil, err
 		}
-		for key, _ := range data.Userslist {
-			if err := addGroupToUser(&GroupsListOfUserUpdate{Userid: key, Groupslist: []string{data.Groupid}}); err != nil {
+		for _, user := range data.Userslist {
+			if err := addGroupToUser(&GroupsListOfUserUpdate{Userid: user.Userid, Groupslist: []string{data.Groupid}}); err != nil {
 				return nil, err
 			}
 		}
@@ -258,13 +258,18 @@ func updateGroupMetadata(data *GroupMetadata) (*GroupMetadata, error) {
 			return nil, err
 		}
 	} else {
-		if q := UpdateGroupMetadata.BindStruct(data); q.Err() != nil {
-			log.Error().Str("where", "update Group metadata").Str("type", "failed to bind struct").Msg(q.Err().Error())
-			return nil, errors.New("internal server error")
-		}
-		if err := UpdateGroupMetadata.Exec(); err != nil {
+		in := dbSession.Query(qb.Update("yaroom.groups").SetLit("name", "'"+data.Name+"'").SetLit("description", "'"+*data.Description+"'").SetLit("image", "'"+*data.Image+"'").Where(qb.EqLit("groupid", "'"+data.Groupid+"'")).ToCql())
+		if err := in.ExecRelease(); err != nil {
 			log.Error().Str("where", "update Group metadata").Str("type", "failed to execute query").Msg(err.Error())
 			return nil, errors.New("internal server error")
+		}
+		for _, user := range data.Userslist {
+			if err := addGroupToUser(&GroupsListOfUserUpdate{Userid: user.Userid, Groupslist: []string{data.Groupid}}); err != nil {
+				return nil, err
+			}
+		}
+		if err := addUserToGroup(&UsersListOfGroupUpdate{Groupid: data.Groupid, Userslist: data.Userslist}); err != nil {
+			return nil, err
 		}
 	}
 	return data, nil
@@ -387,7 +392,7 @@ func selectGroupsOfUser(userId string) ([]GroupsListOfUserUpdate, error) {
 }
 
 func addUserToGroup(group *UsersListOfGroupUpdate) error {
-	in := dbSession.Query(qb.Update("yaroom.groups").AddLit("userslist", convertMapToString(group.Userslist)).Where(qb.EqLit("groupid", "'"+group.Groupid+"'")).ToCql())
+	in := dbSession.Query(qb.Update("yaroom.groups").AddLit("userslist", convertSetToString(group.Userslist)).Where(qb.EqLit("groupid", "'"+group.Groupid+"'")).ToCql())
 	if err := in.ExecRelease(); err != nil {
 		log.Error().Str("where", "add user to group").Str("type", "failed to execute query").Msg(err.Error())
 		return err
@@ -396,13 +401,10 @@ func addUserToGroup(group *UsersListOfGroupUpdate) error {
 }
 
 func deleteUserFromGroup(user *UsersListOfGroupUpdate) error {
-	if q := DeleteUserFromGroup.BindStruct(user); q.Err() != nil {
-		log.Error().Str("where", "delete user from group").Str("type", "failed to bind struct").Msg(q.Err().Error())
-		return errors.New("internal server error")
-	}
-	if err := DeleteUserFromGroup.Exec(); err != nil {
+	in := dbSession.Query(qb.Update("yaroom.groups").RemoveLit("userslist", convertSetToString(user.Userslist)).Where(qb.EqLit("groupid", "'"+user.Groupid+"'")).ToCql())
+	if err := in.ExecRelease(); err != nil {
 		log.Error().Str("where", "delete user from group").Str("type", "failed to execute query").Msg(err.Error())
-		return errors.New("internal server error")
+		return err
 	}
 	return nil
 }

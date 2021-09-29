@@ -29,8 +29,7 @@ class RoomListViewState extends State<RoomListView> {
               itemCount: snapshot.data!.length,
               itemBuilder: (context, index) {
                 RoomsListData e = snapshot.data![index];
-                return RoomTile(
-                    roomId: e.roomId, name: e.name, image: e.roomIcon);
+                return RoomTile(roomId: e.roomId, name: e.name);
               },
             );
           } else if (snapshot.hasError) {
@@ -65,9 +64,7 @@ class RoomTileState extends State<RoomTile> {
     return Column(children: [
       CircleAvatar(
           backgroundColor: Colors.grey[350],
-          foregroundImage:
-              widget.image == null ? null : NetworkImage('${widget.image}'),
-          backgroundImage: AssetImage('assets/no-profile.png'),
+          foregroundImage: iconImageWrapper(widget.image),
           radius: 27.0,
           child: GestureDetector(onTap: () {
             BlocProvider.of<RoomsCubit>(context, listen: false)
@@ -75,10 +72,7 @@ class RoomTileState extends State<RoomTile> {
                     RoomDetails(roomId: widget.roomId, roomName: widget.name));
             Navigator.of(context).pushReplacementNamed('/',
                 arguments: HomePageArguments(
-                    index: 0,
-                    roomId: widget.roomId,
-                    roomName: widget.name,
-                    roomIcon: widget.image));
+                    index: 0, roomId: widget.roomId, roomName: widget.name));
           })),
       SizedBox(
         height: 6,

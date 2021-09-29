@@ -30,7 +30,7 @@ CREATE TABLE yaroom.groups (
     name text,
     description text,
     image text,
-    userslist map<text,frozen <user_udt>>,
+    userslist set<frozen <user_udt>>,
     PRIMARY KEY (groupid)
 );
 

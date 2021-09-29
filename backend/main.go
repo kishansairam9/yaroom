@@ -93,6 +93,10 @@ func main() {
 	r.Use(cors.Default())
 	wsUpgrader.CheckOrigin = func(r *http.Request) bool { return true }
 
+	// Un protected routes
+	r.GET("/icon", iconServeHandler)
+	r.GET("/icon/:objectid", iconServeHandler)
+
 	// Protected routes
 	secured := r.Group("/v1", jwtHandler)
 	{
@@ -107,14 +111,19 @@ func main() {
 
 		// Media handler
 		secured.GET("/media/:objectid", mediaServerHandler)
+		secured.POST("/updateIcon", iconUploadHandler)
 
 		// User Details
 		secured.GET("/getUserDetails", getUserDetailsHandler)
 
-
-		secured.GET("/editRoomDetails",updateRoomHandler)
 		// Group Details
 		secured.POST("/editGroupDetails", updateGroupHandler)
+
+		// Exit Group
+		secured.POST("/exitGroup", exitGroupHandler)
+
+		// Friend Requests
+		secured.POST("/friendRequest", friendRequestHandler)
 
 		// Get messages
 		secured.GET("/getLaterMessages", getLaterMessageHandler)
@@ -144,12 +153,19 @@ func main() {
 
 		// Media handler
 		testing.GET("/media/:objectid", mediaServerHandler)
+		testing.POST("/updateIcon", iconUploadHandler)
 
 		// User Details
 		testing.GET("/getUserDetails", getUserDetailsHandler)
 
 		// Group Details
 		testing.POST("/editGroupDetails", updateGroupHandler)
+
+		// Exit Group
+		testing.POST("/exitGroup", exitGroupHandler)
+
+		// Friend Requests
+		testing.POST("/friendRequest", friendRequestHandler)
 
 		// Get messages
 		testing.GET("/getLaterMessages", getLaterMessageHandler)
