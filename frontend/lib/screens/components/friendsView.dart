@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
+import 'package:yaroom/utils/backendRequests.dart';
 import '../../utils/types.dart';
 import 'contactView.dart';
 import '../createOrAdd/friend.dart';
@@ -143,6 +144,13 @@ class _FriendsViewState extends State<FriendsView> {
                                         color: Colors.green),
                                     onDismissed:
                                         (DismissDirection direction) async {
+                                      await friendRequest({
+                                        "userId": f.userId,
+                                        "status": direction ==
+                                                DismissDirection.endToStart
+                                            ? 2
+                                            : 3
+                                      }, context);
                                       await RepositoryProvider.of<AppDb>(
                                               context)
                                           .updateFriendRequest(
