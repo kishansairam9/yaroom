@@ -301,7 +301,7 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   }
 
   loadMore(List<ChatMessage> msgs) async {
-    if (moreload) {
+    if (msgs.isNotEmpty && moreload) {
       final userid = Provider.of<UserId>(context, listen: false);
       var req = await http.get(Uri.parse('http://localhost:8884/testing/' +
           userid +

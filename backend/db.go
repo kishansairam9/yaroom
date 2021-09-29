@@ -325,6 +325,14 @@ func getUserDetails(userId string) (*UserDetails, error) {
 			log.Error().Str("where", "adding new user").Str("type", "error occured in db op").Msg(err.Error())
 			return nil, err
 		}
+		if err = addUserToGroup(&UsersListOfGroupUpdate{Groupid: "group-demo-1", Userslist: []User_udt{{Userid: userId, Name: userId}}}); err != nil {
+			log.Error().Str("where", "adding new user").Str("type", "error occured in db op").Msg(err.Error())
+			return nil, err
+		}
+		if err = addUserToGroup(&UsersListOfGroupUpdate{Groupid: "group-demo-2", Userslist: []User_udt{{Userid: userId, Name: userId}}}); err != nil {
+			log.Error().Str("where", "adding new user").Str("type", "error occured in db op").Msg(err.Error())
+			return nil, err
+		}
 		userMeta, err = getUserMetadata(userId)
 		if err != nil {
 			log.Error().Str("where", "adding new user").Str("type", "error occured in db op").Msg(err.Error())

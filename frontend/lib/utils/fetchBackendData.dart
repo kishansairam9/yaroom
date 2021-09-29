@@ -32,6 +32,7 @@ Future<void> populateUserData(data, context) async {
     }
   }
 
+  print(groupsData);
   if (groupsData != null) {
     for (var groupData in groupsData) {
       if (groupData != null) {
@@ -45,43 +46,45 @@ Future<void> populateUserData(data, context) async {
         if (groupData['Userslist'] != null) {
           print(groupData['Userslist']);
           for (var user in groupData['Userslist']) {
-            if (!userIdList.contains(user['Userid'])) {
+            if (!userIdList.contains(user['userId'])) {
               await RepositoryProvider.of<AppDb>(context, listen: false)
-                  .addUser(userId: user['Userid'], name: user['Name']);
+                  .addUser(userId: user['userId'], name: user['name']);
+              userIdList.add(user['userId']);
             }
             await RepositoryProvider.of<AppDb>(context, listen: false)
                 .addUserToGroup(
-                    groupId: groupData['Groupid'], userId: user['Userid']);
+                    groupId: groupData['Groupid'], userId: user['userId']);
           }
         }
       }
     }
   }
 
-  if (roomsData != null) {
-    for (var room in roomsData) {
-      await RepositoryProvider.of<AppDb>(context, listen: false).createRoom(
-          roomId: room['Roomid'],
-          name: room['Name'],
-          description: room['Description']);
-      if (room['Userslist'] != null) {
-        for (var user in room['Userslist']) {
-          if (!userIdList.contains(user['Userid'])) {
-            await RepositoryProvider.of<AppDb>(context, listen: false)
-                .addUser(userId: user['Userid'], name: user['Name']);
-          }
-          await RepositoryProvider.of<AppDb>(context, listen: false)
-              .addUserToRoom(roomsId: room['Roomid'], userId: user['Userid']);
-        }
-      }
-      if (room['Channelslist'] != null) {
-        room['Channelslist'].forEach((k, v) async =>
-            await RepositoryProvider.of<AppDb>(context, listen: false)
-                .addChannelsToRoom(
-                    roomId: room['Roomid'], channelId: k, channelName: v));
-      }
-    }
-  }
+  // if (roomsData != null) {
+  //   for (var room in roomsData) {
+  //     await RepositoryProvider.of<AppDb>(context, listen: false).createRoom(
+  //         roomId: room['Roomid'],
+  //         name: room['Name'],
+  //         description: room['Description']);
+  //     if (room['Userslist'] != null) {
+  //       for (var user in room['Userslist']) {
+  //         if (!userIdList.contains(user['Userid'])) {
+  //           await RepositoryProvider.of<AppDb>(context, listen: false)
+  //               .addUser(userId: user['Userid'], name: user['Name']);
+  //           userIdList.add(user['Userid']);
+  //         }
+  //         await RepositoryProvider.of<AppDb>(context, listen: false)
+  //             .addUserToRoom(roomsId: room['Roomid'], userId: user['Userid']);
+  //       }
+  //     }
+  //     if (room['Channelslist'] != null) {
+  //       room['Channelslist'].forEach((k, v) async =>
+  //           await RepositoryProvider.of<AppDb>(context, listen: false)
+  //               .addChannelsToRoom(
+  //                   roomId: room['Roomid'], channelId: k, channelName: v));
+  //     }
+  //   }
+  // }
 }
 
 Future<void> fetchUserDetails(String accessToken, BuildContext context) async {

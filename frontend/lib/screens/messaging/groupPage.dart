@@ -301,7 +301,7 @@ class GroupChatPageState extends State<GroupChatPage>
 
   final GlobalKey<ScaffoldState> _scaffoldkey = new GlobalKey();
   loadMore(List<GroupChatMessage> msgs) async {
-    if (moreload) {
+    if (msgs.isNotEmpty && moreload) {
       final userid = Provider.of<UserId>(context, listen: false);
       var req = await http.get(Uri.parse('http://localhost:8884/testing/' +
           userid +

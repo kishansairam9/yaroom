@@ -39,7 +39,9 @@ Future<bool> deleteDb() async {
     final dataDir = await paths.getApplicationDocumentsDirectory();
     final dbFile = File(p.join(dataDir.path, 'db.sqlite'));
     if (dbFile.existsSync()) {
+      print("file existing, trying to delete");
       dbFile.deleteSync();
+      print("delete done");
     }
   }
   if (Platform.isMacOS || Platform.isLinux) {

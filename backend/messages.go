@@ -55,16 +55,17 @@ type DBMessage struct {
 	Exchange_id string    `json:"exchange_id,omitempty"`
 	Msgid       string    `json:"msgId,omitempty"`
 	Fromuser    string    `json:"fromUser"`
-	Touser      string    `json:"toUser"`
-	Groupid     string    `json:"groupId"`
-	Roomid      string    `json:"roomId"`
-	Channelid   string    `json:"channelId"`
+	Touser      *string   `json:"toUser,omitempty"`
+	Groupid     *string   `json:"groupId,omitempty"`
+	Roomid      *string   `json:"roomId,omitempty"`
+	Channelid   *string   `json:"channelId,omitempty"`
 	Msgtime     time.Time `json:"time"`
+	Type        string    `json:"type"`
 	Content     *string   `json:"content,omitempty"`
 	Mediaid     *string   `json:"media,omitempty"`
 	Replyto     *string   `json:"replyTo,omitempty"`
-	Es_query    string    `json:"es_query,omitempty"`
-	Es_options  string    `json:"es_options,omitempty"`
+	Es_query    *string   `json:"es_query,omitempty"`
+	Es_options  *string   `json:"es_options,omitempty"`
 }
 
 type ChatMessage struct {
@@ -321,30 +322,42 @@ func getLaterMessages(userId, lastMsgId string) ([]DBMessage, error) {
 	}
 
 	var chatfrom []DBMessage
-	q := dbSession.Query(qb.Select("yaroom.chat_messages").Where(qb.GtLit("msgid", lastMsgId)).Where(qb.EqLit("fromuser", userId)).AllowFiltering().ToCql())
+	q := dbSession.Query(qb.Select("yaroom.chat_messages").Columns("*").Where(qb.GtLit("msgid", lastMsgId)).Where(qb.EqLit("fromuser", userId)).AllowFiltering().ToCql())
 	if err := q.SelectRelease(&chatfrom); err != nil {
 		return nil, err
 	}
+	for i := range chatfrom {
+		chatfrom[i].Type = "ChatMessage"
+	}
 	var chatto []DBMessage
-	q = dbSession.Query(qb.Select("yaroom.chat_messages").Columns("fromuser", "touser", "msgid").Where(qb.GtLit("msgid", lastMsgId)).Where(qb.EqLit("touser", userId)).AllowFiltering().ToCql())
+	q = dbSession.Query(qb.Select("yaroom.chat_messages").Columns("*").Where(qb.GtLit("msgid", lastMsgId)).Where(qb.EqLit("touser", userId)).AllowFiltering().ToCql())
 	if err := q.SelectRelease(&chatto); err != nil {
 		return nil, err
+	}
+	for i := range chatto {
+		chatto[i].Type = "ChatMessage"
 	}
 
 	var groupchat []DBMessage
 	if len(groups) > 0 {
-		q = dbSession.Query(qb.Select("yaroom.group_messages").Columns("exchange_id").Where(qb.GtLit("msgid", lastMsgId)).Where(qb.InLit("exchange_id", "("+strings.Join(groups, ",")+")")).AllowFiltering().ToCql())
+		q = dbSession.Query(qb.Select("yaroom.group_messages").Columns("*").Where(qb.GtLit("msgid", lastMsgId)).Where(qb.InLit("exchange_id", "("+strings.Join(groups, ",")+")")).AllowFiltering().ToCql())
 		if err := q.SelectRelease(&groupchat); err != nil {
 			return nil, err
 		}
 	}
+	for i := range groupchat {
+		groupchat[i].Type = "GroupMessage"
+	}
 
 	var roomchat []DBMessage
 	if len(rooms) > 0 {
-		q = dbSession.Query(qb.Select("yaroom.room_messages").Columns("exchange_id").Where(qb.GtLit("msgid", lastMsgId)).Where(qb.InLit("exchange_id", "("+strings.Join(rooms, ",")+")")).AllowFiltering().ToCql())
+		q = dbSession.Query(qb.Select("yaroom.room_messages").Columns("*").Where(qb.GtLit("msgid", lastMsgId)).Where(qb.InLit("exchange_id", "("+strings.Join(rooms, ",")+")")).AllowFiltering().ToCql())
 		if err := q.SelectRelease(&roomchat); err != nil {
 			return nil, err
 		}
+	}
+	for i := range roomchat {
+		roomchat[i].Type = "RoomsMessage"
 	}
 
 	all := make([]DBMessage, 0)

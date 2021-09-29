@@ -45,7 +45,6 @@ Future<void> main() async {
 
   await Firebase.initializeApp();
 
-  // TODO: Upload token to backend
   String? fcmToken = await FirebaseMessaging.instance.getToken(
       vapidKey:
           'BAk6SShjzB8D0LkNQQzCtxwCVQnIBLVx1Eedl-WpcSi1bNTPGTPfzp-YLaL-ob9Md1mv7qgy0F71mdg2mVZRIV8');
@@ -75,7 +74,10 @@ Future<void> main() async {
   var msgStream = MessageExchangeStream();
   msgStream.stream.listen((encodedData) async {
     print("Got encoded data::::::\n" + encodedData);
-    if (encodedData == "" || encodedData == "null") return;
+    if (encodedData == "" ||
+        encodedData == "null" ||
+        encodedData == "true" ||
+        encodedData == "false") return;
     var data = jsonDecode(encodedData) as Map;
     if (data.containsKey('error')) {
       print("WS stream returned error ${data['error']}");
