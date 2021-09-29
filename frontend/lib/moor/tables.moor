@@ -12,7 +12,7 @@ CREATE TABLE Users (
 
 -------------
 -- FriendRequests Table
--- Status = 1 (pending (sent to user)), 2 (Accepted), 3 (Rejected/Cancelled), 4 (pending (sent from user))
+-- Status = 1 (pending (sent to user)), 2 (Accepted), 3 (Rejected/Cancelled), 4 remove friend, 5 (pending (sent from user))
 -------------
 CREATE TABLE FriendRequests(
     userId TEXT NOT NULL PRIMARY KEY REFERENCES Users(userId),

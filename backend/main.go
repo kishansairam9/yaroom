@@ -119,6 +119,12 @@ func main() {
 		// Group Details
 		secured.POST("/editGroupDetails", updateGroupHandler)
 
+		// Exit Group
+		secured.POST("/exitGroup", exitGroupHandler)
+
+		// Friend Requests
+		secured.POST("/friendRequest", friendRequestHandler)
+
 		// Get messages
 		secured.GET("/getLaterMessages", getLaterMessageHandler)
 		secured.GET("/getOlderMessages", getOlderMessageHandler)
@@ -154,6 +160,12 @@ func main() {
 
 		// Group Details
 		testing.POST("/editGroupDetails", updateGroupHandler)
+
+		// Exit Group
+		testing.POST("/exitGroup", exitGroupHandler)
+
+		// Friend Requests
+		testing.POST("/friendRequest", friendRequestHandler)
 
 		// Get messages
 		testing.GET("/getLaterMessages", getLaterMessageHandler)

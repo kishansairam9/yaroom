@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:yaroom/utils/backendRequests.dart';
 import '../../utils/types.dart';
 import 'package:provider/provider.dart';
 
@@ -12,7 +13,7 @@ class ViewContact extends StatefulWidget {
 }
 
 class _ViewContactState extends State<ViewContact> {
-  int status = 5;
+  int status = -1;
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -102,20 +103,24 @@ class _ViewContactState extends State<ViewContact> {
                                 ),
                                 onTap: () async {
                                   // Backend Request to remove friend
+                                  await friendRequest({
+                                    "userId": this.widget.contactData.userId,
+                                    "status": 4
+                                  }, context);
                                   await RepositoryProvider.of<AppDb>(context,
                                           listen: false)
                                       .updateFriendRequest(
-                                          status: 3,
+                                          status: 4,
                                           userId:
                                               this.widget.contactData.userId);
                                   setState(() {
-                                    status = 3;
+                                    status = 4;
                                   });
                                 },
                                 title: Text("Remove Friend",
                                     style: TextStyle(color: Colors.red)),
                               )
-                            : ((status == 1) || (status == 4))
+                            : ((status == 1) || (status == 5))
                                 ? ListTile(
                                     leading: Icon(
                                       Icons.person,
@@ -132,14 +137,19 @@ class _ViewContactState extends State<ViewContact> {
                                     ),
                                     onTap: () async {
                                       setState(() {
-                                        status = 4;
+                                        status = 5;
                                       });
+                                      await friendRequest({
+                                        "userId":
+                                            this.widget.contactData.userId,
+                                        "status": 1
+                                      }, context);
                                       if (snapshot.data!.isNotEmpty) {
                                         await RepositoryProvider.of<AppDb>(
                                                 context,
                                                 listen: false)
                                             .updateFriendRequest(
-                                                status: 4,
+                                                status: 5,
                                                 userId: this
                                                     .widget
                                                     .contactData
@@ -149,31 +159,16 @@ class _ViewContactState extends State<ViewContact> {
                                                 context,
                                                 listen: false)
                                             .addNewFriendRequest(
-                                                status: 4,
+                                                status: 5,
                                                 userId: this
                                                     .widget
                                                     .contactData
                                                     .userId);
                                       }
-                                      // Backend Request to add friend i.e add this user to pending list of respective user.
                                     },
                                     title: Text("Add Friend",
                                         style: TextStyle(color: Colors.green)),
                                   ),
-                        // ListTile(
-                        //   leading: Icon(
-                        //     Icons.person_remove_alt_1,
-                        //     color: Colors.red,
-                        //   ),
-                        //   title: (status == 2)? Text(
-                        //     "Remove Friend",
-                        //     style: TextStyle(color: Colors.red)) : (status == 1)? Text(
-                        //     "Request Pending",
-                        //     style: TextStyle(color: Colors.red)) : Text(
-                        //     "Add Friend",
-                        //     style: TextStyle(color: Colors.green),
-                        //   ),
-                        // ),
                       ]));
                 } else if (snapshot.hasError) {
                   print(snapshot.error);
