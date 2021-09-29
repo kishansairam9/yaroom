@@ -1,26 +1,33 @@
 export '../moor/db.dart';
 
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:moor/moor.dart';
 import 'dart:async';
 
 import 'package:path_provider/path_provider.dart';
-
 import 'package:bloc/bloc.dart';
 
 typedef UserId = String;
 typedef FCMTokenStream = Stream<String>;
 
+ImageProvider iconImageWrapper(String? src) {
+  String url = "http://localhost:8884/icon";
+  if (src != null) {
+    url += "/" + src;
+  }
+  print("Sent image request to $url");
+  return NetworkImage(url);
+}
+
 class HomePageArguments {
   late final int? index;
   late final String? roomId;
   late final String? roomName;
-  late final String? roomIcon;
   late final String? channelId;
 
-  HomePageArguments(
-      {this.index, this.roomId, this.roomName, this.channelId, this.roomIcon});
+  HomePageArguments({this.index, this.roomId, this.roomName, this.channelId});
 }
 
 class MediaStore {
@@ -71,20 +78,15 @@ class CounterStorage {
 }
 
 class RoomArguments extends HomePageArguments {
-  RoomArguments({roomId, roomName, channelId, roomIcon})
+  RoomArguments({roomId, roomName, channelId})
       : super(
-            index: 0,
-            roomId: roomId,
-            roomName: roomName,
-            channelId: channelId,
-            roomIcon: roomIcon);
+            index: 0, roomId: roomId, roomName: roomName, channelId: channelId);
 }
 
 class ChatPageArguments {
   late final String userId, name;
-  late final String? image;
 
-  ChatPageArguments({required this.userId, required this.name, this.image});
+  ChatPageArguments({required this.userId, required this.name});
 }
 
 class FilePickerDetails {
@@ -112,10 +114,8 @@ class FilePickerCubit extends Cubit<FilePickerDetails> {
       : super(initialState);
 
   void updateFilePicker(
-      {required Map<dynamic, dynamic> media, required int i}) {
-    print(i);
-    print(media);
-    emit(FilePickerDetails(media: media, filesAttached: i));
+      {required Map<dynamic, dynamic> media, required int filesAttached}) {
+    emit(FilePickerDetails(media: media, filesAttached: filesAttached));
   }
 }
 

@@ -51,16 +51,14 @@ void fakeInsert(AppDb db, UserId userId) {
   db.addUser(
       userId: userId,
       name: getName(),
-      about: getAbout(),
-      profileImg: getImage());
+      about: getAbout());
   for (var i = 0; i < 30; i++) {
     String uid = getUserId();
     others.add(uid);
     db.addUser(
         userId: uid,
         name: getName(),
-        about: getAbout(),
-        profileImg: getImage());
+        about: getAbout());
     if (Random().nextBool()) {
       db.addNewFriendRequest(userId: uid, status: getRandomInt(1, 3));
     }
@@ -87,8 +85,7 @@ void fakeInsert(AppDb db, UserId userId) {
     db.createGroup(
         groupId: gid,
         name: getCompanyName(),
-        description: getAbout(),
-        groupIcon: getGroupImage());
+        description: getAbout());
     int groupSize = getRandomInt(5, 20);
     var groupMembers = new List.generate(
         groupSize, (_) => others[Random().nextInt(others.length)]);
@@ -114,8 +111,7 @@ void fakeInsert(AppDb db, UserId userId) {
     db.createRoom(
         roomId: rid,
         name: getCompanyName(),
-        description: getAbout(),
-        roomIcon: getGroupImage());
+        description: getAbout());
     int roomSize = getRandomInt(5, 20);
     var roomMembers = new List.generate(
         roomSize, (_) => others[Random().nextInt(others.length)]);

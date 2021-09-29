@@ -71,7 +71,7 @@ class MsgBoxState extends State<MsgBox> {
       // Provider.of<FilePickerDetails>(context, listen: false)
       //     .updateState(media, 1);
       BlocProvider.of<FilePickerCubit>(context, listen: false)
-          .updateFilePicker(media: media, i: 1);
+          .updateFilePicker(media: media, filesAttached: 1);
     }
     // Provider.of<FilePickerDetails>(context, listen: false).filesAttached = 1;
   }

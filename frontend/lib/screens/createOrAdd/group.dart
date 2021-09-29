@@ -59,14 +59,8 @@ class _CreateGroupState extends State<CreateGroup> {
                                 title: Text(snapshot.data![index].name),
                                 secondary: CircleAvatar(
                                   backgroundColor: Colors.grey[350],
-                                  foregroundImage: snapshot
-                                              .data![index].profileImg ==
-                                          null
-                                      ? null
-                                      : NetworkImage(
-                                          '${snapshot.data![index].profileImg}'),
-                                  backgroundImage:
-                                      AssetImage('assets/no-profile.png'),
+                                  foregroundImage: iconImageWrapper(
+                                      snapshot.data![index].userId),
                                 ),
                                 value: checklist
                                     .contains(snapshot.data![index].userId),
@@ -171,10 +165,8 @@ class _CreateGroupState extends State<CreateGroup> {
             Column(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
           Column(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
             CircleAvatar(
-              foregroundImage: this.widget.data["group"].image == null
-                  ? null
-                  : NetworkImage('${this.widget.data["group"].image}'),
-              backgroundImage: AssetImage('assets/no-profile.png'),
+              foregroundImage:
+                  iconImageWrapper(this.widget.data["group"].image),
               radius: 80,
             ),
             Padding(

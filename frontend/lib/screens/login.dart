@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../utils/fcmToken.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../utils/fetchBackendData.dart';
 
 class LandingViewModel extends ChangeNotifier {
   bool _signingIn = false;
@@ -72,21 +73,22 @@ class LandingPage extends StatelessWidget {
       final String? accessToken =
           await Provider.of<AuthorizationService>(context, listen: false)
               .getValidAccessToken();
-      // TODO: Get User Details - friends, rooms, groups etc and populate in DB
+
       // Backend hanldes user new case :)
       // visit route `getUserDetails`
+      await fetchUserDetails(accessToken!, context);
 
-      // TODO: Get new messages if any by passing largest msgId in DB
       // visit route `getLaterMessages`
+      await fetchLaterMessages(accessToken, null, context);
 
       // Start web socket
       Provider.of<MessageExchangeStream>(context, listen: false)
-          .start('ws://localhost:8884/v1/ws', accessToken!);
+          .start('ws://localhost:8884/v1/ws', accessToken);
       final userid =
           await Provider.of<AuthorizationService>(context, listen: false)
               .getUserId();
-      Provider.of<ActiveStatusMap>(context,listen: false).add(userid);
-      Provider.of<ActiveStatusMap>(context,listen: false).update(userid, true);
+      Provider.of<ActiveStatusMap>(context, listen: false).add(userid);
+      Provider.of<ActiveStatusMap>(context, listen: false).update(userid, true);
       // Handle fcm token update
       await notifyFCMToken(
           BlocProvider.of<FcmTokenCubit>(context, listen: false), accessToken);

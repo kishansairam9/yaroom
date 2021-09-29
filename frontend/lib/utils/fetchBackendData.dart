@@ -13,10 +13,8 @@ Future<void> populateUserData(data, context) async {
   var groupsData = data['GroupData'];
   var roomsData = data['RoomData'];
   var userIdList = [];
-  await RepositoryProvider.of<AppDb>(context, listen: false).addUser(
-      userId: userData['Userid'],
-      name: userData['Name'],
-      profileImg: (userData['Image'] == null ? "" : userData['Image']));
+  await RepositoryProvider.of<AppDb>(context, listen: false)
+      .addUser(userId: userData['Userid'], name: userData['Name']);
 
   userIdList.add(userData['Userid']);
 
@@ -28,7 +26,7 @@ Future<void> populateUserData(data, context) async {
   }
 
   if (userData['Friendslist'] != null) {
-    for (var req in userData['Pendinglist']) {
+    for (var req in userData['Friendslist']) {
       await RepositoryProvider.of<AppDb>(context, listen: false)
           .addNewFriendRequest(userId: req, status: 2);
     }
@@ -40,19 +38,16 @@ Future<void> populateUserData(data, context) async {
         await RepositoryProvider.of<AppDb>(context, listen: false).createGroup(
           groupId: groupData['Groupid'],
           name: groupData['Name'],
-          groupIcon: (groupData['Image'] == null ? null : groupData['Image']),
           description: (groupData['Description'] == null
               ? null
               : groupData['Description']),
         );
         if (groupData['Userslist'] != null) {
+          print(groupData['Userslist']);
           for (var user in groupData['Userslist']) {
             if (!userIdList.contains(user['Userid'])) {
               await RepositoryProvider.of<AppDb>(context, listen: false)
-                  .addUser(
-                      userId: user['Userid'],
-                      name: user['Name'],
-                      profileImg: user['Image'] == null ? "" : user['Image']);
+                  .addUser(userId: user['Userid'], name: user['Name']);
             }
             await RepositoryProvider.of<AppDb>(context, listen: false)
                 .addUserToGroup(
@@ -68,15 +63,12 @@ Future<void> populateUserData(data, context) async {
       await RepositoryProvider.of<AppDb>(context, listen: false).createRoom(
           roomId: room['Roomid'],
           name: room['Name'],
-          description: room['Description'],
-          roomIcon: room['Image']);
+          description: room['Description']);
       if (room['Userslist'] != null) {
         for (var user in room['Userslist']) {
           if (!userIdList.contains(user['Userid'])) {
-            await RepositoryProvider.of<AppDb>(context, listen: false).addUser(
-                userId: user['Userid'],
-                name: user['Name'],
-                profileImg: user['Image'] == null ? "" : user['Image']);
+            await RepositoryProvider.of<AppDb>(context, listen: false)
+                .addUser(userId: user['Userid'], name: user['Name']);
           }
           await RepositoryProvider.of<AppDb>(context, listen: false)
               .addUserToRoom(roomsId: room['Roomid'], userId: user['Userid']);

@@ -22,10 +22,7 @@ class _ViewContactState extends State<ViewContact> {
         children: [
           Column(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
             CircleAvatar(
-              foregroundImage: this.widget.contactData.profileImg == null
-                  ? null
-                  : NetworkImage('${this.widget.contactData.profileImg}'),
-              backgroundImage: AssetImage('assets/no-profile.png'),
+              foregroundImage: iconImageWrapper(this.widget.contactData.userId),
               radius: 80,
             ),
             Padding(padding: EdgeInsets.only(top: 10, bottom: 10)),
@@ -61,8 +58,7 @@ class _ViewContactState extends State<ViewContact> {
                       onPressed: () => Navigator.of(context).pushNamed('/chat',
                           arguments: ChatPageArguments(
                               userId: this.widget.contactData.userId,
-                              name: this.widget.contactData.name,
-                              image: this.widget.contactData.profileImg)),
+                              name: this.widget.contactData.name)),
                       icon: Icon(Icons.message_rounded)),
                   Text("Message")
                 ],
