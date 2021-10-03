@@ -8,7 +8,6 @@ import 'package:yaroom/blocs/fcmToken.dart';
 import 'package:yaroom/blocs/rooms.dart';
 import 'utils/router.dart';
 import 'moor/db.dart';
-import 'fakegen.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'utils/types.dart';

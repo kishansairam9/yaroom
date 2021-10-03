@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:bubble/bubble.dart';
 import 'package:flutter/material.dart';
-// import 'package:moor/moor.dart';
+import 'package:yaroom/utils/authorizationService.dart';
 import 'package:provider/provider.dart';
 import 'package:yaroom/blocs/rooms.dart';
 import '../components/msgBox.dart';
@@ -40,8 +40,12 @@ class RoomState extends State<Room> {
 
   Future<Widget> _buildSingleMsg(
       RoomsMessage msg, var curUser, var dateStr, var time) async {
-    final userid = Provider.of<UserId>(context, listen: false);
-
+    String? accessToken =
+        await Provider.of<AuthorizationService>(context, listen: false)
+            .getValidAccessToken();
+    if (accessToken == null) {
+      Navigator.pushNamed(context, '/signin');
+    }
     if (msg.media == null) {
       if (msg.content == null) {
         return Container();
@@ -117,8 +121,12 @@ class RoomState extends State<Room> {
         );
       }
     } else {
-      var media = await http.get(Uri.parse(
-          'http://localhost:8884/testing/' + userid + '/media/' + msg.media!));
+      var media = await http.get(
+          Uri.parse('http://localhost:8884/v1/media/' + msg.media!),
+          headers: <String, String>{
+            'Content-Type': 'application/json',
+            'Authorization': "Bearer $accessToken",
+          });
       var data = jsonDecode(media.body) as Map;
       print(data);
       if (msg.content == null) {
@@ -656,18 +664,27 @@ class RoomState extends State<Room> {
   }
 
   loadMore(List<RoomsMessage> msgs) async {
-    if (moreload) {
-      final userid = Provider.of<UserId>(context, listen: false);
+    if (msgs.isNotEmpty && moreload) {
+      String? accessToken =
+          await Provider.of<AuthorizationService>(context, listen: false)
+              .getValidAccessToken();
+      if (accessToken == null) {
+        Navigator.pushNamed(context, '/signin');
+      }
       if (widget.channelId != null) {
-        var req = await http.get(Uri.parse('http://localhost:8884/testing/' +
-            userid +
-            '/getOlderMessages?msgType=RoomMessage&lastMsgId=' +
-            msgs[0].msgId +
-            '&exchangeId=' +
-            widget.roomId +
-            "@" +
-            widget.channelId! +
-            '&limit=15'));
+        var req = await http.get(
+            Uri.parse(
+                'http://localhost:8884/v1/getOlderMessages?msgType=RoomMessage&lastMsgId=' +
+                    msgs[0].msgId +
+                    '&exchangeId=' +
+                    widget.roomId +
+                    "@" +
+                    widget.channelId! +
+                    '&limit=15'),
+            headers: <String, String>{
+              'Content-Type': 'application/json',
+              'Authorization': "Bearer $accessToken",
+            });
         print("here");
         print("l" + req.body + "l");
         if (req.body != "null" || req.body != "") {

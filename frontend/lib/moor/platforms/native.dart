@@ -33,22 +33,3 @@ AppDb constructDb({bool logStatements = false, bool removeExisting = false}) {
   // }
   return AppDb(VmDatabase.memory(logStatements: logStatements));
 }
-
-Future<bool> deleteDb() async {
-  if (Platform.isIOS || Platform.isAndroid) {
-    final dataDir = await paths.getApplicationDocumentsDirectory();
-    final dbFile = File(p.join(dataDir.path, 'db.sqlite'));
-    if (dbFile.existsSync()) {
-      print("file existing, trying to delete");
-      dbFile.deleteSync();
-      print("delete done");
-    }
-  }
-  if (Platform.isMacOS || Platform.isLinux) {
-    final file = File('db.sqlite');
-    if (file.existsSync()) {
-      file.deleteSync();
-    }
-  }
-  return Future.value(true);
-}

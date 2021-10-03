@@ -2,7 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-
+import 'package:yaroom/utils/authorizationService.dart';
 import '../components/searchDelegate.dart';
 import 'package:bubble/bubble.dart';
 import 'package:flutter/material.dart';
@@ -139,12 +139,10 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
 
   Future<Widget> _buildSingleMessage(
       BuildContext context, ChatMessage msg, bool isMe) async {
-    final userid = Provider.of<UserId>(context, listen: false);
     String? accessToken =
         await Provider.of<AuthorizationService>(context, listen: false)
             .getValidAccessToken();
     if (accessToken == null) {
-      // return Future.value('/signin');
       Navigator.pushNamed(context, '/signin');
     }
     if (msg.media == null) {
@@ -158,10 +156,6 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
         );
       }
     } else {
-      // var media = await http.get(Uri.parse('http://localhost:8884/v1/testing/' +
-      //     userid +
-      //     '/media/' +
-      //     msg.media!));
       var media = await http.get(
           Uri.parse('http://localhost:8884/v1/media/' + msg.media!),
           headers: <String, String>{
@@ -302,14 +296,23 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
 
   loadMore(List<ChatMessage> msgs) async {
     if (msgs.isNotEmpty && moreload) {
-      final userid = Provider.of<UserId>(context, listen: false);
-      var req = await http.get(Uri.parse('http://localhost:8884/testing/' +
-          userid +
-          '/getOlderMessages?msgType=ChatMessage&lastMsgId=' +
-          msgs[0].msgId +
-          '&exchangeId=' +
-          getExchangeId() +
-          '&limit=15'));
+      String? accessToken =
+          await Provider.of<AuthorizationService>(context, listen: false)
+              .getValidAccessToken();
+      if (accessToken == null) {
+        Navigator.pushNamed(context, '/signin');
+      }
+      var req = await http.get(
+          Uri.parse(
+              'http://localhost:8884/v1/getOlderMessages?msgType=ChatMessage&lastMsgId=' +
+                  msgs[0].msgId +
+                  '&exchangeId=' +
+                  getExchangeId() +
+                  '&limit=15'),
+          headers: <String, String>{
+            'Content-Type': 'application/json',
+            'Authorization': "Bearer $accessToken",
+          });
       if (req.body != "null") {
         if (req.body.contains(new RegExp("{\"error\"", caseSensitive: false))) {
           return;

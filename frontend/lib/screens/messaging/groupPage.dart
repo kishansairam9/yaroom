@@ -1,5 +1,5 @@
 import 'dart:typed_data';
-
+import 'package:yaroom/utils/authorizationService.dart';
 import 'package:flutter/material.dart';
 import 'package:bubble/bubble.dart';
 import 'dart:convert';
@@ -76,8 +76,12 @@ class GroupChatPageState extends State<GroupChatPage>
 
   Future<Widget> buildSingleMsg(
       BuildContext context, GroupChatMessage msg) async {
-    final userid = Provider.of<UserId>(context, listen: false);
-
+    String? accessToken =
+        await Provider.of<AuthorizationService>(context, listen: false)
+            .getValidAccessToken();
+    if (accessToken == null) {
+      Navigator.pushNamed(context, '/signin');
+    }
     if (msg.media == null) {
       if (msg.content == null) {
         return Container();
@@ -91,8 +95,12 @@ class GroupChatPageState extends State<GroupChatPage>
             ));
       }
     } else {
-      var media = await http.get(Uri.parse(
-          'http://localhost:8884/testing/' + userid + '/media/' + msg.media!));
+      var media = await http.get(
+          Uri.parse('http://localhost:8884/v1/media/' + msg.media!),
+          headers: <String, String>{
+            'Content-Type': 'application/json',
+            'Authorization': "Bearer $accessToken",
+          });
       var data = jsonDecode(media.body) as Map;
       if (msg.content == null) {
         var temp = data['name'].split(".");
@@ -302,14 +310,23 @@ class GroupChatPageState extends State<GroupChatPage>
   final GlobalKey<ScaffoldState> _scaffoldkey = new GlobalKey();
   loadMore(List<GroupChatMessage> msgs) async {
     if (msgs.isNotEmpty && moreload) {
-      final userid = Provider.of<UserId>(context, listen: false);
-      var req = await http.get(Uri.parse('http://localhost:8884/testing/' +
-          userid +
-          '/getOlderMessages?msgType=GroupMessage&lastMsgId=' +
-          msgs[0].msgId +
-          '&exchangeId=' +
-          widget.groupId +
-          '&limit=15'));
+      String? accessToken =
+          await Provider.of<AuthorizationService>(context, listen: false)
+              .getValidAccessToken();
+      if (accessToken == null) {
+        Navigator.pushNamed(context, '/signin');
+      }
+      var req = await http.get(
+          Uri.parse(
+              'http://localhost:8884/v1/getOlderMessages?msgType=GroupMessage&lastMsgId=' +
+                  msgs[0].msgId +
+                  '&exchangeId=' +
+                  widget.groupId +
+                  '&limit=15'),
+          headers: <String, String>{
+            'Content-Type': 'application/json',
+            'Authorization': "Bearer $accessToken",
+          });
       if (req.body != "null") {
         if (req.body.contains(new RegExp("{\"error\"", caseSensitive: false))) {
           return;

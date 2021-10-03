@@ -3,7 +3,6 @@ import 'package:bottom_navy_bar/bottom_navy_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:yaroom/blocs/activeStatus.dart';
 import 'package:yaroom/blocs/rooms.dart';
-import 'package:yaroom/moor/platforms/native.dart';
 import 'components/searchDelegate.dart';
 import 'package:yaroom/blocs/fcmToken.dart';
 import 'package:yaroom/screens/components/contactView.dart';
@@ -372,7 +371,10 @@ class HomePageState extends State<HomePage> {
                           await Provider.of<AuthorizationService>(context,
                                   listen: false)
                               .logout(context);
-                          await deleteDb();
+                          await Provider.of<AppDb>(context, listen: false)
+                              .deleteAll();
+                          await Provider.of<AppDb>(context, listen: false)
+                              .createAll();
                           await Navigator.of(context)
                               .pushNamedAndRemoveUntil('/signin', (_) => false);
                         },
