@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/gocql/gocql"
 	"github.com/rs/xid"
@@ -104,9 +105,9 @@ func setupDB() {
 
 type User_udt struct {
 	gocqlx.UDT
-	Userid string  `json:"userId"`
-	Name   string  `json:"name"`
-	Image  *string `json:"profileImg"`
+	Userid string  `json:"userId" db:"userid"`
+	Name   string  `json:"name" db:"name"`
+	Image  *string `json:"profileImg" db:"image"`
 }
 
 // MarshalUDT implements UDTMarshaler.
@@ -154,6 +155,7 @@ type UserDetails struct {
 	UserData  UserMetadata
 	GroupData []GroupMetadata
 	RoomData  []RoomMetadata
+	Users     []User
 }
 
 type UserFCMTokenUpdate struct {
@@ -179,6 +181,11 @@ type PendingListOfUserUpdate struct {
 type UsersListOfGroupUpdate struct {
 	Groupid   string
 	Userslist []User_udt
+}
+
+type User struct {
+	Userid string `json:"userId"`
+	Name   string `json:"name"`
 }
 
 func updateUserMetadata(data *UserMetadata) error {
@@ -342,6 +349,13 @@ func getUserDetails(userId string) (*UserDetails, error) {
 	var ret UserDetails
 	ret.UserData = *userMeta
 	ret.GroupData = make([]GroupMetadata, 0)
+	usersList := make([]string, 0)
+	usersList = append(usersList, userMeta.Friendslist...)
+	usersList = append(usersList, userMeta.Pendinglist...)
+	ret.Users, err = getUsers(usersList)
+	if err != nil {
+		log.Error().Str("where", "get users").Str("type", "error occured in retrieving friends and pending users").Msg(err.Error())
+	}
 	for _, group := range userMeta.Groupslist {
 		val, err := getGroupMetadata(group)
 		if err != nil {
@@ -526,4 +540,30 @@ func removeFCMToken(tok *UserFCMTokenUpdate) error {
 		return errors.New("internal server error")
 	}
 	return nil
+}
+
+func getUsers(userList []string) ([]User, error) {
+	final := "("
+	final += "'" + strings.Join(userList, "', '") + "'"
+	final += ")"
+	in := dbSession.Query(qb.Select("yaroom.users").Columns("userid", "name").Where(qb.InLit("userid", final)).AllowFiltering().ToCql())
+	rows := make([]User, 1)
+	if err := in.SelectRelease(&rows); err != nil {
+		log.Error().Str("where", "getting user data").Str("type", "failed to execute query").Msg(err.Error())
+		return nil, err
+	}
+	return rows, nil
+}
+
+func getFriends(userid string) ([]string, error) {
+	friends, err := selectUserFriend(userid)
+	pending, err := selectUserPendingRequest(userid)
+	usersList := []string{}
+	for _, user := range friends[0].Friendslist {
+		usersList = append(usersList, user)
+	}
+	for _, user := range pending[0].Pendinglist {
+		usersList = append(usersList, user)
+	}
+	return usersList, err
 }
