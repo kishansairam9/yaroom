@@ -12,27 +12,33 @@ Future<void> populateUserData(data, context) async {
   var userData = data['UserData'];
   var groupsData = data['GroupData'];
   var roomsData = data['RoomData'];
+  var usersList = data["Users"];
   var userIdList = [];
   await RepositoryProvider.of<AppDb>(context, listen: false)
       .addUser(userId: userData['Userid'], name: userData['Name']);
 
-  userIdList.add(userData['Userid']);
+  for (var user in usersList) {
+    if (!userIdList.contains(user["userId"])) {
+      userIdList.add(user.Userid);
+      await RepositoryProvider.of<AppDb>(context, listen: false)
+          .addUser(userId: user['userId'], name: user['name']);
+    }
+  }
 
   if (userData['Pendinglist'] != null) {
-    for (var req in userData['Pendinglist']) {
+    for (var user in userData['Pendinglist']) {
       await RepositoryProvider.of<AppDb>(context, listen: false)
-          .addNewFriendRequest(userId: req, status: 1);
+          .addNewFriendRequest(userId: user, status: 1);
     }
   }
 
   if (userData['Friendslist'] != null) {
-    for (var req in userData['Friendslist']) {
+    for (var user in userData['Friendslist']) {
       await RepositoryProvider.of<AppDb>(context, listen: false)
-          .addNewFriendRequest(userId: req, status: 2);
+          .addNewFriendRequest(userId: user, status: 2);
     }
   }
 
-  print(groupsData);
   if (groupsData != null) {
     for (var groupData in groupsData) {
       if (groupData != null) {
@@ -44,7 +50,6 @@ Future<void> populateUserData(data, context) async {
               : groupData['Description']),
         );
         if (groupData['Userslist'] != null) {
-          print(groupData['Userslist']);
           for (var user in groupData['Userslist']) {
             if (!userIdList.contains(user['userId'])) {
               await RepositoryProvider.of<AppDb>(context, listen: false)

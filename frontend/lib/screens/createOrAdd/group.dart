@@ -12,7 +12,6 @@ class CreateGroup extends StatefulWidget {
 
 class _CreateGroupState extends State<CreateGroup> {
   final _formKey = GlobalKey<FormState>();
-  List<dynamic> checklist = [];
   _addMembers() {
     showModalBottomSheet(
         context: context,
@@ -24,6 +23,14 @@ class _CreateGroupState extends State<CreateGroup> {
               builder: (BuildContext context,
                   AsyncSnapshot<List<GetFriendRequestsResult>> snapshot) {
                 if (snapshot.hasData) {
+                  var checklist = snapshot.data!
+                      .map(
+                          (e) => (this.widget.data["members"].contains(e.userId)
+                              ? CheckBox(title: e.name)
+                              : SizedBox(
+                                  height: 0,
+                                )))
+                      .toList();
                   return Scaffold(
                     appBar: AppBar(
                       leading: Builder(
@@ -40,45 +47,48 @@ class _CreateGroupState extends State<CreateGroup> {
                             ))
                       ],
                     ),
-                    body: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 16.0),
-                      child: ListView.builder(
-                          itemCount: snapshot.data!.length,
-                          itemBuilder: (context, index) {
-                            print("Hello");
-                            print(checklist);
-                            if ((snapshot.data![index].status != 2) ||
-                                (this
-                                    .widget
-                                    .data["members"]
-                                    .contains(snapshot.data![index].userId)))
-                              return const SizedBox(
-                                height: 0,
-                              );
-                            return CheckboxListTile(
-                                title: Text(snapshot.data![index].name),
-                                secondary: CircleAvatar(
-                                  backgroundColor: Colors.grey[350],
-                                  foregroundImage: iconImageWrapper(
-                                      snapshot.data![index].userId),
-                                ),
-                                value: checklist
-                                    .contains(snapshot.data![index].userId),
-                                onChanged: (_) {
-                                  setState(() {
-                                    if (checklist
-                                        .contains(snapshot.data![index].userId))
-                                      checklist.removeWhere((element) =>
-                                          element ==
-                                          snapshot.data![index].userId);
-                                    else
-                                      checklist
-                                          .add(snapshot.data![index].userId);
-                                    print(checklist);
-                                  });
-                                });
-                          }),
-                    ),
+                    body: checklist.length == 0
+                        ? Text("All your friends are added to the group!")
+                        : ListView(
+                            padding: const EdgeInsets.symmetric(vertical: 16.0),
+                            children: [...checklist],
+                            // child: ListView.builder(
+                            //     itemCount: snapshot.data!.length,
+                            //     itemBuilder: (context, index) {
+                            //       print("Hello");
+                            //       print(checklist);
+                            //       if ((snapshot.data![index].status != 2) ||
+                            //           (this
+                            //               .widget
+                            //               .data["members"]
+                            //               .contains(snapshot.data![index].userId)))
+                            //         return const SizedBox(
+                            //           height: 0,
+                            //         );
+                            //       return CheckboxListTile(
+                            //           title: Text(snapshot.data![index].name),
+                            //           secondary: CircleAvatar(
+                            //             backgroundColor: Colors.grey[350],
+                            //             foregroundImage: iconImageWrapper(
+                            //                 snapshot.data![index].userId),
+                            //           ),
+                            //           value: checklist
+                            //               .contains(snapshot.data![index].userId),
+                            //           onChanged: (_) {
+                            //             setState(() {
+                            //               if (checklist
+                            //                   .contains(snapshot.data![index].userId))
+                            //                 checklist.removeWhere((element) =>
+                            //                     element ==
+                            //                     snapshot.data![index].userId);
+                            //               else
+                            //                 checklist
+                            //                     .add(snapshot.data![index].userId);
+                            //               print(checklist);
+                            //             });
+                            //           });
+                            //     }),
+                          ),
                   );
                 } else if (snapshot.hasError) {
                   print(snapshot.error);
@@ -178,5 +188,25 @@ class _CreateGroupState extends State<CreateGroup> {
           ]),
           Row()
         ]));
+  }
+}
+
+class CheckBox extends StatefulWidget {
+  final String title;
+  bool value = false;
+  CheckBox({
+    required this.title,
+  });
+  @override
+  _CheckBoxState createState() => _CheckBoxState();
+}
+
+class _CheckBoxState extends State<CheckBox> {
+  @override
+  Widget build(BuildContext context) {
+    return CheckboxListTile(
+        value: widget.value,
+        title: Text(widget.title),
+        onChanged: (value) => setState(() => widget.value = value!));
   }
 }
