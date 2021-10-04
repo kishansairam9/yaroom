@@ -3383,24 +3383,24 @@ abstract class _$AppDb extends GeneratedDatabase {
   late final ChatMessagesTextIndex chatMessagesTextIndex =
       ChatMessagesTextIndex(this);
   late final Trigger chatMessagesTextIndexAI = Trigger(
-      'CREATE TRIGGER ChatMessagesTextIndex_AI AFTER INSERT ON ChatMessages BEGIN INSERT INTO ChatMessagesTextIndex ("rowid", msgId, fromUser, toUser, time, content, media, replyTo) VALUES (new."rowid", new.msgId, new.fromUser, new.toUser, new.time, new.content, new.media, new.replyTo);END',
+      'CREATE TRIGGER ChatMessagesTextIndex_AI AFTER INSERT ON ChatMessages BEGIN INSERT OR REPLACE INTO ChatMessagesTextIndex ("rowid", msgId, fromUser, toUser, time, content, media, replyTo) VALUES (new."rowid", new.msgId, new.fromUser, new.toUser, new.time, new.content, new.media, new.replyTo);END',
       'ChatMessagesTextIndex_AI');
   late final Trigger chatMessagesTextIndexAD = Trigger(
-      'CREATE TRIGGER ChatMessagesTextIndex_AD AFTER DELETE ON ChatMessages BEGIN INSERT INTO ChatMessagesTextIndex (ChatMessagesTextIndex, "rowid", msgId, fromUser, toUser, time, content, media, replyTo) VALUES (\'delete\', old."rowid", old.msgId, old.fromUser, old.toUser, old.time, old.content, old.media, old.replyTo);END',
+      'CREATE TRIGGER ChatMessagesTextIndex_AD AFTER DELETE ON ChatMessages BEGIN INSERT OR REPLACE INTO ChatMessagesTextIndex (ChatMessagesTextIndex, "rowid", msgId, fromUser, toUser, time, content, media, replyTo) VALUES (\'delete\', old."rowid", old.msgId, old.fromUser, old.toUser, old.time, old.content, old.media, old.replyTo);END',
       'ChatMessagesTextIndex_AD');
   late final Trigger chatMessagesTextIndexAU = Trigger(
-      'CREATE TRIGGER ChatMessagesTextIndex_AU AFTER UPDATE ON ChatMessages BEGIN INSERT INTO ChatMessagesTextIndex (ChatMessagesTextIndex, "rowid", msgId, fromUser, toUser, time, content, media, replyTo) VALUES (\'delete\', old."rowid", old.msgId, old.fromUser, old.toUser, old.time, old.content, old.media, old.replyTo);INSERT INTO ChatMessagesTextIndex ("rowid", msgId, fromUser, toUser, time, content, media, replyTo) VALUES (new."rowid", new.msgId, new.fromUser, new.toUser, new.time, new.content, new.media, new.replyTo);END',
+      'CREATE TRIGGER ChatMessagesTextIndex_AU AFTER UPDATE ON ChatMessages BEGIN INSERT OR REPLACE INTO ChatMessagesTextIndex (ChatMessagesTextIndex, "rowid", msgId, fromUser, toUser, time, content, media, replyTo) VALUES (\'delete\', old."rowid", old.msgId, old.fromUser, old.toUser, old.time, old.content, old.media, old.replyTo);INSERT OR REPLACE INTO ChatMessagesTextIndex ("rowid", msgId, fromUser, toUser, time, content, media, replyTo) VALUES (new."rowid", new.msgId, new.fromUser, new.toUser, new.time, new.content, new.media, new.replyTo);END',
       'ChatMessagesTextIndex_AU');
   late final GroupChatMessagesTextIndex groupChatMessagesTextIndex =
       GroupChatMessagesTextIndex(this);
   late final Trigger groupChatMessagesTextIndexAI = Trigger(
-      'CREATE TRIGGER GroupChatMessagesTextIndex_AI AFTER INSERT ON GroupChatMessages BEGIN INSERT INTO GroupChatMessagesTextIndex ("rowid", msgId, groupId, fromUser, time, content, media, replyTo) VALUES (new."rowid", new.msgId, new.groupId, new.fromUser, new.time, new.content, new.media, new.replyTo);END',
+      'CREATE TRIGGER GroupChatMessagesTextIndex_AI AFTER INSERT ON GroupChatMessages BEGIN INSERT OR REPLACE INTO GroupChatMessagesTextIndex ("rowid", msgId, groupId, fromUser, time, content, media, replyTo) VALUES (new."rowid", new.msgId, new.groupId, new.fromUser, new.time, new.content, new.media, new.replyTo);END',
       'GroupChatMessagesTextIndex_AI');
   late final Trigger groupChatMessagesTextIndexAD = Trigger(
-      'CREATE TRIGGER GroupChatMessagesTextIndex_AD AFTER DELETE ON GroupChatMessages BEGIN INSERT INTO GroupChatMessagesTextIndex (GroupChatMessagesTextIndex, "rowid", msgId, groupId, fromUser, time, content, media, replyTo) VALUES (\'delete\', old."rowid", old.msgId, old.groupId, old.fromUser, old.time, old.content, old.media, old.replyTo);END',
+      'CREATE TRIGGER GroupChatMessagesTextIndex_AD AFTER DELETE ON GroupChatMessages BEGIN INSERT OR REPLACE INTO GroupChatMessagesTextIndex (GroupChatMessagesTextIndex, "rowid", msgId, groupId, fromUser, time, content, media, replyTo) VALUES (\'delete\', old."rowid", old.msgId, old.groupId, old.fromUser, old.time, old.content, old.media, old.replyTo);END',
       'GroupChatMessagesTextIndex_AD');
   late final Trigger groupChatMessagesTextIndexAU = Trigger(
-      'CREATE TRIGGER GroupChatMessagesTextIndex_AU AFTER UPDATE ON GroupChatMessages BEGIN INSERT INTO GroupChatMessagesTextIndex (GroupChatMessagesTextIndex, "rowid", msgId, groupId, fromUser, time, content, media, replyTo) VALUES (\'delete\', old."rowid", old.msgId, old.groupId, old.fromUser, old.time, old.content, old.media, old.replyTo);INSERT INTO GroupChatMessagesTextIndex ("rowid", msgId, groupId, fromUser, time, content, media, replyTo) VALUES (new."rowid", new.msgId, new.groupId, new.fromUser, new.time, new.content, new.media, new.replyTo);END',
+      'CREATE TRIGGER GroupChatMessagesTextIndex_AU AFTER UPDATE ON GroupChatMessages BEGIN INSERT OR REPLACE INTO GroupChatMessagesTextIndex (GroupChatMessagesTextIndex, "rowid", msgId, groupId, fromUser, time, content, media, replyTo) VALUES (\'delete\', old."rowid", old.msgId, old.groupId, old.fromUser, old.time, old.content, old.media, old.replyTo);INSERT OR REPLACE INTO GroupChatMessagesTextIndex ("rowid", msgId, groupId, fromUser, time, content, media, replyTo) VALUES (new."rowid", new.msgId, new.groupId, new.fromUser, new.time, new.content, new.media, new.replyTo);END',
       'GroupChatMessagesTextIndex_AU');
   late final FriendRequests friendRequests = FriendRequests(this);
   late final GroupUserMapping groupUserMapping = GroupUserMapping(this);
@@ -3411,7 +3411,7 @@ abstract class _$AppDb extends GeneratedDatabase {
   Future<int> addUser(
       {required String userId, required String name, String? about}) {
     return customInsert(
-      'INSERT INTO Users VALUES (?1, ?2, ?3)',
+      'INSERT OR REPLACE INTO Users (userId, name, about) VALUES (?1, ?2, ?3)',
       variables: [
         Variable<String>(userId),
         Variable<String>(name),
@@ -3486,7 +3486,7 @@ abstract class _$AppDb extends GeneratedDatabase {
   Future<int> addNewFriendRequest(
       {required String userId, required int status}) {
     return customInsert(
-      'INSERT INTO FriendRequests VALUES (?1, ?2)',
+      'INSERT OR REPLACE INTO FriendRequests VALUES (?1, ?2)',
       variables: [Variable<String>(userId), Variable<int>(status)],
       updates: {friendRequests},
     );
@@ -3505,7 +3505,7 @@ abstract class _$AppDb extends GeneratedDatabase {
   Future<int> createGroup(
       {required String groupId, required String name, String? description}) {
     return customInsert(
-      'INSERT INTO GroupDMs VALUES (?1, ?2, ?3)',
+      'INSERT OR REPLACE INTO GroupDMs VALUES (?1, ?2, ?3)',
       variables: [
         Variable<String>(groupId),
         Variable<String>(name),
@@ -3529,7 +3529,7 @@ abstract class _$AppDb extends GeneratedDatabase {
   Future<int> addUserToGroup(
       {required String groupId, required String userId}) {
     return customInsert(
-      'INSERT INTO GroupUserMapping VALUES (?1, ?2)',
+      'INSERT OR REPLACE INTO GroupUserMapping VALUES (?1, ?2)',
       variables: [Variable<String>(groupId), Variable<String>(userId)],
       updates: {groupUserMapping},
     );
@@ -3589,7 +3589,7 @@ abstract class _$AppDb extends GeneratedDatabase {
       String? media,
       String? replyTo}) {
     return customInsert(
-      'INSERT INTO GroupChatMessages VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)',
+      'INSERT OR REPLACE INTO GroupChatMessages VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)',
       variables: [
         Variable<String>(msgId),
         Variable<String>(groupId),
@@ -3623,7 +3623,7 @@ abstract class _$AppDb extends GeneratedDatabase {
       String? media,
       String? replyTo}) {
     return customInsert(
-      'INSERT INTO ChatMessages VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)',
+      'INSERT OR REPLACE INTO ChatMessages VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)',
       variables: [
         Variable<String>(msgId),
         Variable<String>(fromUser),
@@ -3682,7 +3682,7 @@ abstract class _$AppDb extends GeneratedDatabase {
   Future<int> createRoom(
       {required String roomId, required String name, String? description}) {
     return customInsert(
-      'INSERT INTO RoomsList VALUES (?1, ?2, ?3)',
+      'INSERT OR REPLACE INTO RoomsList VALUES (?1, ?2, ?3)',
       variables: [
         Variable<String>(roomId),
         Variable<String>(name),
@@ -3704,7 +3704,7 @@ abstract class _$AppDb extends GeneratedDatabase {
 
   Future<int> addUserToRoom({required String roomsId, required String userId}) {
     return customInsert(
-      'INSERT INTO RoomsUserMapping VALUES (?1, ?2)',
+      'INSERT OR REPLACE INTO RoomsUserMapping VALUES (?1, ?2)',
       variables: [Variable<String>(roomsId), Variable<String>(userId)],
       updates: {roomsUserMapping},
     );
@@ -3739,7 +3739,7 @@ abstract class _$AppDb extends GeneratedDatabase {
       required String channelId,
       required String channelName}) {
     return customInsert(
-      'INSERT INTO RoomsChannels VALUES (?1, ?2, ?3)',
+      'INSERT OR REPLACE INTO RoomsChannels VALUES (?1, ?2, ?3)',
       variables: [
         Variable<String>(roomId),
         Variable<String>(channelId),
@@ -3783,7 +3783,7 @@ abstract class _$AppDb extends GeneratedDatabase {
       String? media,
       String? replyTo}) {
     return customInsert(
-      'INSERT INTO RoomsMessages VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)',
+      'INSERT OR REPLACE INTO RoomsMessages VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)',
       variables: [
         Variable<String>(msgId),
         Variable<String>(roomId),

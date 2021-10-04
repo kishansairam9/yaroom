@@ -77,31 +77,31 @@ CREATE VIRTUAL TABLE GroupChatMessagesTextIndex USING fts5(msgId UNINDEXED, grou
 
 -- Triggers to keep index in sync
 CREATE TRIGGER ChatMessagesTextIndex_AI AFTER INSERT ON ChatMessages BEGIN
-    INSERT INTO ChatMessagesTextIndex(rowid, msgId, fromUser, toUser, time, content, media, replyTo) VALUES (new.rowid, new.msgId, new.fromUser, new.toUser, new.time, new.content, new.media, new.replyTo);
+    INSERT OR REPLACE INTO ChatMessagesTextIndex(rowid, msgId, fromUser, toUser, time, content, media, replyTo) VALUES (new.rowid, new.msgId, new.fromUser, new.toUser, new.time, new.content, new.media, new.replyTo);
 END;
 
 CREATE TRIGGER ChatMessagesTextIndex_AD AFTER DELETE ON ChatMessages BEGIN
-    INSERT INTO ChatMessagesTextIndex(ChatMessagesTextIndex, rowid, msgId, fromUser, toUser, time, content, media, replyTo) VALUES ('delete', old.rowid, old.msgId, old.fromUser, old.toUser, old.time, old.content, old.media, old.replyTo);
+    INSERT OR REPLACE INTO ChatMessagesTextIndex(ChatMessagesTextIndex, rowid, msgId, fromUser, toUser, time, content, media, replyTo) VALUES ('delete', old.rowid, old.msgId, old.fromUser, old.toUser, old.time, old.content, old.media, old.replyTo);
 END;
 
 CREATE TRIGGER ChatMessagesTextIndex_AU AFTER UPDATE ON ChatMessages BEGIN
-    INSERT INTO ChatMessagesTextIndex(ChatMessagesTextIndex, rowid, msgId, fromUser, toUser, time, content, media, replyTo) VALUES ('delete', old.rowid, old.msgId, old.fromUser, old.toUser, old.time, old.content, old.media, old.replyTo);
-    INSERT INTO ChatMessagesTextIndex(rowid, msgId, fromUser, toUser, time, content, media, replyTo) VALUES (new.rowid, new.msgId, new.fromUser, new.toUser, new.time, new.content, new.media, new.replyTo);
+    INSERT OR REPLACE INTO ChatMessagesTextIndex(ChatMessagesTextIndex, rowid, msgId, fromUser, toUser, time, content, media, replyTo) VALUES ('delete', old.rowid, old.msgId, old.fromUser, old.toUser, old.time, old.content, old.media, old.replyTo);
+    INSERT OR REPLACE INTO ChatMessagesTextIndex(rowid, msgId, fromUser, toUser, time, content, media, replyTo) VALUES (new.rowid, new.msgId, new.fromUser, new.toUser, new.time, new.content, new.media, new.replyTo);
 END;
 
 
 -- Group chat messages Indexes
 CREATE TRIGGER GroupChatMessagesTextIndex_AI AFTER INSERT ON GroupChatMessages BEGIN
-    INSERT INTO GroupChatMessagesTextIndex(rowid, msgId, groupId, fromUser, time, content, media, replyTo) VALUES (new.rowid, new.msgId, new.groupId, new.fromUser, new.time, new.content, new.media, new.replyTo);
+    INSERT OR REPLACE INTO GroupChatMessagesTextIndex(rowid, msgId, groupId, fromUser, time, content, media, replyTo) VALUES (new.rowid, new.msgId, new.groupId, new.fromUser, new.time, new.content, new.media, new.replyTo);
 END;
 
 CREATE TRIGGER GroupChatMessagesTextIndex_AD AFTER DELETE ON GroupChatMessages BEGIN
-    INSERT INTO GroupChatMessagesTextIndex(GroupChatMessagesTextIndex, rowid, msgId, groupId, fromUser, time, content, media, replyTo) VALUES ('delete', old.rowid, old.msgId, old.groupId, old.fromUser, old.time, old.content, old.media, old.replyTo);
+    INSERT OR REPLACE INTO GroupChatMessagesTextIndex(GroupChatMessagesTextIndex, rowid, msgId, groupId, fromUser, time, content, media, replyTo) VALUES ('delete', old.rowid, old.msgId, old.groupId, old.fromUser, old.time, old.content, old.media, old.replyTo);
 END;
 
 CREATE TRIGGER GroupChatMessagesTextIndex_AU AFTER UPDATE ON GroupChatMessages BEGIN
-    INSERT INTO GroupChatMessagesTextIndex(GroupChatMessagesTextIndex, rowid, msgId, groupId, fromUser, time, content, media, replyTo) VALUES ('delete', old.rowid, old.msgId, old.groupId, old.fromUser, old.time, old.content, old.media, old.replyTo);
-    INSERT INTO GroupChatMessagesTextIndex(rowid, msgId, groupId, fromUser, time, content, media, replyTo) VALUES (new.rowid, new.msgId, new.groupId, new.fromUser, new.time, new.content, new.media, new.replyTo);
+    INSERT OR REPLACE INTO GroupChatMessagesTextIndex(GroupChatMessagesTextIndex, rowid, msgId, groupId, fromUser, time, content, media, replyTo) VALUES ('delete', old.rowid, old.msgId, old.groupId, old.fromUser, old.time, old.content, old.media, old.replyTo);
+    INSERT OR REPLACE INTO GroupChatMessagesTextIndex(rowid, msgId, groupId, fromUser, time, content, media, replyTo) VALUES (new.rowid, new.msgId, new.groupId, new.fromUser, new.time, new.content, new.media, new.replyTo);
 END;
 
 -------------
@@ -160,7 +160,7 @@ CREATE TABLE RoomsMessages (
 -------------
 -- User Table
 -------------
-addUser(:userId AS TEXT, :name AS TEXT, :about AS TEXT OR NULL): INSERT into Users VALUES (:userId, :name, :about);
+addUser(:userId AS TEXT, :name AS TEXT, :about AS TEXT OR NULL): INSERT OR REPLACE INTO Users(userId, name, about) VALUES (:userId, :name, :about);
 
 getAllUsers: SELECT * FROM Users;
 getUserById(:userId AS TEXT): SELECT * FROM Users WHERE userId = :userId;
@@ -172,20 +172,20 @@ getUsersNameMatching(:match AS TEXT): SELECT * FROM Users WHERE LOWER(name) LIKE
 getFriends: SELECT U.* FROM Users AS U, (SELECT userId AS id FROM FriendRequests WHERE (status = 2)) AS F WHERE (U.userId = F.id);  
 getFriendStatus(:userId as TEXT): SELECT status FROM FriendRequests WHERE (userId = :userId);
 getFriendRequests: SELECT U.*, F.status FROM Users AS U, (SELECT * FROM FriendRequests) AS F WHERE (U.userId = F.userId);  
-addNewFriendRequest(:userId as TEXT, :status as INT): INSERT INTO FriendRequests VALUES (:userId, :status);
+addNewFriendRequest(:userId as TEXT, :status as INT): INSERT OR REPLACE INTO FriendRequests VALUES (:userId, :status);
 updateFriendRequest(:userId as TEXT, :status as INT): UPDATE FriendRequests SET status = :status WHERE (userId = :userId);
 
 -------------
 -- Groups Table
 -------------
-createGroup(:groupId AS TEXT, :name AS TEXT, :description AS TEXT OR NULL): INSERT into GroupDMs VALUES (:groupId, :name, :description);
+createGroup(:groupId AS TEXT, :name AS TEXT, :description AS TEXT OR NULL): INSERT OR REPLACE INTO GroupDMs VALUES (:groupId, :name, :description);
 getGroupsNameMatching(:match AS TEXT): SELECT * FROM GroupDMs WHERE LOWER(name) LIKE '%' || :match || '%';
 
 
 -------------
 -- Group-User Mapping Table
 -------------
-addUserToGroup(:groupId AS TEXT, :userId AS TEXT): INSERT into GroupUserMapping VALUES (:groupId, :userId);
+addUserToGroup(:groupId AS TEXT, :userId AS TEXT): INSERT OR REPLACE INTO GroupUserMapping VALUES (:groupId, :userId);
 removeUserFromGroup(:groupId AS TEXT, :userId AS TEXT): DELETE from GroupUserMapping WHERE ((userId = :userId) AND (groupId = :groupId));
 
 
@@ -197,7 +197,7 @@ getGroupMembers(:groupID AS TEXT): SELECT U.* FROM Users AS U, (SELECT DISTINCT 
 -- Group Chat Messages Table
 -------------
 getGroupChat(:groupId AS TEXT): SELECT * FROM GroupChatMessages WHERE groupId = :groupId ORDER BY msgId;
-insertGroupChatMessage(:msgId AS TEXT, :groupId AS TEXT, :fromUser AS TEXT, :time AS DATETIME, :content AS TEXT OR NULL, :media AS TEXT OR NULL, :replyTo AS TEXT OR NULL): INSERT INTO GroupChatMessages VALUES (:msgId, :groupId, :fromUser, :time, :content, :media, :replyTo);
+insertGroupChatMessage(:msgId AS TEXT, :groupId AS TEXT, :fromUser AS TEXT, :time AS DATETIME, :content AS TEXT OR NULL, :media AS TEXT OR NULL, :replyTo AS TEXT OR NULL): INSERT OR REPLACE INTO GroupChatMessages VALUES (:msgId, :groupId, :fromUser, :time, :content, :media, :replyTo);
 
 --------------
 -- DM Messages
@@ -205,7 +205,7 @@ insertGroupChatMessage(:msgId AS TEXT, :groupId AS TEXT, :fromUser AS TEXT, :tim
 
 getUserChat(:otherUser AS TEXT): SELECT * FROM ChatMessages WHERE fromUser = :otherUser OR toUser = :otherUser ORDER BY msgId;
 
-insertMessage(:msgId AS TEXT, :fromUser AS TEXT, :toUser AS TEXT, :time AS DATETIME, :content AS TEXT OR NULL, :media AS TEXT OR NULL, :replyTo AS TEXT OR NULL): INSERT INTO ChatMessages VALUES (:msgId, :fromUser, :toUser, :time, :content, :media, :replyTo);
+insertMessage(:msgId AS TEXT, :fromUser AS TEXT, :toUser AS TEXT, :time AS DATETIME, :content AS TEXT OR NULL, :media AS TEXT OR NULL, :replyTo AS TEXT OR NULL): INSERT OR REPLACE INTO ChatMessages VALUES (:msgId, :fromUser, :toUser, :time, :content, :media, :replyTo);
 
 -- Search
 -- Possible BUG! -> if 'uvw AND xyz' is search string then the query we execute searchs for match of both 'uvw' and 'xyz'
@@ -216,14 +216,14 @@ searchGroupChatMessages(:query AS TEXT, :limit AS INT OR NULL): SELECT c.content
 --------
 -- Rooms
 --------
-createRoom(:roomId AS TEXT, :name AS TEXT, :description AS TEXT OR NULL): INSERT into RoomsList VALUES (:roomId, :name, :description);
+createRoom(:roomId AS TEXT, :name AS TEXT, :description AS TEXT OR NULL): INSERT OR REPLACE INTO RoomsList VALUES (:roomId, :name, :description);
 
 getRoomDetails(:roomId AS TEXT): SELECT * FROM RoomsList WHERE roomId = :roomId;
 
 -------------
 -- Rooms-User Mapping Table
 -------------
-addUserToRoom(:roomId AS TEXT, :userId AS TEXT): INSERT into RoomsUserMapping VALUES (:roomsId, :userId);
+addUserToRoom(:roomId AS TEXT, :userId AS TEXT): INSERT OR REPLACE INTO RoomsUserMapping VALUES (:roomsId, :userId);
 
 getRoomsOfUser(:userID AS TEXT): SELECT DISTINCT R.roomId, R.name, R.description FROM RoomsList AS R INNER JOIN RoomsUserMapping as RM ON R.roomId = RM.roomId WHERE RM.userId = :userID;   
 
@@ -232,14 +232,14 @@ getRoomMembers(:roomID AS TEXT): SELECT U.* FROM Users AS U, (SELECT DISTINCT us
 -------------
 -- Rooms-Channels Mapping Table
 -------------
-addChannelsToRoom(:channelId AS TEXT, :roomId AS TEXT, :channelName as TEXT): INSERT into RoomsChannels VALUES (:roomId, :channelId, :channelName);
+addChannelsToRoom(:channelId AS TEXT, :roomId AS TEXT, :channelName as TEXT): INSERT OR REPLACE INTO RoomsChannels VALUES (:roomId, :channelId, :channelName);
 
 getChannelsOfRoom(:roomID AS TEXT): SELECT RC.* FROM RoomsChannels AS RC WHERE RC.roomId = :roomID;
 getChannelName(:roomId AS TEXT, :channelId AS TEXT): SELECT * FROM RoomsChannels WHERE roomId = :roomId AND channelId = :channelId;
 -------------
 -- Rooms Channel-wise Messages Table
 -------------
-insertRoomsChannelMessage(:msgId AS TEXT, :roomID AS TEXT, :channelId AS TEXT, :fromUser AS TEXT, :time AS DATETIME, :content AS TEXT OR NULL, :media AS TEXT OR NULL, :replyTo AS TEXT OR NULL): INSERT INTO RoomsMessages VALUES (:msgId, :roomId, :channelId,:fromUser, :time, :content, :media, :replyTo);
+insertRoomsChannelMessage(:msgId AS TEXT, :roomID AS TEXT, :channelId AS TEXT, :fromUser AS TEXT, :time AS DATETIME, :content AS TEXT OR NULL, :media AS TEXT OR NULL, :replyTo AS TEXT OR NULL): INSERT OR REPLACE INTO RoomsMessages VALUES (:msgId, :roomId, :channelId,:fromUser, :time, :content, :media, :replyTo);
 
 getRoomChannelChat(:roomId AS TEXT, :channelId AS TEXT): SELECT * FROM RoomsMessages WHERE roomId = :roomId AND channelId = :channelId ORDER BY msgId;
 
