@@ -465,8 +465,12 @@ class GroupChatPageState extends State<GroupChatPage>
                           ]);
                     });
               } else if (selection == 2) {
-                Navigator.pushNamed(context, '/editgroup',
-                    arguments: {"group": widget, "members": members});
+                Navigator.pushReplacementNamed(context, '/editgroup',
+                    arguments: {"group": {                "groupId" : widget.groupId,
+                      "name" : widget.name,
+                      "groupIcon" : widget.image,
+                      "description" : widget.description 
+                    } , "members": members});
               }
             },
             itemBuilder: (context) => [

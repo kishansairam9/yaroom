@@ -119,6 +119,16 @@ class FilePickerCubit extends Cubit<FilePickerDetails> {
   }
 }
 
+class IconPickerCubit extends Cubit<FilePickerDetails> {
+  IconPickerCubit({required FilePickerDetails initialState})
+      : super(initialState);
+
+  void updateFilePicker(
+      {required Map<dynamic, dynamic> media, required int filesAttached}) {
+    emit(FilePickerDetails(media: media, filesAttached: filesAttached));
+  }
+}
+
 class GroupChatPageArguments {
   late final String groupId, name;
   late final String? image, description;

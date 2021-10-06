@@ -41,7 +41,7 @@ class _CreateGroupState extends State<CreateGroup> {
     FilePickerResult? _paths = await FilePicker.platform
         .pickFiles(type: FileType.image, allowMultiple: false, withData: false);
     if (_paths != null) {
-      media['iconId'] = this.widget.data["group"].groupId;
+      media['iconId'] = this.widget.data["group"]["groupId"];
       File? croppedFile = await ImageCropper.cropImage(
           sourcePath: _paths.files.first.path!,
           compressFormat: ImageCompressFormat.jpg,
@@ -95,12 +95,12 @@ class _CreateGroupState extends State<CreateGroup> {
                               await editGroup(
                                   jsonEncode(<String, dynamic>{
                                     "groupId":
-                                        this.widget.data["group"].groupId,
-                                    "name": this.widget.data["group"].name,
+                                        this.widget.data["group"]["groupId"],
+                                    "name": this.widget.data["group"]["name"],
                                     "description":
-                                        this.widget.data["group"].description,
+                                        this.widget.data["group"]["description"],
                                     "groupIcon":
-                                        this.widget.data["group"].groupIcon,
+                                        this.widget.data["group"]["groupIcon"],
                                     "groupMembers":
                                         checklist.map((e) => e.id).toList()
                                   }),
@@ -110,7 +110,7 @@ class _CreateGroupState extends State<CreateGroup> {
                                         listen: false)
                                     .addUserToGroup(
                                         groupId:
-                                            this.widget.data["group"].groupId,
+                                            this.widget.data["group"]["groupId"],
                                         userId: user.id);
                               }
                               Navigator.pop(context);
@@ -145,10 +145,10 @@ class _CreateGroupState extends State<CreateGroup> {
 
   _createForm() {
     var _groupData = {
-      "groupId": this.widget.data["group"].groupId,
-      "name": this.widget.data["group"].name,
-      "description": this.widget.data["group"].description,
-      "groupIcon": this.widget.data["group"].image,
+      "groupId": this.widget.data["group"]["groupId"],
+      "name": this.widget.data["group"]["name"],
+      "description": this.widget.data["group"]["description"],
+      "groupIcon": this.widget.data["group"]["groupIcon"],
     };
     return Form(
       key: _formKey,
@@ -159,7 +159,7 @@ class _CreateGroupState extends State<CreateGroup> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             TextFormField(
-              initialValue: this.widget.data["group"].name,
+              initialValue: this.widget.data["group"]["name"],
               decoration: const InputDecoration(
                   icon: Icon(Icons.person_add), labelText: 'Enter Group Name'),
               validator: (value) {
@@ -172,7 +172,7 @@ class _CreateGroupState extends State<CreateGroup> {
               },
             ),
             TextFormField(
-              initialValue: this.widget.data["group"].description,
+              initialValue: this.widget.data["group"]["description"],
               decoration: const InputDecoration(
                   icon: Icon(Icons.text_snippet),
                   labelText: 'Enter Group Description'),
@@ -193,7 +193,7 @@ class _CreateGroupState extends State<CreateGroup> {
                     _formKey.currentState!.save();
                     await editGroup(
                         jsonEncode(<String, dynamic>{
-                          "groupId": this.widget.data["group"].groupId,
+                          "groupId": this.widget.data["group"]["groupId"],
                           "name": _groupData["name"],
                           "description": _groupData["description"],
                           "groupIcon": _groupData["groupIcon"],
@@ -202,7 +202,7 @@ class _CreateGroupState extends State<CreateGroup> {
                         context);
                     await RepositoryProvider.of<AppDb>(context, listen: false)
                         .createGroup(
-                            groupId: this.widget.data["group"].groupId,
+                            groupId: this.widget.data["group"]["groupId"],
                             name: _groupData["name"],
                             description: _groupData["description"]);
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -225,9 +225,17 @@ class _CreateGroupState extends State<CreateGroup> {
         appBar: AppBar(
           leading: Builder(
               builder: (context) => IconButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () async {
+                    await Navigator.pushReplacementNamed(context, '/groupchat',
+                      arguments: GroupChatPageArguments(
+      groupId: this.widget.data["group"]["groupId"],
+      name: this.widget.data["group"]["name"],
+      description: this.widget.data["group"]["description"],
+      image: this.widget.data["group"]["groupIcon"],
+    ));
+                  },
                   icon: Icon(Icons.arrow_back))),
-          title: Text(this.widget.data["group"].groupId == ""
+          title: Text(this.widget.data["group"]["groupId"] == ""
               ? "Create Group"
               : "Group Settings"),
           actions: [
@@ -255,7 +263,7 @@ class _CreateGroupState extends State<CreateGroup> {
                           height: 300,
                           width: 300,
                           image: iconImageWrapper(
-                              this.widget.data["group"].groupId));
+                              this.widget.data["group"]["groupId"]));
                     }
                     return CircularProgressIndicator();
                   }),
