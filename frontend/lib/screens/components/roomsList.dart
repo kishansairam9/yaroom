@@ -64,7 +64,7 @@ class RoomTileState extends State<RoomTile> {
     return Column(children: [
       CircleAvatar(
           backgroundColor: Colors.grey[350],
-          foregroundImage: iconImageWrapper(widget.image),
+          foregroundImage: iconImageWrapper(widget.roomId),
           radius: 27.0,
           child: GestureDetector(onTap: () {
             BlocProvider.of<RoomsCubit>(context, listen: false)

@@ -59,6 +59,16 @@ class AuthorizationService {
     return userId;
   }
 
+  Future<String> getName() async {
+    final String? idToken = await secureStorageService.getIdToken();
+
+    while (!(idToken != null && idToken.isNotEmpty)) {
+      await Future.delayed(Duration(seconds: 2));
+    }
+    String userId = parseIdToken(idToken)['name'];
+    return userId;
+  }
+
   Future<String?> getValidAccessToken() async {
     final DateTime? expirationDate =
         await secureStorageService.getAccessTokenExpirationDateTime();

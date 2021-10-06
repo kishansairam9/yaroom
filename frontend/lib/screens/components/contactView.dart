@@ -103,10 +103,10 @@ class _ViewContactState extends State<ViewContact> {
                                 ),
                                 onTap: () async {
                                   // Backend Request to remove friend
-                                  await friendRequest({
-                                    "userId": this.widget.contactData.userId,
-                                    "status": 4
-                                  }, context);
+                                  await friendRequest(
+                                      this.widget.contactData.userId,
+                                      4,
+                                      context);
                                   await RepositoryProvider.of<AppDb>(context,
                                           listen: false)
                                       .updateFriendRequest(
@@ -139,11 +139,10 @@ class _ViewContactState extends State<ViewContact> {
                                       setState(() {
                                         status = 5;
                                       });
-                                      await friendRequest({
-                                        "userId":
-                                            this.widget.contactData.userId,
-                                        "status": 1
-                                      }, context);
+                                      await friendRequest(
+                                          this.widget.contactData.userId,
+                                          1,
+                                          context);
                                       if (snapshot.data!.isNotEmpty) {
                                         await RepositoryProvider.of<AppDb>(
                                                 context,

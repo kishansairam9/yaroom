@@ -105,7 +105,7 @@ class ProfileTileState extends State<ProfileTile> {
       onTap: _showChat,
       leading: CircleAvatar(
         backgroundColor: Colors.grey[350],
-        foregroundImage: iconImageWrapper(widget.image),
+        foregroundImage: iconImageWrapper(widget.userId),
         radius: 28.0,
       ),
       title: Text(widget.name),

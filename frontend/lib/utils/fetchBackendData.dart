@@ -17,11 +17,15 @@ Future<void> populateUserData(data, context) async {
   await RepositoryProvider.of<AppDb>(context, listen: false)
       .addUser(userId: userData['Userid'], name: userData['Name']);
 
-  for (var user in usersList) {
-    if (!userIdList.contains(user["userId"])) {
-      userIdList.add(user.Userid);
-      await RepositoryProvider.of<AppDb>(context, listen: false)
-          .addUser(userId: user['userId'], name: user['name']);
+  userIdList.add(userData["Userid"]);
+
+  if (usersList != null) {
+    for (var user in usersList) {
+      if (!userIdList.contains(user["userId"])) {
+        userIdList.add(user["userId"]);
+        await RepositoryProvider.of<AppDb>(context, listen: false)
+            .addUser(userId: user['userId'], name: user['name']);
+      }
     }
   }
 
@@ -92,10 +96,11 @@ Future<void> populateUserData(data, context) async {
   // }
 }
 
-Future<void> fetchUserDetails(String accessToken, BuildContext context) async {
+Future<void> fetchUserDetails(
+    String accessToken, String name, BuildContext context) async {
   try {
     var response = await http.get(
-        Uri.parse('http://localhost:8884/v1/getUserDetails'),
+        Uri.parse('http://localhost:8884/v1/getUserDetails?name=$name'),
         headers: <String, String>{
           'Content-Type': 'application/json',
           'Authorization': "Bearer $accessToken",

@@ -73,10 +73,12 @@ class LandingPage extends StatelessWidget {
       final String? accessToken =
           await Provider.of<AuthorizationService>(context, listen: false)
               .getValidAccessToken();
-
+      final String name =
+          await Provider.of<AuthorizationService>(context, listen: false)
+              .getName();
       // Backend hanldes user new case :)
       // visit route `getUserDetails`
-      await fetchUserDetails(accessToken!, context);
+      await fetchUserDetails(accessToken!, name, context);
 
       // visit route `getLaterMessages`
       await fetchLaterMessages(accessToken, null, context);

@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:yaroom/screens/components/msgBox.dart';
 import 'package:yaroom/screens/messaging/groupsView.dart';
+import 'package:yaroom/utils/backendRequests.dart';
 import '../components/contactView.dart';
 import '../components/searchDelegate.dart';
 import 'package:provider/provider.dart';
@@ -432,7 +433,7 @@ class GroupChatPageState extends State<GroupChatPage>
       ListTile(
         leading: CircleAvatar(
           backgroundColor: Colors.grey[350],
-          foregroundImage: iconImageWrapper(widget.image),
+          foregroundImage: iconImageWrapper(widget.groupId),
         ),
         tileColor: Colors.transparent,
         trailing: Consumer<GroupChatData>(
@@ -450,6 +451,8 @@ class GroupChatPageState extends State<GroupChatPage>
                           actions: [
                             TextButton(
                                 onPressed: () async {
+                                  // request to backend to remove user from group
+                                  await exitGroup(widget.groupId, context);
                                   await groupChatData.removeGroup(
                                       context, widget.groupId);
                                   await Navigator.pushReplacementNamed(
@@ -589,9 +592,8 @@ class GroupChatPageState extends State<GroupChatPage>
                               children: [
                                 _getDrawerHeader(groupMembersSnapshot.data!
                                     .map((User e) => e.userId)),
-                                ...groupMembersSnapshot.data!.map((User e) =>
-                                    // for (var i = 0; i < widget.memberCount; i++)
-                                    ListTile(
+                                ...groupMembersSnapshot.data!
+                                    .map((User e) => ListTile(
                                         onTap: () => _showContact(context, e),
                                         tileColor: Colors.transparent,
                                         leading: CircleAvatar(
@@ -620,7 +622,7 @@ class GroupChatPageState extends State<GroupChatPage>
                                         leading: CircleAvatar(
                                           backgroundColor: Colors.grey[350],
                                           foregroundImage:
-                                              iconImageWrapper(widget.image),
+                                              iconImageWrapper(widget.groupId),
                                         ),
                                         title: Text(
                                           widget.name,

@@ -147,7 +147,7 @@ class GroupProfileTileState extends State<GroupProfileTile> {
       onTap: _showChat,
       leading: CircleAvatar(
         backgroundColor: Colors.grey[350],
-        foregroundImage: iconImageWrapper(widget.image),
+        foregroundImage: iconImageWrapper(widget.groupId),
         radius: 28.0,
       ),
       title: Text(widget.name),

@@ -136,13 +136,13 @@ class _FriendsViewState extends State<FriendsView> {
                                         color: Colors.green),
                                     onDismissed:
                                         (DismissDirection direction) async {
-                                      await friendRequest({
-                                        "userId": f.userId,
-                                        "status": direction ==
-                                                DismissDirection.endToStart
-                                            ? 2
-                                            : 3
-                                      }, context);
+                                      await friendRequest(
+                                          f.userId,
+                                          direction ==
+                                                  DismissDirection.endToStart
+                                              ? 2
+                                              : 3,
+                                          context);
                                       await RepositoryProvider.of<AppDb>(
                                               context)
                                           .updateFriendRequest(

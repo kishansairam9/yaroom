@@ -55,7 +55,16 @@ class ContentRouter {
       case '/editgroup':
         final args = settings.arguments;
         return MaterialPageRoute(
-            builder: (context) => wrapWithUserId(context, CreateGroup(args)));
+            builder: (context) => wrapWithUserId(
+                context,
+                BlocProvider(
+                  create: (context) {
+                    return FilePickerCubit(
+                        initialState:
+                            FilePickerDetails(media: Map(), filesAttached: 0));
+                  },
+                  child: CreateGroup(args),
+                )));
 
       case '/settings':
         return MaterialPageRoute(

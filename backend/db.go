@@ -184,16 +184,14 @@ type UsersListOfGroupUpdate struct {
 }
 
 type User struct {
-	Userid string `json:"userId"`
-	Name   string `json:"name"`
+	Userid string  `json:"userId" db:"userid"`
+	Name   string  `json:"name" db:"name"`
+	Image  *string `json:"profileImg" db:"image"`
 }
 
 func updateUserMetadata(data *UserMetadata) error {
-	if q := UpdateUserMetadata.BindStruct(data); q.Err() != nil {
-		log.Error().Str("where", "update user metadata").Str("type", "failed to bind struct").Msg(q.Err().Error())
-		return errors.New("internal server error")
-	}
-	if err := UpdateUserMetadata.Exec(); err != nil {
+	in := dbSession.Query(qb.Update("yaroom.users").SetLit("name", "'"+data.Name+"'").SetLit("username", "'"+*data.Username+"'").Where(qb.EqLit("userid", "'"+data.Userid+"'")).ToCql())
+	if err := in.ExecRelease(); err != nil {
 		log.Error().Str("where", "update user metadata").Str("type", "failed to execute query").Msg(err.Error())
 		return errors.New("internal server error")
 	}
@@ -227,6 +225,9 @@ func getGroupMetadata(groupId string) (*GroupMetadata, error) {
 }
 
 func convertSetToString(data []User_udt) string {
+	if len(data) == 0 {
+		return "null"
+	}
 	var s string
 	s += "{"
 	for _, val := range data {
@@ -295,8 +296,9 @@ func getRoomMetadata(roomId string) (*RoomMetadata, error) {
 	return rows[0], nil
 }
 
-func getUserDetails(userId string) (*UserDetails, error) {
+func getUserDetails(userId string, name string) (*UserDetails, error) {
 	paddedUserId := "'" + userId + "'"
+	paddedName := "'" + name + "'"
 	userMeta, err := getUserMetadata(userId)
 	if err != nil {
 		log.Error().Str("where", "get user details").Str("type", "error occured in retrieving user metadata").Msg(err.Error())
@@ -304,7 +306,7 @@ func getUserDetails(userId string) (*UserDetails, error) {
 	}
 	if userMeta == nil {
 		// New user, add user to demo rooms and groups
-		in := dbSession.Query(qb.Insert("yaroom.users").LitColumn("userid", paddedUserId).LitColumn("name", paddedUserId).LitColumn("image", "''").LitColumn("username", paddedUserId).LitColumn("groupslist", "{'group-demo-1', 'group-demo-2'}").LitColumn("roomslist", "{'room-demo-1', 'room-demo-2'}").ToCql())
+		in := dbSession.Query(qb.Insert("yaroom.users").LitColumn("userid", paddedUserId).LitColumn("name", paddedName).LitColumn("image", "''").LitColumn("username", paddedName).LitColumn("groupslist", "{'group-demo-1', 'group-demo-2'}").LitColumn("roomslist", "{'room-demo-1', 'room-demo-2'}").ToCql())
 		if err := in.ExecRelease(); err != nil {
 			return nil, err
 		}
@@ -332,11 +334,11 @@ func getUserDetails(userId string) (*UserDetails, error) {
 			log.Error().Str("where", "adding new user").Str("type", "error occured in db op").Msg(err.Error())
 			return nil, err
 		}
-		if err = addUserToGroup(&UsersListOfGroupUpdate{Groupid: "group-demo-1", Userslist: []User_udt{{Userid: userId, Name: userId}}}); err != nil {
+		if err = addUserToGroup(&UsersListOfGroupUpdate{Groupid: "group-demo-1", Userslist: []User_udt{{Userid: userId, Name: name}}}); err != nil {
 			log.Error().Str("where", "adding new user").Str("type", "error occured in db op").Msg(err.Error())
 			return nil, err
 		}
-		if err = addUserToGroup(&UsersListOfGroupUpdate{Groupid: "group-demo-2", Userslist: []User_udt{{Userid: userId, Name: userId}}}); err != nil {
+		if err = addUserToGroup(&UsersListOfGroupUpdate{Groupid: "group-demo-2", Userslist: []User_udt{{Userid: userId, Name: name}}}); err != nil {
 			log.Error().Str("where", "adding new user").Str("type", "error occured in db op").Msg(err.Error())
 			return nil, err
 		}
@@ -431,8 +433,8 @@ func deleteUserFromGroup(user *UsersListOfGroupUpdate) error {
 	return nil
 }
 
-func selectUsersFromGroup(userId string) ([]UsersListOfGroupUpdate, error) {
-	if q := SelectUsersOfGroup.BindMap(qb.M{"userid": userId}); q.Err() != nil {
+func selectUsersFromGroup(groupId string) ([]UsersListOfGroupUpdate, error) {
+	if q := SelectUsersOfGroup.BindMap(qb.M{"groupid": groupId}); q.Err() != nil {
 		log.Error().Str("where", "get users of group").Str("type", "failed to bind struct").Msg(q.Err().Error())
 		return nil, errors.New("internal server error")
 	}
@@ -546,7 +548,7 @@ func getUsers(userList []string) ([]User, error) {
 	final := "("
 	final += "'" + strings.Join(userList, "', '") + "'"
 	final += ")"
-	in := dbSession.Query(qb.Select("yaroom.users").Columns("userid", "name").Where(qb.InLit("userid", final)).AllowFiltering().ToCql())
+	in := dbSession.Query(qb.Select("yaroom.users").Columns("userid", "name", "image").Where(qb.InLit("userid", final)).AllowFiltering().ToCql())
 	rows := make([]User, 1)
 	if err := in.SelectRelease(&rows); err != nil {
 		log.Error().Str("where", "getting user data").Str("type", "failed to execute query").Msg(err.Error())

@@ -193,7 +193,8 @@ class MyApp extends StatelessWidget {
 
       // Backend hanldes user new case :)
       // visit route `getUserDetails`
-      await fetchUserDetails(accessToken, context);
+      await fetchUserDetails(
+          accessToken, parseIdToken(idToken)["name"], context);
       print(accessToken);
       // visit route `getLaterMessages`
       await fetchLaterMessages(accessToken, null, context);

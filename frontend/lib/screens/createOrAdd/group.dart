@@ -1,6 +1,15 @@
+import 'dart:convert';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:yaroom/utils/backendRequests.dart';
 import '../../utils/types.dart';
+import 'package:image_cropper/image_cropper.dart';
+import 'dart:async';
+import 'dart:io';
+import 'package:provider/provider.dart';
+import '../../utils/authorizationService.dart';
+import 'package:http/http.dart' as http;
 
 class CreateGroup extends StatefulWidget {
   final data;
@@ -12,6 +21,50 @@ class CreateGroup extends StatefulWidget {
 
 class _CreateGroupState extends State<CreateGroup> {
   final _formKey = GlobalKey<FormState>();
+  var media = new Map();
+  bool errOnUpload = false;
+  StreamController<bool> updateImage = StreamController();
+
+  @override
+  void initState() {
+    updateImage.add(true);
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    updateImage.close();
+    super.dispose();
+  }
+
+  Future<void> _openFileExplorer() async {
+    FilePickerResult? _paths = await FilePicker.platform
+        .pickFiles(type: FileType.image, allowMultiple: false, withData: false);
+    if (_paths != null) {
+      media['iconId'] = this.widget.data["group"].groupId;
+      File? croppedFile = await ImageCropper.cropImage(
+          sourcePath: _paths.files.first.path!,
+          compressFormat: ImageCompressFormat.jpg,
+          compressQuality: 94,
+          aspectRatioPresets: [
+            CropAspectRatioPreset.square,
+          ],
+          androidUiSettings: AndroidUiSettings(
+              toolbarTitle: 'Cropper',
+              toolbarColor: Colors.deepOrange,
+              toolbarWidgetColor: Colors.white,
+              initAspectRatio: CropAspectRatioPreset.square,
+              lockAspectRatio: true),
+          iosUiSettings: IOSUiSettings(
+            minimumAspectRatio: 1.0,
+          ));
+      media['jpegBytes'] = croppedFile!.readAsBytesSync();
+
+      BlocProvider.of<FilePickerCubit>(context, listen: false)
+          .updateFilePicker(media: media, filesAttached: 1);
+    }
+  }
+
   _addMembers() {
     showModalBottomSheet(
         context: context,
@@ -23,14 +76,12 @@ class _CreateGroupState extends State<CreateGroup> {
               builder: (BuildContext context,
                   AsyncSnapshot<List<GetFriendRequestsResult>> snapshot) {
                 if (snapshot.hasData) {
-                  var checklist = snapshot.data!
-                      .map(
-                          (e) => (this.widget.data["members"].contains(e.userId)
-                              ? CheckBox(title: e.name)
-                              : SizedBox(
-                                  height: 0,
-                                )))
-                      .toList();
+                  var checklist = [];
+                  for (var e in snapshot.data!) {
+                    if (!this.widget.data["members"].contains(e.userId)) {
+                      checklist.add(CheckBox(title: e.name, id: e.userId));
+                    }
+                  }
                   return Scaffold(
                     appBar: AppBar(
                       leading: Builder(
@@ -40,7 +91,30 @@ class _CreateGroupState extends State<CreateGroup> {
                       title: Text("Add more people!"),
                       actions: [
                         TextButton(
-                            onPressed: () => {},
+                            onPressed: () async {
+                              await editGroup(
+                                  jsonEncode(<String, dynamic>{
+                                    "groupId":
+                                        this.widget.data["group"].groupId,
+                                    "name": this.widget.data["group"].name,
+                                    "description":
+                                        this.widget.data["group"].description,
+                                    "groupIcon":
+                                        this.widget.data["group"].groupIcon,
+                                    "groupMembers":
+                                        checklist.map((e) => e.id).toList()
+                                  }),
+                                  context);
+                              for (var user in checklist) {
+                                await RepositoryProvider.of<AppDb>(context,
+                                        listen: false)
+                                    .addUserToGroup(
+                                        groupId:
+                                            this.widget.data["group"].groupId,
+                                        userId: user.id);
+                              }
+                              Navigator.pop(context);
+                            },
                             child: Text(
                               "ADD",
                               style: TextStyle(color: Colors.white),
@@ -48,46 +122,14 @@ class _CreateGroupState extends State<CreateGroup> {
                       ],
                     ),
                     body: checklist.length == 0
-                        ? Text("All your friends are added to the group!")
+                        ? Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(
+                                "All your friends are added to the group!"),
+                          )
                         : ListView(
                             padding: const EdgeInsets.symmetric(vertical: 16.0),
                             children: [...checklist],
-                            // child: ListView.builder(
-                            //     itemCount: snapshot.data!.length,
-                            //     itemBuilder: (context, index) {
-                            //       print("Hello");
-                            //       print(checklist);
-                            //       if ((snapshot.data![index].status != 2) ||
-                            //           (this
-                            //               .widget
-                            //               .data["members"]
-                            //               .contains(snapshot.data![index].userId)))
-                            //         return const SizedBox(
-                            //           height: 0,
-                            //         );
-                            //       return CheckboxListTile(
-                            //           title: Text(snapshot.data![index].name),
-                            //           secondary: CircleAvatar(
-                            //             backgroundColor: Colors.grey[350],
-                            //             foregroundImage: iconImageWrapper(
-                            //                 snapshot.data![index].userId),
-                            //           ),
-                            //           value: checklist
-                            //               .contains(snapshot.data![index].userId),
-                            //           onChanged: (_) {
-                            //             setState(() {
-                            //               if (checklist
-                            //                   .contains(snapshot.data![index].userId))
-                            //                 checklist.removeWhere((element) =>
-                            //                     element ==
-                            //                     snapshot.data![index].userId);
-                            //               else
-                            //                 checklist
-                            //                     .add(snapshot.data![index].userId);
-                            //               print(checklist);
-                            //             });
-                            //           });
-                            //     }),
                           ),
                   );
                 } else if (snapshot.hasError) {
@@ -102,17 +144,20 @@ class _CreateGroupState extends State<CreateGroup> {
   }
 
   _createForm() {
+    var _groupData = {
+      "groupId": this.widget.data["group"].groupId,
+      "name": this.widget.data["group"].name,
+      "description": this.widget.data["group"].description,
+      "groupIcon": this.widget.data["group"].image,
+    };
     return Form(
       key: _formKey,
-      child: Padding(
+      child: Container(
         padding: EdgeInsets.all(25.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Text("Add your friends to the group",
-            //     textAlign: TextAlign.center,
-            //     style: Theme.of(context).textTheme.headline6!),
             TextFormField(
               initialValue: this.widget.data["group"].name,
               decoration: const InputDecoration(
@@ -120,6 +165,8 @@ class _CreateGroupState extends State<CreateGroup> {
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Please enter group name';
+                } else {
+                  _groupData["name"] = value;
                 }
                 return null;
               },
@@ -132,6 +179,8 @@ class _CreateGroupState extends State<CreateGroup> {
               validator: (value) {
                 if (value == null) {
                   return 'Please enter description';
+                } else {
+                  _groupData["description"] = value;
                 }
                 return null;
               },
@@ -139,8 +188,23 @@ class _CreateGroupState extends State<CreateGroup> {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16.0),
               child: ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   if (_formKey.currentState!.validate()) {
+                    _formKey.currentState!.save();
+                    await editGroup(
+                        jsonEncode(<String, dynamic>{
+                          "groupId": this.widget.data["group"].groupId,
+                          "name": _groupData["name"],
+                          "description": _groupData["description"],
+                          "groupIcon": _groupData["groupIcon"],
+                          "groupMembers": []
+                        }),
+                        context);
+                    await RepositoryProvider.of<AppDb>(context, listen: false)
+                        .createGroup(
+                            groupId: this.widget.data["group"].groupId,
+                            name: _groupData["name"],
+                            description: _groupData["description"]);
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Processing Data')),
                     );
@@ -171,31 +235,82 @@ class _CreateGroupState extends State<CreateGroup> {
                 onPressed: () => _addMembers(), icon: Icon(Icons.person_add))
           ],
         ),
-        body:
-            Column(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-          Column(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
-            CircleAvatar(
-              foregroundImage:
-                  iconImageWrapper(this.widget.data["group"].image),
-              radius: 80,
-            ),
-            Padding(
-              padding: EdgeInsets.only(top: 10, bottom: 10),
-              child: ElevatedButton(
-                  onPressed: () => {}, child: Text("Upload Icon")),
-            ),
-            _createForm()
-          ]),
-          Row()
-        ]));
+        body: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: <Widget>[
+              SizedBox(
+                height: 50,
+              ),
+              errOnUpload
+                  ? SnackBar(
+                      content: Text('Error occured while uploading retry!'))
+                  : Container(),
+              StreamBuilder(
+                  stream: updateImage.stream,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData) {
+                      return Image(
+                          height: 300,
+                          width: 300,
+                          image: iconImageWrapper(
+                              this.widget.data["group"].groupId));
+                    }
+                    return CircularProgressIndicator();
+                  }),
+              Container(
+                child: ElevatedButton(
+                  child: Text("Update Icon"),
+                  onPressed: () async {
+                    await _openFileExplorer();
+                    String encData = jsonEncode(
+                        BlocProvider.of<FilePickerCubit>(context, listen: false)
+                            .state
+                            .media);
+                    final String? accessToken =
+                        await Provider.of<AuthorizationService>(context,
+                                listen: false)
+                            .getValidAccessToken();
+                    try {
+                      var response = await http.post(
+                          Uri.parse('http://localhost:8884/v1/updateIcon'),
+                          body: encData,
+                          headers: <String, String>{
+                            'Content-Type': 'application/json',
+                            'Authorization': "Bearer $accessToken",
+                          });
+                      print(
+                          "Update icon response ${response.statusCode} ${response.body}");
+                      setState(() {
+                        errOnUpload = false;
+                      });
+                      BlocProvider.of<FilePickerCubit>(context, listen: false)
+                          .updateFilePicker(media: Map(), filesAttached: 0);
+                      updateImage.sink.add(true);
+                    } catch (e) {
+                      print("Exception occured in update icon $e");
+                      setState(() {
+                        errOnUpload = true;
+                      });
+                    }
+                  },
+                ),
+              ),
+              _createForm()
+            ],
+          ),
+        ));
   }
 }
 
 class CheckBox extends StatefulWidget {
   final String title;
+  final String id;
   bool value = false;
   CheckBox({
     required this.title,
+    required this.id,
   });
   @override
   _CheckBoxState createState() => _CheckBoxState();
