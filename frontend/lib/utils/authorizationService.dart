@@ -29,6 +29,7 @@ class AuthorizationService {
   );
   Future<bool> authorize() async {
     try {
+      print("authorize trying");
       final AuthorizationTokenResponse? response =
           await appAuth.authorizeAndExchangeCode(AuthorizationTokenRequest(
               clientId, redirectUrl,
@@ -73,7 +74,7 @@ class AuthorizationService {
     final DateTime? expirationDate =
         await secureStorageService.getAccessTokenExpirationDateTime();
     int? cmp = expirationDate?.compareTo(DateTime.now());
-    
+
     if (cmp != null && cmp > 0) {
       return secureStorageService.getAccessToken();
     }
@@ -105,8 +106,8 @@ class AuthorizationService {
     print("Accesss token ---- ");
     print(accessToken);
     String? refreshToken = await secureStorageService.getRefreshToken();
-    if (accessToken != null) {
-      if (refreshToken != null) {
+    if (accessToken != null && refreshToken != null) {
+      try {
         var client = Auth0Client(
             clientId: clientId,
             clientSecret: clientId,
@@ -124,11 +125,15 @@ class AuthorizationService {
 
         // Logout client
         await client.logout();
+      } catch (e) {
+        print(
+            "Caught error $e while using auth0 lib to logout using auth0client");
+      }
 
-        String logoutUrl = issuer + '/v2/logout';
-        if (await canLaunch(logoutUrl)) {
-          launch(logoutUrl);
-        }
+      // Current workaround!
+      String logoutUrl = issuer + '/v2/logout';
+      if (await canLaunch(logoutUrl)) {
+        launch(logoutUrl);
       }
     }
     // Delete all tokens

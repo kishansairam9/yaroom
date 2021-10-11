@@ -362,19 +362,19 @@ class HomePageState extends State<HomePage> {
                               BlocProvider.of<FcmTokenCubit>(context,
                                   listen: false),
                               accessToken!);
-                          // Close websocket
-                          Provider.of<MessageExchangeStream>(context,
-                                  listen: false)
-                              .close();
-
                           // Logout
                           await Provider.of<AuthorizationService>(context,
                                   listen: false)
                               .logout(context);
+                          // Clear DB
                           await Provider.of<AppDb>(context, listen: false)
                               .deleteAll();
                           await Provider.of<AppDb>(context, listen: false)
                               .createAll();
+                          // Close websocket
+                          Provider.of<MessageExchangeStream>(context,
+                                  listen: false)
+                              .close();
                           await Navigator.of(context)
                               .pushNamedAndRemoveUntil('/signin', (_) => false);
                         },

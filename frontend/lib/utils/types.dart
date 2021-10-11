@@ -12,6 +12,8 @@ import 'package:bloc/bloc.dart';
 typedef UserId = String;
 typedef FCMTokenStream = Stream<String>;
 
+enum ConnectivityFlags { wsActive, wsRetrying, closed }
+
 ImageProvider iconImageWrapper(String? src) {
   String url = "http://localhost:8884/icon";
   if (src != null) {
