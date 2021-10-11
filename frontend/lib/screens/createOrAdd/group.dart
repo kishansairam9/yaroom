@@ -9,6 +9,8 @@ import 'dart:async';
 import 'dart:io';
 import 'package:provider/provider.dart';
 import '../../utils/authorizationService.dart';
+import '../../utils/notifiers.dart';
+import '../messaging/groupsView.dart';
 import 'package:http/http.dart' as http;
 
 class CreateGroup extends StatefulWidget {
@@ -94,13 +96,13 @@ class _CreateGroupState extends State<CreateGroup> {
                             onPressed: () async {
                               await editGroup(
                                   jsonEncode(<String, dynamic>{
-                                    "groupId":
-                                        this.widget.data["group"]["groupId"],
+                                    "groupId": this.widget.data["group"]
+                                        ["groupId"],
                                     "name": this.widget.data["group"]["name"],
-                                    "description":
-                                        this.widget.data["group"]["description"],
-                                    "groupIcon":
-                                        this.widget.data["group"]["groupIcon"],
+                                    "description": this.widget.data["group"]
+                                        ["description"],
+                                    "groupIcon": this.widget.data["group"]
+                                        ["groupIcon"],
                                     "groupMembers":
                                         checklist.map((e) => e.id).toList()
                                   }),
@@ -109,8 +111,8 @@ class _CreateGroupState extends State<CreateGroup> {
                                 await RepositoryProvider.of<AppDb>(context,
                                         listen: false)
                                     .addUserToGroup(
-                                        groupId:
-                                            this.widget.data["group"]["groupId"],
+                                        groupId: this.widget.data["group"]
+                                            ["groupId"],
                                         userId: user.id);
                               }
                               Navigator.pop(context);
@@ -227,12 +229,12 @@ class _CreateGroupState extends State<CreateGroup> {
               builder: (context) => IconButton(
                   onPressed: () async {
                     await Navigator.pushReplacementNamed(context, '/groupchat',
-                      arguments: GroupChatPageArguments(
-      groupId: this.widget.data["group"]["groupId"],
-      name: this.widget.data["group"]["name"],
-      description: this.widget.data["group"]["description"],
-      image: this.widget.data["group"]["groupIcon"],
-    ));
+                        arguments: GroupChatPageArguments(
+                          groupId: this.widget.data["group"]["groupId"],
+                          name: this.widget.data["group"]["name"],
+                          description: this.widget.data["group"]["description"],
+                          image: this.widget.data["group"]["groupIcon"],
+                        ));
                   },
                   icon: Icon(Icons.arrow_back))),
           title: Text(this.widget.data["group"]["groupId"] == ""
@@ -296,6 +298,8 @@ class _CreateGroupState extends State<CreateGroup> {
                       BlocProvider.of<FilePickerCubit>(context, listen: false)
                           .updateFilePicker(media: Map(), filesAttached: 0);
                       updateImage.sink.add(true);
+                      Provider.of<GroupsList>(context, listen: false)
+                          .triggerRerender();
                     } catch (e) {
                       print("Exception occured in update icon $e");
                       setState(() {

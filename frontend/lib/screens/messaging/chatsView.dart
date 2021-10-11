@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:math';
 import 'chatPage.dart';
 import '../../utils/types.dart';
+import '../../utils/notifiers.dart';
 import 'package:provider/provider.dart';
 
 class ChatView extends StatefulWidget {
@@ -17,25 +18,27 @@ class ChatView extends StatefulWidget {
 class ChatViewState extends State<ChatView> {
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder(
-        stream: RepositoryProvider.of<AppDb>(context).getFriends().watch(),
-        builder: (BuildContext context, AsyncSnapshot<List<User>> snapshot) {
-          if (snapshot.hasData) {
-            return ListView(
-                children: ListTile.divideTiles(
-              context: context,
-              tiles: snapshot.data!
-                  .where((e) =>
-                      e.userId != Provider.of<UserId>(context, listen: false))
-                  .map((e) => ProfileTile(userId: e.userId, name: e.name)),
-            ).toList());
-          } else if (snapshot.hasError) {
-            print(snapshot.error);
-            return SnackBar(
-                content: Text('Error has occured while reading from DB'));
-          }
-          return CircularProgressIndicator();
-        });
+    return Consumer<DMsList>(builder: (_, DMsList dMsList, __) {
+      return FutureBuilder(
+          future: dMsList.updateChats(context),
+          builder: (BuildContext context, AsyncSnapshot<void> snapshot) {
+            if (snapshot.hasData) {
+              return ListView(
+                  children: ListTile.divideTiles(
+                context: context,
+                tiles: dMsList.chats
+                    .where((e) =>
+                        e.userId != Provider.of<UserId>(context, listen: false))
+                    .map((e) => ProfileTile(userId: e.userId, name: e.name)),
+              ).toList());
+            } else if (snapshot.hasError) {
+              print(snapshot.error);
+              return SnackBar(
+                  content: Text('Error has occured while reading from DB'));
+            }
+            return CircularProgressIndicator();
+          });
+    });
   }
 }
 

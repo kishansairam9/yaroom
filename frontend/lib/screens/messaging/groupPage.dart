@@ -15,6 +15,7 @@ import '../components/searchDelegate.dart';
 import 'package:provider/provider.dart';
 import '../../utils/messageExchange.dart';
 import '../../utils/types.dart';
+import '../../utils/notifiers.dart';
 import '../../blocs/groupChats.dart';
 import 'package:http/http.dart' as http;
 
@@ -436,8 +437,7 @@ class GroupChatPageState extends State<GroupChatPage>
           foregroundImage: iconImageWrapper(widget.groupId),
         ),
         tileColor: Colors.transparent,
-        trailing: Consumer<GroupChatData>(
-            builder: (_, GroupChatData groupChatData, __) {
+        trailing: Consumer<GroupsList>(builder: (_, GroupsList groupsList, __) {
           return PopupMenuButton<int>(
             onSelected: (selection) async {
               if (selection == 1) {
@@ -453,7 +453,7 @@ class GroupChatPageState extends State<GroupChatPage>
                                 onPressed: () async {
                                   // request to backend to remove user from group
                                   await exitGroup(widget.groupId, context);
-                                  await groupChatData.removeGroup(
+                                  await groupsList.removeGroup(
                                       context, widget.groupId);
                                   await Navigator.pushReplacementNamed(
                                       context, '/');
@@ -466,11 +466,15 @@ class GroupChatPageState extends State<GroupChatPage>
                     });
               } else if (selection == 2) {
                 Navigator.pushReplacementNamed(context, '/editgroup',
-                    arguments: {"group": {                "groupId" : widget.groupId,
-                      "name" : widget.name,
-                      "groupIcon" : widget.image,
-                      "description" : widget.description 
-                    } , "members": members});
+                    arguments: {
+                      "group": {
+                        "groupId": widget.groupId,
+                        "name": widget.name,
+                        "groupIcon": widget.image,
+                        "description": widget.description
+                      },
+                      "members": members
+                    });
               }
             },
             itemBuilder: (context) => [

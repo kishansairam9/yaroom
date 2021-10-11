@@ -87,13 +87,6 @@ func sendMessageNotification(userId string, msg WSMessage) error {
 		return nil
 	}
 
-	// TODO Remove debug statements
-	fmt.Println(toUserData.Name)
-	fmt.Println(toUserData.Userid)
-	fmt.Println(fromUserData.Image)
-	fmt.Print("To user tokens -----  ")
-	fmt.Println(toUserData.Tokens)
-
 	switch msg.Type {
 	case "ChatMessage":
 		for _, token := range toUserData.Tokens {

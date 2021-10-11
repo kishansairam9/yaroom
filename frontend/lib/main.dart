@@ -6,11 +6,13 @@ import 'package:path_provider/path_provider.dart';
 import 'package:yaroom/blocs/activeStatus.dart';
 import 'package:yaroom/blocs/fcmToken.dart';
 import 'package:yaroom/blocs/rooms.dart';
+import 'package:yaroom/screens/messaging/chatsView.dart';
 import 'utils/router.dart';
 import 'moor/db.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'utils/types.dart';
+import 'utils/notifiers.dart';
 import 'utils/activeStatus.dart';
 import 'utils/fcmToken.dart';
 import 'utils/messageExchange.dart';
@@ -226,8 +228,9 @@ class MyApp extends StatelessWidget {
         RepositoryProvider<AppDb>.value(value: db),
         Provider<MessageExchangeStream>.value(value: msgExchangeStream),
         BlocProvider<FcmTokenCubit>.value(value: fcmTokenCubit),
-        ChangeNotifierProvider<GroupChatData>(
-          create: (_) => GroupChatData(),
+        ChangeNotifierProvider<DMsList>(create: (_) => DMsList()),
+        ChangeNotifierProvider<GroupsList>(
+          create: (_) => GroupsList(),
         ),
         BlocProvider(create: (context) {
           return FilePickerCubit(

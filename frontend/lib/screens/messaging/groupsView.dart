@@ -4,25 +4,7 @@ import 'package:provider/provider.dart';
 import 'dart:math';
 import 'groupPage.dart';
 import '../../utils/types.dart';
-
-class GroupChatData extends ChangeNotifier {
-  List<GroupDM> groupData = [];
-  Future<bool> getGroupData(context) async {
-    this.groupData = await RepositoryProvider.of<AppDb>(context)
-        .getGroupsOfUser(userID: Provider.of<UserId>(context, listen: false))
-        .get();
-    print(this.groupData);
-    return Future.value(true);
-  }
-
-  Future<bool> removeGroup(context, groupId) async {
-    await RepositoryProvider.of<AppDb>(context).removeUserFromGroup(
-        groupId: groupId, userId: Provider.of<UserId>(context, listen: false));
-    this.groupData.removeWhere((element) => element.groupId == groupId);
-    notifyListeners();
-    return Future.value(true);
-  }
-}
+import '../../utils/notifiers.dart';
 
 class GroupChatView extends StatefulWidget {
   GroupChatView({Key? key}) : super(key: key);
@@ -36,18 +18,17 @@ class GroupChatView extends StatefulWidget {
 class GroupChatViewState extends State<GroupChatView> {
   @override
   Widget build(BuildContext context) {
-    return Consumer<GroupChatData>(
-        builder: (_, GroupChatData groupChatData, __) {
+    return Consumer<GroupsList>(builder: (_, GroupsList groupsList, __) {
       return Stack(
         children: [
           FutureBuilder(
-              future: groupChatData.getGroupData(context),
+              future: groupsList.getGroupData(context),
               builder: (BuildContext context, AsyncSnapshot<void> snapshot) {
                 if (snapshot.hasData) {
                   return ListView(
                       children: ListTile.divideTiles(
                     context: context,
-                    tiles: groupChatData.groupData.map((e) =>
+                    tiles: groupsList.groupData.map((e) =>
                         GroupProfileTile(groupId: e.groupId, name: e.name)),
                   ).toList());
                 } else if (snapshot.hasError) {

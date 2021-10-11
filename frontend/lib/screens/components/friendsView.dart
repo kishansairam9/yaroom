@@ -3,8 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:yaroom/utils/backendRequests.dart';
 import '../../utils/types.dart';
+import '../../utils/notifiers.dart';
 import 'contactView.dart';
 import '../createOrAdd/friend.dart';
+import '../messaging/chatsView.dart';
 
 class FriendsView extends StatefulWidget {
   const FriendsView({Key? key}) : super(key: key);
@@ -152,6 +154,9 @@ class _FriendsViewState extends State<FriendsView> {
                                                   ? 2
                                                   : 3,
                                               userId: f.userId);
+                                      await Provider.of<DMsList>(context,
+                                              listen: false)
+                                          .updateChats(context);
                                       setState(() {
                                         snapshot.data!.removeAt(index);
                                       });
