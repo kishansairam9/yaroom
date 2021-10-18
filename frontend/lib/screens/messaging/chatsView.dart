@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:math';
 import 'chatPage.dart';
+import '../../blocs/chatMeta.dart';
 import '../../utils/types.dart';
 import '../../utils/notifiers.dart';
 import 'package:provider/provider.dart';
@@ -50,9 +51,6 @@ class ProfileTile extends StatefulWidget {
   late final List<dynamic> _preParams;
   late final Function? _preShowChat;
 
-  late final int? _unread;
-  late final String? _showText;
-
   ProfileTile(
       {required this.userId,
       required this.name,
@@ -67,37 +65,31 @@ class ProfileTile extends StatefulWidget {
       preShowChat!;
     }
     _preParams = preParams ?? [];
-    _unread = unread;
-    _showText = showText;
   }
 
   @override
-  ProfileTileState createState() => ProfileTileState(
-      unread: _unread,
-      showText: _showText,
-      preParams: _preParams,
-      preShowChat: _preShowChat);
+  ProfileTileState createState() => ProfileTileState();
 }
 
 class ProfileTileState extends State<ProfileTile> {
-  int _unread = 0;
-  String _showText = '';
-
-  ProfileTileState(
-      {int? unread,
-      String? showText,
-      Function? preShowChat,
-      List<dynamic>? preParams}) {
-    _unread = unread ?? Random().nextInt(20);
-    _showText = showText ?? '';
-  }
+  ProfileTileState();
 
   void _showChat() {
     if (widget._preShowChat != null) {
       Function.apply(widget._preShowChat!, widget._preParams);
     }
+    Provider.of<ChatMetaCubit>(context, listen: false).read(getExchangeId());
     Navigator.of(context).pushNamed('/chat',
         arguments: ChatPageArguments(userId: widget.userId, name: widget.name));
+  }
+
+  String getExchangeId() {
+    var ids = <String>[
+      Provider.of<UserId>(context, listen: false),
+      widget.userId
+    ];
+    ids.sort();
+    return ids[0] + ":" + ids[1];
   }
 
   @override
@@ -112,21 +104,31 @@ class ProfileTileState extends State<ProfileTile> {
         radius: 28.0,
       ),
       title: Text(widget.name),
-      subtitle: Text(_showText),
-      trailing: _unread > 0
-          ?
-          // TODO: Badges float around when puled from bottom to top agressively, should animate even slightly
-          MaterialButton(
+      subtitle: BlocBuilder<ChatMetaCubit, ChatMetaState>(
+          bloc: Provider.of<ChatMetaCubit>(context, listen: false),
+          builder: (context, ChatMetaState state) {
+            return Text(state.getLastMsgPreview(getExchangeId()));
+          }),
+      trailing: BlocBuilder<ChatMetaCubit, ChatMetaState>(
+          bloc: Provider.of<ChatMetaCubit>(context, listen: false),
+          builder: (context, ChatMetaState state) {
+            int unread = state.getUnread(getExchangeId());
+            return MaterialButton(
               onPressed: () {},
-              color: Colors.blueGrey[400],
-              child: Text(
-                '$_unread',
-                style: TextStyle(color: Theme.of(context).accentColor),
-              ),
+              color: unread > 0 ? Colors.blueGrey[400] : Colors.transparent,
+              height: unread == 0 ? 0 : null,
+              child: unread == 0
+                  ? null
+                  : Text(
+                      '$unread',
+                      style: TextStyle(color: Theme.of(context).accentColor),
+                    ),
               // padding: EdgeInsets.all(5),
               shape: CircleBorder(),
-            )
-          : null,
+            );
+            // }
+            // return Container();
+          }),
     );
     // );
   }

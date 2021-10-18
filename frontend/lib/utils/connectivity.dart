@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:yaroom/utils/types.dart';
@@ -60,7 +61,7 @@ class ConnectivityCheckState extends State<ConnectivityCheck> {
           print(resp.statusCode);
           nextState = resp.statusCode == 200;
           print(nextState);
-        } catch (error) {
+        } catch (e) {
           nextState = false;
         }
         if (prevState != nextState) {

@@ -44,7 +44,7 @@ android {
 
     defaultConfig {
         applicationId "com.auth0.yaroom" // Change later
-        minSdkVersion 18
+        minSdkVersion 28
         targetSdkVersion 28
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName

@@ -6,9 +6,9 @@ import './utils/connectivity.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:yaroom/blocs/activeStatus.dart';
+import 'package:yaroom/blocs/chatMeta.dart';
 import 'package:yaroom/blocs/fcmToken.dart';
 import 'package:yaroom/blocs/rooms.dart';
-import 'package:yaroom/screens/messaging/chatsView.dart';
 import 'utils/router.dart';
 import 'moor/db.dart';
 import 'package:provider/provider.dart';
@@ -27,15 +27,30 @@ import 'utils/secureStorageService.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 import 'utils/authorizationService.dart';
 import 'moor/utils.dart';
-import 'screens/messaging/groupsView.dart';
 import 'utils/fetchBackendData.dart';
-import 'package:connectivity/connectivity.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+bool removeExistingDB = true;
+
+const AndroidNotificationChannel channel = AndroidNotificationChannel(
+  'high_importance_channel', // id
+  'Yaroom Notifications', // title
+  description: 'Channel used for messaging notifications', // description
+  importance: Importance.max,
+);
+
+AppDb db = constructDb(logStatements: true, removeExisting: removeExistingDB);
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print("Handling a background message: ${message.messageId}");
-  AppDb db = constructDb(logStatements: true, removeExisting: false);
+  HydratedBloc.storage = await HydratedStorage.build(
+    storageDirectory: kIsWeb
+        ? HydratedStorage.webStorageDirectory
+        : await getApplicationDocumentsDirectory(),
+  );
   Map<String, dynamic> data = message.data;
-  await updateDb(db, data);
+  var chatMeta = ChatMetaCubit();
+  await updateDb(db, data, chatMeta);
 }
 
 Future<void> main() async {
@@ -64,16 +79,24 @@ Future<void> main() async {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   }
 
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+
+  await flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>()
+      ?.createNotificationChannel(channel);
+  await flutterLocalNotificationsPlugin.initialize(InitializationSettings(
+      android: AndroidInitializationSettings('@mipmap/ic_launcher')));
+
   HydratedBloc.storage = await HydratedStorage.build(
     storageDirectory: kIsWeb
         ? HydratedStorage.webStorageDirectory
         : await getApplicationDocumentsDirectory(),
   );
 
-  final removeExistingDB = true;
-  AppDb db = constructDb(logStatements: true, removeExisting: removeExistingDB);
-
   var activeStatus = ActiveStatusMap(statusMap: Map());
+  var chatMeta = ChatMetaCubit();
   var msgStream = MessageExchangeStream();
   msgStream.stream.listen((encodedData) async {
     print("Got encoded data::::::\n" + encodedData);
@@ -92,21 +115,40 @@ Future<void> main() async {
           "Active status recieved for ${data['userId']} as ${data['active']}");
       return;
     }
-    await updateDb(db, data);
+    await updateDb(db, data, chatMeta);
   }, onError: (e) {
     print("WS stream returned error $e");
   });
-  FirebaseMessaging.onMessage.listen((RemoteMessage msg) {
-    print(msg.data);
-    msgStream.addStreamMessage(msg.data);
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    print(message.data);
+    msgStream.addStreamMessage(message.data);
+    RemoteNotification? notification = message.notification;
+    AndroidNotification? android = message.notification?.android;
+    // If `onMessage` is triggered with a notification, construct our own
+    // local notification to show to users using the created channel.
+    if (notification != null && android != null) {
+      flutterLocalNotificationsPlugin.show(
+          notification.hashCode,
+          notification.title,
+          notification.body,
+          NotificationDetails(
+            android: AndroidNotificationDetails(
+              channel.id,
+              channel.name,
+              channelDescription: channel.description,
+              // icon: android.smallIcon,
+              // other properties...
+            ),
+          ));
+    }
   });
 
   const FlutterSecureStorage secureStorage = FlutterSecureStorage();
   final SecureStorageService secureStorageService =
       SecureStorageService(secureStorage);
 
-  runApp(
-      MyApp(db, msgStream, secureStorageService, fcmTokenCubit, activeStatus));
+  runApp(MyApp(db, msgStream, secureStorageService, fcmTokenCubit, activeStatus,
+      chatMeta));
 }
 
 class MyApp extends StatelessWidget {
@@ -115,17 +157,20 @@ class MyApp extends StatelessWidget {
   late final SecureStorageService secureStorageService;
   late final FcmTokenCubit fcmTokenCubit;
   late final ActiveStatusMap activeStatus;
+  late final ChatMetaCubit chatMetaCubit;
 
   MyApp(
       AppDb db,
       MessageExchangeStream msgExchangeStream,
       SecureStorageService secureStorageService,
       FcmTokenCubit fcmTokenCubit,
-      ActiveStatusMap activeStatus) {
+      ActiveStatusMap activeStatus,
+      ChatMetaCubit chatMetaCubit) {
     this.db = db;
     this.secureStorageService = secureStorageService;
     this.msgExchangeStream = msgExchangeStream;
     this.fcmTokenCubit = fcmTokenCubit;
+    this.chatMetaCubit = chatMetaCubit;
     this.activeStatus = activeStatus;
   }
 
@@ -151,7 +196,8 @@ class MyApp extends StatelessWidget {
               .getUserId();
       Provider.of<ActiveStatusMap>(context, listen: false).add(userid);
       Provider.of<ActiveStatusMap>(context, listen: false).update(userid, true);
-
+      // This must be before fetch is calleed
+      Provider.of<ChatMetaCubit>(context, listen: false).setUser(userid);
       // Backend hanldes user new case :)
       // visit route `getUserDetails`
       await fetchUserDetails(
@@ -159,7 +205,6 @@ class MyApp extends StatelessWidget {
       print(accessToken);
       // visit route `getLaterMessages`
       await fetchLaterMessages(accessToken, null, context);
-
       return Future.value('/');
     }
     return Future.value('/signin');
@@ -186,6 +231,7 @@ class MyApp extends StatelessWidget {
           RepositoryProvider<AppDb>.value(value: db),
           Provider<MessageExchangeStream>.value(value: msgExchangeStream),
           BlocProvider<FcmTokenCubit>.value(value: fcmTokenCubit),
+          BlocProvider<ChatMetaCubit>.value(value: chatMetaCubit),
           ChangeNotifierProvider<DMsList>(create: (_) => DMsList()),
           ChangeNotifierProvider<GroupsList>(
             create: (_) => GroupsList(),
@@ -273,39 +319,4 @@ class _MaterialAppWrapperState extends State<MaterialAppWrapper>
       onGenerateRoute: _contentRouter.onGenerateRoute,
     );
   }
-}
-
-Future<bool> delMsg(BuildContext context, User user) async {
-  var oldMsg = await RepositoryProvider.of<AppDb>(context)
-      .getUserMsgsToDelete(userId: user.userId, count: 10)
-      .get();
-  for (int i = 0; i < oldMsg.length; i++) {
-    await RepositoryProvider.of<AppDb>(context)
-        .deleteMsg(msgId: oldMsg[i].msgId);
-  }
-  return Future.value(true);
-}
-
-Future<bool> delOldMsg(BuildContext context, User user) async {
-  print('hola');
-  var oldMsgCount = await RepositoryProvider.of<AppDb>(context)
-      .getUserMsgCount(userId: user.userId)
-      .get();
-  if (oldMsgCount[0] > 10) {
-    delMsg(context, user);
-  }
-  return Future.value(true);
-}
-
-Future<bool> cleanFrontendDB(BuildContext context) async {
-  final userid = await Provider.of<AuthorizationService>(context, listen: false)
-      .getUserId();
-  var oldUsers = await RepositoryProvider.of<AppDb>(context)
-      .getAllOtherUsers(userId: userid)
-      .get();
-  for (int i = 0; i < oldUsers.length; i++) {
-    await delOldMsg(context, oldUsers[i]);
-  }
-  print("hi");
-  return Future.value(true);
 }

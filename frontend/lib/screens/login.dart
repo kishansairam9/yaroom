@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:yaroom/blocs/activeStatus.dart';
+import 'package:yaroom/blocs/chatMeta.dart';
 import '../blocs/fcmToken.dart';
 import '../utils/messageExchange.dart';
 import '../utils/authorizationService.dart';
@@ -73,22 +74,23 @@ class LandingPage extends StatelessWidget {
       final String? accessToken =
           await Provider.of<AuthorizationService>(context, listen: false)
               .getValidAccessToken();
+      final userid =
+          await Provider.of<AuthorizationService>(context, listen: false)
+              .getUserId();
       final String name =
           await Provider.of<AuthorizationService>(context, listen: false)
               .getName();
+      // This must be before fetch is calleed
+      Provider.of<ChatMetaCubit>(context, listen: false).setUser(userid);
       // Backend hanldes user new case :)
       // visit route `getUserDetails`
       await fetchUserDetails(accessToken!, name, context);
-
       // visit route `getLaterMessages`
       await fetchLaterMessages(accessToken, null, context);
 
       // Start web socket
       Provider.of<MessageExchangeStream>(context, listen: false)
           .start('ws://localhost:8884/v1/ws', accessToken);
-      final userid =
-          await Provider.of<AuthorizationService>(context, listen: false)
-              .getUserId();
       Provider.of<ActiveStatusMap>(context, listen: false).add(userid);
       Provider.of<ActiveStatusMap>(context, listen: false).update(userid, true);
       // Handle fcm token update

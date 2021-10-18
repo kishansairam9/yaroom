@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart';
+import 'package:yaroom/blocs/chatMeta.dart';
 import 'package:yaroom/moor/db.dart';
 import 'dart:convert';
 import 'package:provider/provider.dart';
@@ -131,9 +132,14 @@ Future<void> fetchLaterMessages(
       print("Server error, report to support");
       return;
     }
-    var results = jsonDecode(response.body);
+    List<dynamic> results = jsonDecode(response.body);
+    results.sort((a, b) => a['msgId'].compareTo(b['msgId']));
     for (var message in results) {
-      updateDb(RepositoryProvider.of<AppDb>(context, listen: false), message);
+      updateDb(
+        RepositoryProvider.of<AppDb>(context, listen: false),
+        message,
+        Provider.of<ChatMetaCubit>(context, listen: false),
+      );
     }
     print("User Details response ${response.statusCode} ${response.body}");
   } catch (e) {

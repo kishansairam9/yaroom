@@ -92,8 +92,9 @@ func sendMessageNotification(userId string, msg WSMessage) error {
 		for _, token := range toUserData.Tokens {
 			print("sending to ", token)
 			notif := &fcm.Message{
-				To:   token,
-				Data: data,
+				To:       token,
+				Data:     data,
+				Priority: "high",
 				Notification: &fcm.Notification{
 					Title: fromUserData.Name,
 					Body:  trimLength(msg.Content, 150),

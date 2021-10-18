@@ -15,6 +15,7 @@ import 'package:provider/provider.dart';
 import '../../utils/messageExchange.dart';
 import '../../utils/types.dart';
 import '../../blocs/chats.dart';
+import '../../blocs/chatMeta.dart';
 import 'package:http/http.dart' as http;
 
 class ChatPage extends StatefulWidget {
@@ -51,7 +52,8 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     print(state.toString());
     switch (state) {
       case AppLifecycleState.resumed:
-        Navigator.of(context).pushReplacementNamed('/chat',
+        Navigator.of(context).pushNamedAndRemoveUntil(
+            '/chat', (Route<dynamic> route) => route.isFirst,
             arguments:
                 ChatPageArguments(name: widget.name, userId: widget.userId));
         break;
@@ -83,58 +85,6 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
 
     await saveFileToMediaStore(file, data['name']);
     await file.delete();
-    print('done');
-    // Directory? directory;
-    // try {
-    //   if (Platform.isAndroid) {
-    //     if (await _requestPermission(Permission.storage)) {
-    //       directory = await getExternalStorageDirectory();
-    //       String newPath = "";
-    //       print(directory);
-    //       List<String> paths = directory!.path.split("/");
-    //       for (int x = 1; x < paths.length; x++) {
-    //         String folder = paths[x];
-    //         if (folder != "Android") {
-    //           newPath += "/" + folder;
-    //         } else {
-    //           break;
-    //         }
-    //       }
-    //       newPath = newPath + "/yaroom";
-    //       directory = Directory(newPath);
-    //     } else {
-    //       return;
-    //     }
-    //   } else {
-    //     if (await _requestPermission(Permission.photos)) {
-    //       directory = await getTemporaryDirectory();
-    //     } else {
-    //       return;
-    //     }
-    //   }
-
-    //   if (!await directory.exists()) {
-    //     await directory.create(recursive: true);
-    //   }
-    //   if (await directory.exists()) {
-    //     File saveFile = File(directory.path + "/" + data['name']);
-    //     // await dio.download(url, saveFile.path,
-    //     //     onReceiveProgress: (value1, value2) {
-    //     //       setState(() {
-    //     //         progress = value1 / value2;
-    //     //       });
-    //     //     });
-    //     await saveFile
-    //         .writeAsBytes(Uint8List.fromList(data['bytes'].cast<int>()));
-    //     //   if (Platform.isIOS) {
-    //     // await ImageGallerySaver.saveFile(saveFile.path,
-    //     //     isReturnPathOfIOS: true);
-    //   }
-    //   return;
-    // } catch (e) {
-    //   print(e);
-    // }
-    // return;
   }
 
   Future<Widget> _buildSingleMessage(
@@ -396,17 +346,11 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
       String? content,
       Map? media,
       int? replyTo}) {
-    // print("hi");
-    // print(Provider.of<FilePickerDetails>(context, listen: false).getMedia());
-    // print(media);
-    // print(BlocProvider.of<FilePickerCubit>(context).state.filesAttached);
     if (media != null && media.keys.length == 0) media = null;
     if (content == '') content = null;
     if (media == null && content == null) {
       return;
     }
-    // print("hello me here");
-    // print(media);
     Provider.of<MessageExchangeStream>(context, listen: false)
         .sendWSMessage(jsonEncode({
       'type': 'ChatMessage',
@@ -417,10 +361,6 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
       'mediaData': media,
       'replyTo': replyTo,
     }));
-    print("hello");
-    print(widget.userId);
-    // Provider.of<FilePickerDetails>(context, listen: false)
-    //     .updateState(Map(), 0);
     BlocProvider.of<FilePickerCubit>(context, listen: false)
         .updateFilePicker(media: Map(), filesAttached: 0);
   }
