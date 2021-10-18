@@ -231,6 +231,8 @@ class _CreateGroupState extends State<CreateGroup> {
                             userId:
                                 Provider.of<UserId>(context, listen: false));
                     ScaffoldMessenger.of(context).clearSnackBars();
+                    await Provider.of<GroupsList>(context, listen: false)
+                        .triggerRerender();
                     await Navigator.pushReplacementNamed(context, '/groupchat',
                         arguments: GroupChatPageArguments(
                           groupId: this.widget.data["group"]["groupId"],
