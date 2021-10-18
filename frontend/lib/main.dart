@@ -114,6 +114,9 @@ Future<void> main() async {
       print(
           "Active status recieved for ${data['userId']} as ${data['active']}");
       return;
+    } else if (data.containsKey('update')) {
+      print("Update type");
+      return;
     }
     await updateDb(db, data, chatMeta);
   }, onError: (e) {

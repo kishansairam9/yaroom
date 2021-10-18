@@ -44,7 +44,8 @@ Future<dynamic> editGroup(dynamic obj, BuildContext context) async {
           'Authorization': "Bearer $accessToken",
         });
     print("Group edit response ${response.statusCode} ${response.body}");
-    return response.body;
+    if (response.statusCode == 200) return response.body;
+    throw response.body;
   } catch (e) {
     print("Exception occured in group create/edit $e");
     return null;

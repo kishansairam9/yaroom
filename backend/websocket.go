@@ -59,6 +59,7 @@ func wsHandler(g *gin.Context) {
 	}
 
 	backendStreams := make([]string, 0)
+	backendStreams = append(backendStreams, "SELF:"+userId)
 	if userMeta.Friendslist != nil {
 		for _, friend := range userMeta.Friendslist {
 			backendStreams = append(backendStreams, fmt.Sprintf("USER:%v", friend))

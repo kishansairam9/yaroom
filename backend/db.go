@@ -212,6 +212,9 @@ func getUserMetadata(userId string) (*UserMetadata, error) {
 }
 
 func getGroupMetadata(groupId string) (*GroupMetadata, error) {
+	if groupId == "" {
+		return nil, nil
+	}
 	if q := SelectGroupMetadata.BindMap(qb.M{"groupid": groupId}); q.Err() != nil {
 		log.Error().Str("where", "get group metadata").Str("type", "failed to bind struct").Msg(q.Err().Error())
 		return nil, errors.New("internal server error")
@@ -364,12 +367,20 @@ func getUserDetails(userId string, name string) (*UserDetails, error) {
 			log.Error().Str("where", "get group metadata").Str("type", "error occured in retrieving group metadata").Msg(err.Error())
 			continue
 		}
+		if val == nil {
+			log.Error().Str("where", "get group metadata").Str("type", "error occured in retrieving group metadata").Msg(err.Error())
+			continue
+		}
 		ret.GroupData = append(ret.GroupData, *val)
 	}
 	ret.RoomData = make([]RoomMetadata, 0)
 	for _, room := range userMeta.Roomslist {
 		val, err := getRoomMetadata(room)
 		if err != nil {
+			log.Error().Str("where", "get room metadata").Str("type", "error occured in retrieving room metadata").Msg(err.Error())
+			continue
+		}
+		if val == nil {
 			log.Error().Str("where", "get room metadata").Str("type", "error occured in retrieving room metadata").Msg(err.Error())
 			continue
 		}

@@ -123,6 +123,26 @@ func userSubscribeTo(userId string, streams []string, outputChan chan<- []byte, 
 			activeStatusBuffer = make(map[string][]byte)
 		case msg := <-dataCh:
 			fmt.Println("got msg ", string(msg.Data))
+			subTest := strings.Split(string(msg.Data), "-")
+			if subTest[0] == "SUB" {
+				st := subTest[1]
+				found := false
+				for _, v := range streams {
+					if v == st {
+						found = true
+					}
+				}
+				if !found {
+					fmt.Println("Subscribed to " + st)
+					_, err := jsContext.ChanSubscribe(st, dataCh, nats.DeliverNew(), nats.AckExplicit())
+					if err != nil {
+						log.Warn().Str("where", "send active status").Str("type", "failed to add messsage to stream "+st).Msg(err.Error())
+					}
+					streams = append(streams, st)
+				}
+				msg.AckSync()
+				continue
+			}
 			var store ActiveStatus
 			notActiveStatus := json.Unmarshal(msg.Data, &store)
 			if notActiveStatus == nil {

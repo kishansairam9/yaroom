@@ -142,3 +142,8 @@ class GroupChatPageArguments {
       this.image,
       this.description});
 }
+
+const PENDING = 1;
+const FRIEND = 2;
+const REJECTED = 3;
+const RemoveFrined = 4;

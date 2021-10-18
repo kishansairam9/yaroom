@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
@@ -93,6 +94,13 @@ type friendRequest struct {
 	Status string `json:"status" binding:"required"`
 }
 
+const (
+	SendRequest   = "1"
+	AcceptRequest = "2"
+	RejectRequest = "3"
+	RemoveFrined  = "4"
+)
+
 func updateUserHandler(g *gin.Context) {
 	var req userDetails
 	if err := g.BindJSON(&req); err != nil {
@@ -107,6 +115,13 @@ func updateUserHandler(g *gin.Context) {
 }
 
 func updateGroupHandler(g *gin.Context) {
+	rawUserId, exists := g.Get("userId")
+	if !exists {
+		g.AbortWithStatusJSON(400, gin.H{"error": "user not authenticated"})
+		return
+	}
+	userId := rawUserId.(string)
+
 	var req groupDetails
 	if err := g.BindJSON(&req); err != nil {
 		log.Info().Str("where", "bind json").Str("type", "failed to parse body to json").Msg(err.Error())
@@ -135,17 +150,26 @@ func updateGroupHandler(g *gin.Context) {
 		users_list = append(users_list, curr.Userid)
 	}
 
-	obj, err := getGroupMetadata(req.GroupId)
+	obj, err := getGroupMetadata(data.Groupid)
 	if err != nil {
 		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
 		return
 	}
-	encObj, err := json.Marshal(obj)
+	print(obj.Groupid)
+	encObj, err := json.Marshal(*obj)
 	if err != nil {
 		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
 		return
 	}
-	sendUpdateOnStream([]string{"GROUP:" + req.GroupId}, encObj)
+	m := make(map[string]interface{})
+	_ = json.Unmarshal(encObj, &m)
+	m["update"] = "group"
+	encAug, _ := json.Marshal(m)
+	ensureStreamsExist([]string{"GROUP:" + data.Groupid})
+	sendUpdateOnStream([]string{"SELF:" + userId}, []byte("SUB-GROUP:"+data.Groupid))
+	time.AfterFunc(time.Duration(2)*time.Second, func() {
+		sendUpdateOnStream([]string{"GROUP:" + data.Groupid}, encAug)
+	})
 
 	g.JSON(200, groupDetails{GroupId: data.Groupid, Name: data.Name, Description: *data.Description, GroupIcon: *data.Image, GroupMembers: users_list})
 }

@@ -66,7 +66,7 @@ class _FriendsViewState extends State<FriendsView> {
                               name: result.name,
                               about: result.about,
                               userId: result.userId);
-                          if (result.status != 2)
+                          if (result.status != FRIEND)
                             return const SizedBox(
                               height: 0,
                             );
@@ -106,7 +106,7 @@ class _FriendsViewState extends State<FriendsView> {
                                 physics: NeverScrollableScrollPhysics(),
                                 itemCount: snapshot.data!.length,
                                 separatorBuilder: (_, index) =>
-                                    snapshot.data![index].status == 1
+                                    snapshot.data![index].status == PENDING
                                         ? const Divider()
                                         : SizedBox(
                                             height: 0,
@@ -117,7 +117,7 @@ class _FriendsViewState extends State<FriendsView> {
                                       name: result.name,
                                       about: result.about,
                                       userId: result.userId);
-                                  if (result.status != 1)
+                                  if (result.status != PENDING)
                                     return const SizedBox(
                                       height: 0,
                                     );
@@ -142,8 +142,8 @@ class _FriendsViewState extends State<FriendsView> {
                                           f.userId,
                                           direction ==
                                                   DismissDirection.endToStart
-                                              ? 2
-                                              : 3,
+                                              ? FRIEND
+                                              : REJECTED,
                                           context);
                                       await RepositoryProvider.of<AppDb>(
                                               context)
@@ -151,8 +151,8 @@ class _FriendsViewState extends State<FriendsView> {
                                               status: direction ==
                                                       DismissDirection
                                                           .endToStart
-                                                  ? 2
-                                                  : 3,
+                                                  ? FRIEND
+                                                  : PENDING,
                                               userId: f.userId);
                                       await Provider.of<DMsList>(context,
                                               listen: false)

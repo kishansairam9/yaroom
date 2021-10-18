@@ -103,8 +103,9 @@ class _CreateGroupState extends State<CreateGroup> {
                                         ["description"],
                                     "groupIcon": this.widget.data["group"]
                                         ["groupIcon"],
-                                    "groupMembers":
-                                        checklist.map((e) => e.id).toList()
+                                    "groupMembers": checklist
+                                        .map((e) => (e.value) ? e.id : null)
+                                        .toList()
                                   }),
                                   context);
                               for (var user in checklist) {
@@ -146,12 +147,12 @@ class _CreateGroupState extends State<CreateGroup> {
   }
 
   _createForm() {
-    var _groupData = {
-      "groupId": this.widget.data["group"]["groupId"],
-      "name": this.widget.data["group"]["name"],
-      "description": this.widget.data["group"]["description"],
-      "groupIcon": this.widget.data["group"]["groupIcon"],
-    };
+    // var _groupData = {
+    //   "groupId": this.widget.data["group"]["groupId"],
+    //   "name": this.widget.data["group"]["name"],
+    //   "description": this.widget.data["group"]["description"],
+    //   "groupIcon": this.widget.data["group"]["groupIcon"],
+    // };
     return Form(
       key: _formKey,
       child: Container(
@@ -168,7 +169,7 @@ class _CreateGroupState extends State<CreateGroup> {
                 if (value == null || value.isEmpty) {
                   return 'Please enter group name';
                 } else {
-                  _groupData["name"] = value;
+                  this.widget.data["group"]["name"] = value;
                 }
                 return null;
               },
@@ -182,7 +183,7 @@ class _CreateGroupState extends State<CreateGroup> {
                 if (value == null) {
                   return 'Please enter description';
                 } else {
-                  _groupData["description"] = value;
+                  this.widget.data["group"]["description"] = value;
                 }
                 return null;
               },
@@ -193,23 +194,50 @@ class _CreateGroupState extends State<CreateGroup> {
                 onPressed: () async {
                   if (_formKey.currentState!.validate()) {
                     _formKey.currentState!.save();
-                    await editGroup(
-                        jsonEncode(<String, dynamic>{
-                          "groupId": this.widget.data["group"]["groupId"],
-                          "name": _groupData["name"],
-                          "description": _groupData["description"],
-                          "groupIcon": _groupData["groupIcon"],
-                          "groupMembers": []
-                        }),
-                        context);
-                    await RepositoryProvider.of<AppDb>(context, listen: false)
-                        .createGroup(
-                            groupId: this.widget.data["group"]["groupId"],
-                            name: _groupData["name"],
-                            description: _groupData["description"]);
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Processing Data')),
                     );
+                    var res = await editGroup(
+                        jsonEncode(<String, dynamic>{
+                          "groupId": this.widget.data["group"]["groupId"],
+                          "name": this.widget.data["group"]["name"],
+                          "description": this.widget.data["group"]
+                              ["description"],
+                          "groupIcon": this.widget.data["group"]["groupIcon"],
+                          "groupMembers": [
+                            Provider.of<UserId>(context, listen: false)
+                          ]
+                        }),
+                        context);
+                    if (res == null) {
+                      ScaffoldMessenger.of(context).clearSnackBars();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('Group Create Failed, try again!')),
+                      );
+                      return;
+                    }
+                    this.widget.data["group"]["groupId"] =
+                        jsonDecode(res)["groupId"];
+                    await RepositoryProvider.of<AppDb>(context, listen: false)
+                        .createGroup(
+                            groupId: this.widget.data["group"]["groupId"],
+                            name: this.widget.data["group"]["name"],
+                            description: this.widget.data["group"]
+                                ["description"]);
+                    await RepositoryProvider.of<AppDb>(context, listen: false)
+                        .addUserToGroup(
+                            groupId: this.widget.data["group"]["groupId"],
+                            userId:
+                                Provider.of<UserId>(context, listen: false));
+                    ScaffoldMessenger.of(context).clearSnackBars();
+                    await Navigator.pushReplacementNamed(context, '/groupchat',
+                        arguments: GroupChatPageArguments(
+                          groupId: this.widget.data["group"]["groupId"],
+                          name: this.widget.data["group"]["name"],
+                          description: this.widget.data["group"]["description"],
+                          image: this.widget.data["group"]["groupIcon"],
+                        ));
                   }
                 },
                 child: const Text('Save'),

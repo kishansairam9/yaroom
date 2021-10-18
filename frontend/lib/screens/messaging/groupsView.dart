@@ -44,8 +44,12 @@ class GroupChatViewState extends State<GroupChatView> {
               child: Icon(Icons.people),
               onPressed: () =>
                   Navigator.of(context).pushNamed('/editgroup', arguments: {
-                "group": GroupChatPageArguments(
-                    groupId: "", name: "", image: "", description: ""),
+                "group": {
+                  "groupId": "",
+                  "name": "",
+                  "groupIcon": "",
+                  "description": ""
+                },
                 "members": []
               }),
               backgroundColor: Theme.of(context).primaryColor,
