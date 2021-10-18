@@ -2,7 +2,7 @@
 ## TODO Later
 
 ### Frontend
-- [ ] Fix Auth0 logout workaround ([Active issue](https://github.com/MaikuB/flutter_appauth/issues/48)on flutter AppAuth package) - current workaround proposed in comments redirects to browser for logout action
+- [ ] Fix Auth0 logout workaround ([Active issue](https://github.com/MaikuB/flutter_appauth/issues/48) on flutter AppAuth package) - current workaround proposed in comments redirects to browser for logout action
 - [ ] Support web
   - [ ] Configure secure storage alternative for Auth0 storage
   - [ ] Write SQL.js update statements for msgs received via FCM 
