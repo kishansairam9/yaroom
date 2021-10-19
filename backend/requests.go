@@ -167,7 +167,7 @@ func updateGroupHandler(g *gin.Context) {
 	encAug, _ := json.Marshal(m)
 	ensureStreamsExist([]string{"GROUP:" + data.Groupid})
 	sendUpdateOnStream([]string{"SELF:" + userId}, []byte("SUB-GROUP:"+data.Groupid))
-	time.AfterFunc(time.Duration(2)*time.Second, func() {
+	time.AfterFunc(time.Duration(1)*time.Second, func() {
 		sendUpdateOnStream([]string{"GROUP:" + data.Groupid}, encAug)
 	})
 
@@ -312,7 +312,19 @@ func exitGroupHandler(g *gin.Context) {
 		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
 		return
 	}
-	sendUpdateOnStream([]string{"GROUP:" + req.GroupId}, encObj)
+	m := make(map[string]interface{})
+	_ = json.Unmarshal(encObj, &m)
+	m["update"] = "group"
+	encAug, _ := json.Marshal(m)
+	sendUpdateOnStream([]string{"GROUP:" + req.GroupId}, encAug)
+	time.AfterFunc(time.Duration(1)*time.Second, func() {
+		delete(m, "update")
+		m["exit"] = "group"
+		m["delUser"] = userId
+		encAug, _ = json.Marshal(m)
+		print(encAug)
+		sendUpdateOnStream([]string{"SELF:" + userId}, encAug)
+	})
 	g.JSON(200, gin.H{"success": true})
 }
 

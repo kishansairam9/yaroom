@@ -559,6 +559,7 @@ func getUsers(userList []string) ([]User, error) {
 	final := "("
 	final += "'" + strings.Join(userList, "', '") + "'"
 	final += ")"
+	print(qb.Select("yaroom.users").Columns("userid", "name", "image").Where(qb.InLit("userid", final)).AllowFiltering().ToCql())
 	in := dbSession.Query(qb.Select("yaroom.users").Columns("userid", "name", "image").Where(qb.InLit("userid", final)).AllowFiltering().ToCql())
 	rows := make([]User, 1)
 	if err := in.SelectRelease(&rows); err != nil {

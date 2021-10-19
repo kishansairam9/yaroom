@@ -405,8 +405,6 @@ class GroupChatPageState extends State<GroupChatPage>
                                 onPressed: () async {
                                   // request to backend to remove user from group
                                   await exitGroup(widget.groupId, context);
-                                  await groupsList.removeGroup(
-                                      context, widget.groupId);
                                   await Navigator.pushReplacementNamed(
                                       context, '/');
                                 },

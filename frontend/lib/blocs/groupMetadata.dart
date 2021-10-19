@@ -23,6 +23,12 @@ class GroupMetadataMap {
     statusMap[change.groupId] = change;
     return statusMap;
   }
+
+  Map<String, GroupMetadata> delete(String groupId) {
+    Map<String, GroupMetadata> statusMap = data;
+    statusMap.remove(groupId);
+    return statusMap;
+  }
 }
 
 class GroupMetadataCubit extends Cubit<GroupMetadataMap> {
@@ -31,5 +37,9 @@ class GroupMetadataCubit extends Cubit<GroupMetadataMap> {
 
   void update(GroupMetadata data) {
     emit(GroupMetadataMap(state.update(data)));
+  }
+
+  void delete(String groupId) {
+    emit(GroupMetadataMap(state.delete(groupId)));
   }
 }

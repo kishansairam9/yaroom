@@ -3515,6 +3515,15 @@ abstract class _$AppDb extends GeneratedDatabase {
     );
   }
 
+  Future<int> deleteGroup({required String groupId}) {
+    return customUpdate(
+      'DELETE FROM GroupDMs WHERE groupId = ?1',
+      variables: [Variable<String>(groupId)],
+      updates: {groupDMs},
+      updateKind: UpdateKind.delete,
+    );
+  }
+
   Selectable<GroupDM> getGroupsNameMatching({required String match}) {
     return customSelect(
         'SELECT * FROM GroupDMs WHERE LOWER(name) LIKE \'%\' || ?1 || \'%\'',

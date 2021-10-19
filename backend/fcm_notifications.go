@@ -156,3 +156,7 @@ func sendMessageNotification(msg WSMessage) error {
 	}
 	return nil
 }
+
+func sendFriendRequestNotification() {
+
+}

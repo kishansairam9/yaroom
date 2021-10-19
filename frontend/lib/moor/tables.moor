@@ -179,6 +179,7 @@ updateFriendRequest(:userId as TEXT, :status as INT): UPDATE FriendRequests SET 
 -- Groups Table
 -------------
 createGroup(:groupId AS TEXT, :name AS TEXT, :description AS TEXT OR NULL): INSERT OR REPLACE INTO GroupDMs VALUES (:groupId, :name, :description);
+deleteGroup(:groupId AS TEXT): DELETE FROM GroupDMs WHERE groupId = :groupId; 
 getGroupsNameMatching(:match AS TEXT): SELECT * FROM GroupDMs WHERE LOWER(name) LIKE '%' || :match || '%';
 
 getGroupsMetadata: SELECT * FROM GroupDMs;

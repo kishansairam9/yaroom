@@ -82,9 +82,11 @@ class _CreateGroupState extends State<CreateGroup> {
                     if (snapshot.hasData) {
                       var checklist = [];
                       for (var e in snapshot.data!) {
+                        var f = User(
+                            userId: e.userId, name: e.name, about: e.about);
                         if (!state
                             .data[this.widget.data["groupId"]]!.groupMembers
-                            .contains(e.userId)) {
+                            .contains(f)) {
                           checklist.add(CheckBox(title: e.name, id: e.userId));
                         }
                       }
@@ -98,6 +100,12 @@ class _CreateGroupState extends State<CreateGroup> {
                           actions: [
                             TextButton(
                                 onPressed: () async {
+                                  var selectedFromChecklist = [];
+                                  checklist.forEach((e) {
+                                    if (e.value)
+                                      selectedFromChecklist.add(e.id);
+                                  });
+
                                   await editGroup(
                                       jsonEncode(<String, dynamic>{
                                         "groupId": this.widget.data["groupId"],
@@ -107,19 +115,9 @@ class _CreateGroupState extends State<CreateGroup> {
                                         "description": state
                                             .data[this.widget.data["groupId"]]!
                                             .description,
-                                        "groupMembers": checklist
-                                            .map((e) => (e.value) ? e.id : null)
-                                            .toList()
+                                        "groupMembers": selectedFromChecklist
                                       }),
                                       context);
-                                  for (var user in checklist) {
-                                    await RepositoryProvider.of<AppDb>(context,
-                                            listen: false)
-                                        .addUserToGroup(
-                                            groupId:
-                                                this.widget.data["groupId"],
-                                            userId: user.id);
-                                  }
                                   Navigator.pop(context);
                                 },
                                 child: Text(
@@ -218,6 +216,7 @@ class _CreateGroupState extends State<CreateGroup> {
                     }
                     var group = jsonDecode(res);
                     groupId = group["groupId"];
+                    this.widget.data["groupId"] = group["groupId"];
                     ScaffoldMessenger.of(context).clearSnackBars();
                     await Navigator.pushReplacementNamed(context, '/groupchat',
                         arguments: GroupChatPageArguments(
@@ -255,10 +254,13 @@ class _CreateGroupState extends State<CreateGroup> {
           title: Text(this.widget.data["groupId"] == ""
               ? "Create Group"
               : "Group Settings"),
-          actions: [
-            IconButton(
-                onPressed: () => _addMembers(), icon: Icon(Icons.person_add))
-          ],
+          actions: this.widget.data["groupId"] == ""
+              ? null
+              : [
+                  IconButton(
+                      onPressed: () => _addMembers(),
+                      icon: Icon(Icons.person_add))
+                ],
         ),
         body: SingleChildScrollView(
           child: Column(

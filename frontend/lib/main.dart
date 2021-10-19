@@ -123,9 +123,11 @@ Future<void> main() async {
             groupId: data["Groupid"],
             name: data["Name"],
             description: data["Description"]);
-        for (var user in data["Userslist"]) {
-          await db.addUserToGroup(
-              groupId: data["Groupid"], userId: user["userId"]);
+        if (data["Userslist"] != null) {
+          for (var user in data["Userslist"]) {
+            await db.addUserToGroup(
+                groupId: data["Groupid"], userId: user["userId"]);
+          }
         }
         var groupMembers =
             await db.getGroupMembers(groupID: data["Groupid"]).get();
@@ -140,7 +142,16 @@ Future<void> main() async {
         var get = groupMetadataCubit.state.data[data["Groupid"]];
         print("after update, name: ${get?.name}, desc: ${get?.description}");
       }
-      print("Update type");
+      print("update type");
+      return;
+    } else if (data.containsKey("exit")) {
+      if (data['exit'] == 'group') {
+        await db.removeUserFromGroup(
+            groupId: data["Groupid"], userId: data["delUser"]);
+        groupMetadataCubit.delete(data["Groupid"]);
+        await db.deleteGroup(groupId: data["Groupid"]);
+      }
+      print("exit type");
       return;
     }
     await updateDb(db, data, chatMeta);
