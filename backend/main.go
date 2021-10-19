@@ -267,7 +267,7 @@ func main() {
 				g.AbortWithStatus(500)
 				return
 			}
-			if err = sendMessageNotification(msg.ToUser, msg); err != nil {
+			if err = sendMessageNotification(msg); err != nil {
 				log.Error().Str("where", "fcm send to user").Str("type", "failed to send push notification").Msg(err.Error())
 				g.AbortWithStatusJSON(500, gin.H{"error": "internal server error"})
 				return

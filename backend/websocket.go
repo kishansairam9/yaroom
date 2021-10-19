@@ -171,7 +171,7 @@ func wsHandler(g *gin.Context) {
 			}
 			data, isMsg := out.(WSMessage)
 			if isMsg && data.FromUser == userId {
-				if err = sendMessageNotification(out.(WSMessage).ToUser, out.(WSMessage)); err != nil {
+				if err = sendMessageNotification(out.(WSMessage)); err != nil {
 					log.Error().Str("where", "fcm send to user").Str("type", "failed to send push notification").Msg(err.Error())
 				}
 			}
