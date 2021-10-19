@@ -3,12 +3,8 @@ import 'package:yaroom/utils/authorizationService.dart';
 import 'package:flutter/material.dart';
 import 'package:bubble/bubble.dart';
 import 'dart:convert';
-import 'dart:io' show Platform; // OS Detection
-import 'package:flutter/foundation.dart' show kIsWeb; // Web detection
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:yaroom/screens/components/msgBox.dart';
-import 'package:yaroom/screens/messaging/groupsView.dart';
 import 'package:yaroom/utils/backendRequests.dart';
 import '../components/contactView.dart';
 import '../components/searchDelegate.dart';
@@ -18,16 +14,13 @@ import '../../utils/types.dart';
 import '../../utils/notifiers.dart';
 import '../../blocs/groupChats.dart';
 import 'package:http/http.dart' as http;
+import '../../blocs/groupMetadata.dart';
 
 class GroupChatPage extends StatefulWidget {
-  late final String groupId, name;
-  late final String? image, description;
+  late final String groupId;
 
   GroupChatPage(GroupChatPageArguments args) {
     this.groupId = args.groupId;
-    this.name = args.name;
-    this.image = args.image;
-    this.description = args.description;
   }
   GroupChatPageState createState() => new GroupChatPageState();
 }
@@ -60,10 +53,8 @@ class GroupChatPageState extends State<GroupChatPage>
       case AppLifecycleState.resumed:
         Navigator.of(context).pushReplacementNamed('/groupchat',
             arguments: GroupChatPageArguments(
-                name: widget.name,
-                groupId: widget.groupId,
-                image: widget.image,
-                description: widget.description));
+              groupId: widget.groupId,
+            ));
         break;
       default:
         break;
@@ -147,46 +138,6 @@ class GroupChatPageState extends State<GroupChatPage>
         );
       }
     }
-
-    // if (msg.media != null && msg.content != null) {
-    //   return Column(
-    //     children: [
-    //       Align(
-    //           alignment: Alignment.centerLeft,
-    //           child: Text(
-    //             msg.media!,
-    //             textAlign: TextAlign.left,
-    //             style: TextStyle(color: Colors.white),
-    //           )),
-    //       Align(
-    //           alignment: Alignment.centerLeft,
-    //           child: Text(
-    //             msg.content!,
-    //             textAlign: TextAlign.left,
-    //             style: TextStyle(color: Colors.white),
-    //           )),
-    //     ],
-    //   );
-    // }
-    // if (msg.media != null && msg.content == null) {
-    //   return Align(
-    //       alignment: Alignment.centerLeft,
-    //       child: Text(
-    //         msg.media!,
-    //         textAlign: TextAlign.left,
-    //         style: TextStyle(color: Colors.white),
-    //       ));
-    // }
-    // if (msg.media == null && msg.content != null) {
-    //   return Align(
-    //       alignment: Alignment.centerLeft,
-    //       child: Text(
-    //         msg.content!,
-    //         textAlign: TextAlign.left,
-    //         style: TextStyle(color: Colors.white),
-    //       ));
-    // }
-    // return Container();
   }
 
   _buildMessage(BuildContext context, GroupChatMessage msg, bool prevIsSame,
@@ -466,15 +417,7 @@ class GroupChatPageState extends State<GroupChatPage>
                     });
               } else if (selection == 2) {
                 Navigator.pushReplacementNamed(context, '/editgroup',
-                    arguments: {
-                      "group": {
-                        "groupId": widget.groupId,
-                        "name": widget.name,
-                        "groupIcon": widget.image,
-                        "description": widget.description
-                      },
-                      "members": members
-                    });
+                    arguments: {"groupId": widget.groupId});
               }
             },
             itemBuilder: (context) => [
@@ -496,10 +439,14 @@ class GroupChatPageState extends State<GroupChatPage>
             ],
           );
         }),
-        title: Text(
-          widget.name,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontSize: 20),
+        title: BlocBuilder<GroupMetadataCubit, GroupMetadataMap>(
+          builder: (context, state) {
+            return Text(
+              state.data[widget.groupId]!.name,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 20),
+            );
+          },
         ),
         // subtitle: Text(widget.name),
       ),
@@ -537,14 +484,11 @@ class GroupChatPageState extends State<GroupChatPage>
   }
 
   Widget build(BuildContext context) {
-    return FutureBuilder<List<User>>(
-        future: RepositoryProvider.of<AppDb>(context)
-            .getGroupMembers(groupID: widget.groupId)
-            .get(),
-        builder:
-            (BuildContext _, AsyncSnapshot<List<User>> groupMembersSnapshot) {
-          if (groupMembersSnapshot.hasData) {
-            print(groupMembersSnapshot.data);
+    return BlocBuilder<GroupMetadataCubit, GroupMetadataMap>(
+        bloc: Provider.of<GroupMetadataCubit>(context, listen: false),
+        builder: (BuildContext _, state) {
+          if (state.data[widget.groupId] != null) {
+            List<User> groupMembers = state.data[widget.groupId]!.groupMembers;
             return FutureBuilder(
                 future: RepositoryProvider.of<AppDb>(context)
                     .getGroupChat(groupId: widget.groupId)
@@ -554,8 +498,7 @@ class GroupChatPageState extends State<GroupChatPage>
                   if (groupChatSnapshot.hasData) {
                     return MultiProvider(
                       providers: [
-                        Provider<List<User>>(
-                            create: (_) => groupMembersSnapshot.data!),
+                        Provider<List<User>>(create: (_) => groupMembers),
                         BlocProvider(create: (context) {
                           var cubit = GroupChatCubit(
                               groupId: widget.groupId,
@@ -598,20 +541,19 @@ class GroupChatPageState extends State<GroupChatPage>
                                 child: ListView(
                               padding: EdgeInsets.zero,
                               children: [
-                                _getDrawerHeader(groupMembersSnapshot.data!
-                                    .map((User e) => e.userId)),
-                                ...groupMembersSnapshot.data!
-                                    .map((User e) => ListTile(
-                                        onTap: () => _showContact(context, e),
-                                        tileColor: Colors.transparent,
-                                        leading: CircleAvatar(
-                                          backgroundColor: Colors.grey[350],
-                                          foregroundImage:
-                                              iconImageWrapper(e.userId),
-                                        ),
-                                        title: Text(
-                                          e.name,
-                                        )))
+                                _getDrawerHeader(
+                                    groupMembers.map((User e) => e.userId)),
+                                ...groupMembers.map((User e) => ListTile(
+                                    onTap: () => _showContact(context, e),
+                                    tileColor: Colors.transparent,
+                                    leading: CircleAvatar(
+                                      backgroundColor: Colors.grey[350],
+                                      foregroundImage:
+                                          iconImageWrapper(e.userId),
+                                    ),
+                                    title: Text(
+                                      e.name,
+                                    )))
                               ],
                             )),
                             appBar: AppBar(
@@ -622,21 +564,28 @@ class GroupChatPageState extends State<GroupChatPage>
                               titleSpacing: 0,
                               title: Builder(
                                   builder: (context) => ListTile(
-                                        onTap: () => Scaffold.of(context)
-                                            .openEndDrawer(),
-                                        contentPadding: EdgeInsets.only(
-                                            left: 0.0, right: 0.0),
-                                        tileColor: Colors.transparent,
-                                        leading: CircleAvatar(
-                                          backgroundColor: Colors.grey[350],
-                                          foregroundImage:
-                                              iconImageWrapper(widget.groupId),
-                                        ),
-                                        title: Text(
-                                          widget.name,
-                                          style: TextStyle(color: Colors.white),
-                                        ),
-                                      )),
+                                      onTap: () =>
+                                          Scaffold.of(context).openEndDrawer(),
+                                      contentPadding: EdgeInsets.only(
+                                          left: 0.0, right: 0.0),
+                                      tileColor: Colors.transparent,
+                                      leading: CircleAvatar(
+                                        backgroundColor: Colors.grey[350],
+                                        foregroundImage:
+                                            iconImageWrapper(widget.groupId),
+                                      ),
+                                      title: BlocBuilder<GroupMetadataCubit,
+                                              GroupMetadataMap>(
+                                          bloc: Provider.of<GroupMetadataCubit>(
+                                              context,
+                                              listen: false),
+                                          builder: (context, state) {
+                                            return Text(
+                                              state.data[widget.groupId]!.name,
+                                              style: TextStyle(
+                                                  color: Colors.white),
+                                            );
+                                          }))),
                               actions: <Widget>[
                                 IconButton(
                                   onPressed: () => {
@@ -684,10 +633,6 @@ class GroupChatPageState extends State<GroupChatPage>
                   }
                   return CircularProgressIndicator();
                 });
-          } else if (groupMembersSnapshot.hasError) {
-            print(groupMembersSnapshot.error);
-            return SnackBar(
-                content: Text('Error has occured while reading from local DB'));
           }
           return CircularProgressIndicator();
         });

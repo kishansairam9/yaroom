@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
-import 'dart:math';
-import 'groupPage.dart';
+import 'package:yaroom/blocs/groupMetadata.dart';
 import '../../utils/types.dart';
 import '../../utils/notifiers.dart';
+import '../../blocs/chatMeta.dart';
 
 class GroupChatView extends StatefulWidget {
   GroupChatView({Key? key}) : super(key: key);
@@ -21,37 +21,21 @@ class GroupChatViewState extends State<GroupChatView> {
     return Consumer<GroupsList>(builder: (_, GroupsList groupsList, __) {
       return Stack(
         children: [
-          FutureBuilder(
-              future: groupsList.getGroupData(context),
-              builder: (BuildContext context, AsyncSnapshot<void> snapshot) {
-                if (snapshot.hasData) {
-                  return ListView(
-                      children: ListTile.divideTiles(
-                    context: context,
-                    tiles: groupsList.groupData.map((e) =>
-                        GroupProfileTile(groupId: e.groupId, name: e.name)),
-                  ).toList());
-                } else if (snapshot.hasError) {
-                  print(snapshot.error);
-                  return SnackBar(
-                      content: Text('Error has occured while reading from DB'));
-                }
-                return CircularProgressIndicator();
-              }),
+          BlocBuilder<GroupMetadataCubit, GroupMetadataMap>(
+              builder: (BuildContext context, state) {
+            List<GroupProfileTile> tiles = [];
+            state.data.forEach((k, v) => tiles
+                .add(GroupProfileTile(groupId: k, name: state.data[k]!.name)));
+            return ListView(
+                children: ListTile.divideTiles(context: context, tiles: tiles)
+                    .toList());
+          }),
           Align(
             alignment: Alignment.bottomRight,
             child: FloatingActionButton(
               child: Icon(Icons.people),
-              onPressed: () =>
-                  Navigator.of(context).pushNamed('/editgroup', arguments: {
-                "group": {
-                  "groupId": "",
-                  "name": "",
-                  "groupIcon": "",
-                  "description": ""
-                },
-                "members": []
-              }),
+              onPressed: () => Navigator.of(context)
+                  .pushNamed('/editgroup', arguments: {"groupId": ""}),
               backgroundColor: Theme.of(context).primaryColor,
             ),
           )
@@ -63,22 +47,16 @@ class GroupChatViewState extends State<GroupChatView> {
 
 class GroupProfileTile extends StatefulWidget {
   late final String groupId;
-  late final String? image, description;
+  late final String? description;
   late final String name;
 
   late final List<dynamic> _preParams;
   late final Function? _preShowChat;
 
-  late final int? _unread;
-  late final String? _showText;
-
   GroupProfileTile(
       {required this.groupId,
       required this.name,
-      this.image,
       this.description,
-      int? unread,
-      String? showText,
       Function? preShowChat,
       List<dynamic>? preParams}) {
     _preShowChat = preShowChat ?? null;
@@ -87,41 +65,21 @@ class GroupProfileTile extends StatefulWidget {
       preShowChat!;
     }
     _preParams = preParams ?? [];
-    _unread = unread;
-    _showText = showText;
   }
 
   @override
-  GroupProfileTileState createState() => GroupProfileTileState(
-      unread: _unread,
-      showText: _showText,
-      preParams: _preParams,
-      preShowChat: _preShowChat);
+  GroupProfileTileState createState() => GroupProfileTileState();
 }
 
 class GroupProfileTileState extends State<GroupProfileTile> {
-  int _unread = 0;
-  String _showText = '';
-
-  GroupProfileTileState(
-      {int? unread,
-      String? showText,
-      Function? preShowChat,
-      List<dynamic>? preParams}) {
-    _unread = unread ?? Random().nextInt(20);
-    _showText = showText ?? '';
-  }
+  GroupProfileTileState();
 
   void _showChat() {
     if (widget._preShowChat != null) {
       Function.apply(widget._preShowChat!, widget._preParams);
     }
     Navigator.of(context).pushNamed('/groupchat',
-        arguments: GroupChatPageArguments(
-            groupId: widget.groupId,
-            name: widget.name,
-            image: widget.image,
-            description: widget.description));
+        arguments: GroupChatPageArguments(groupId: widget.groupId));
   }
 
   @override
@@ -136,22 +94,31 @@ class GroupProfileTileState extends State<GroupProfileTile> {
         radius: 28.0,
       ),
       title: Text(widget.name),
-      subtitle: Text(_showText),
-      trailing: _unread > 0
-          ?
-          // TODO: Badges float around when puled from bottom to top agressively, should animate even slightly
-          MaterialButton(
+      subtitle: BlocBuilder<ChatMetaCubit, ChatMetaState>(
+          bloc: Provider.of<ChatMetaCubit>(context, listen: false),
+          builder: (context, ChatMetaState state) {
+            return Text(state.getLastMsgPreview(widget.groupId));
+          }),
+      trailing: BlocBuilder<ChatMetaCubit, ChatMetaState>(
+          bloc: Provider.of<ChatMetaCubit>(context, listen: false),
+          builder: (context, ChatMetaState state) {
+            int unread = state.getUnread(widget.groupId);
+            return MaterialButton(
               onPressed: () {},
-              color: Colors.blueGrey[400],
-              child: Text(
-                '$_unread',
-                style: TextStyle(color: Theme.of(context).accentColor),
-              ),
+              color: unread > 0 ? Colors.blueGrey[400] : Colors.transparent,
+              height: unread == 0 ? 0 : null,
+              child: unread == 0
+                  ? null
+                  : Text(
+                      '$unread',
+                      style: TextStyle(color: Theme.of(context).accentColor),
+                    ),
               // padding: EdgeInsets.all(5),
               shape: CircleBorder(),
-            )
-          : null,
+            );
+            // }
+            // return Container();
+          }),
     );
-    // );
   }
 }

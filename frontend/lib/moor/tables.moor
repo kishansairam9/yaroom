@@ -181,6 +181,7 @@ updateFriendRequest(:userId as TEXT, :status as INT): UPDATE FriendRequests SET 
 createGroup(:groupId AS TEXT, :name AS TEXT, :description AS TEXT OR NULL): INSERT OR REPLACE INTO GroupDMs VALUES (:groupId, :name, :description);
 getGroupsNameMatching(:match AS TEXT): SELECT * FROM GroupDMs WHERE LOWER(name) LIKE '%' || :match || '%';
 
+getGroupsMetadata: SELECT * FROM GroupDMs;
 
 -------------
 -- Group-User Mapping Table

@@ -9,7 +9,7 @@ import 'package:provider/provider.dart';
 import '../screens/login.dart';
 import './types.dart';
 import './authorizationService.dart';
-import '../screens/createOrAdd/group.dart';
+import '../screens/edit/group.dart';
 
 Widget wrapWithUserId(BuildContext context, Widget child) {
   return FutureBuilder<String>(

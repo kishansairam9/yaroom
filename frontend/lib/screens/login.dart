@@ -8,9 +8,9 @@ import '../utils/authorizationService.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../utils/fcmToken.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import '../utils/fetchBackendData.dart';
+import '../blocs/groupMetadata.dart';
+import '../utils/types.dart';
 
 class LandingViewModel extends ChangeNotifier {
   bool _signingIn = false;
@@ -85,6 +85,25 @@ class LandingPage extends StatelessWidget {
       // Backend hanldes user new case :)
       // visit route `getUserDetails`
       await fetchUserDetails(accessToken!, name, context);
+      await Future.delayed(Duration(seconds: 2), () async {
+        var groups = await RepositoryProvider.of<AppDb>(context, listen: false)
+            .getGroupsMetadata()
+            .get();
+        for (var group in groups) {
+          var groupMembers =
+              await RepositoryProvider.of<AppDb>(context, listen: false)
+                  .getGroupMembers(groupID: group.groupId)
+                  .get();
+          var d = GroupMetadata(
+              groupId: group.groupId,
+              name: group.name,
+              description: group.description == null ? "" : group.description!,
+              groupMembers: groupMembers);
+          Provider.of<GroupMetadataCubit>(context, listen: false).update(d);
+          print("added group ${group.groupId} to cubit");
+        }
+      });
+
       // visit route `getLaterMessages`
       await fetchLaterMessages(accessToken, null, context);
 

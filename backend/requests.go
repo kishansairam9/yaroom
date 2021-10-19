@@ -98,7 +98,7 @@ const (
 	SendRequest   = "1"
 	AcceptRequest = "2"
 	RejectRequest = "3"
-	RemoveFrined  = "4"
+	RemoveFriend  = "4"
 )
 
 func updateUserHandler(g *gin.Context) {
@@ -329,13 +329,13 @@ func friendRequestHandler(g *gin.Context) {
 	}
 	userId := rawUserId.(string)
 
-	if req.Status == "1" {
+	if req.Status == SendRequest {
 		// User sent friend request
 		if err := addUserPendingRequest(&PendingListOfUserUpdate{Userid: req.UserId, Pendinglist: []string{userId}}); err != nil {
 			g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
 			return
 		}
-	} else if req.Status == "2" {
+	} else if req.Status == AcceptRequest {
 		// User accepted friend request
 		if err := removeUserPendingRequest(&PendingListOfUserUpdate{Userid: userId, Pendinglist: []string{req.UserId}}); err != nil {
 			g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
@@ -349,13 +349,13 @@ func friendRequestHandler(g *gin.Context) {
 			g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
 			return
 		}
-	} else if req.Status == "3" {
+	} else if req.Status == RejectRequest {
 		// User rejects friend request
 		if err := removeUserPendingRequest(&PendingListOfUserUpdate{Userid: userId, Pendinglist: []string{req.UserId}}); err != nil {
 			g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
 			return
 		}
-	} else if req.Status == "4" {
+	} else if req.Status == RemoveFriend {
 		// User removes friend
 		if err := removeUserFriend(&FriendsListOfUserUpdate{Userid: req.UserId, Friendslist: []string{userId}}); err != nil {
 			g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})

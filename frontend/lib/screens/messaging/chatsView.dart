@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'dart:math';
-import 'chatPage.dart';
 import '../../blocs/chatMeta.dart';
 import '../../utils/types.dart';
 import '../../utils/notifiers.dart';
@@ -45,7 +43,6 @@ class ChatViewState extends State<ChatView> {
 
 class ProfileTile extends StatefulWidget {
   late final String userId;
-  late final String? image;
   late final String name;
 
   late final List<dynamic> _preParams;
@@ -54,9 +51,6 @@ class ProfileTile extends StatefulWidget {
   ProfileTile(
       {required this.userId,
       required this.name,
-      this.image,
-      int? unread,
-      String? showText,
       Function? preShowChat,
       List<dynamic>? preParams}) {
     _preShowChat = preShowChat ?? null;

@@ -28,6 +28,7 @@ import 'package:flutter_appauth/flutter_appauth.dart';
 import 'utils/authorizationService.dart';
 import 'moor/utils.dart';
 import 'utils/fetchBackendData.dart';
+import 'blocs/groupMetadata.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 bool removeExistingDB = true;
@@ -98,6 +99,8 @@ Future<void> main() async {
   var activeStatus = ActiveStatusMap(statusMap: Map());
   var chatMeta = ChatMetaCubit();
   var msgStream = MessageExchangeStream();
+  var groupMetadataCubit =
+      GroupMetadataCubit(initialState: GroupMetadataMap(Map()));
   msgStream.stream.listen((encodedData) async {
     print("Got encoded data::::::\n" + encodedData);
     if (encodedData == "" ||
@@ -115,6 +118,28 @@ Future<void> main() async {
           "Active status recieved for ${data['userId']} as ${data['active']}");
       return;
     } else if (data.containsKey('update')) {
+      if (data['update'] == 'group') {
+        await db.createGroup(
+            groupId: data["Groupid"],
+            name: data["Name"],
+            description: data["Description"]);
+        for (var user in data["Userslist"]) {
+          await db.addUserToGroup(
+              groupId: data["Groupid"], userId: user["userId"]);
+        }
+        var groupMembers =
+            await db.getGroupMembers(groupID: data["Groupid"]).get();
+        var d = GroupMetadata(
+            groupId: data["Groupid"],
+            name: data["Name"],
+            description:
+                data["Description"] == null ? "" : data["Description"]!,
+            groupMembers: groupMembers);
+        groupMetadataCubit.update(d);
+        print("added group ${data["Groupid"]} to cubit");
+        var get = groupMetadataCubit.state.data[data["Groupid"]];
+        print("after update, name: ${get?.name}, desc: ${get?.description}");
+      }
       print("Update type");
       return;
     }
@@ -150,8 +175,14 @@ Future<void> main() async {
   final SecureStorageService secureStorageService =
       SecureStorageService(secureStorage);
 
-  runApp(MyApp(db, msgStream, secureStorageService, fcmTokenCubit, activeStatus,
-      chatMeta));
+  runApp(MyApp(
+      db: db,
+      msgExchangeStream: msgStream,
+      secureStorageService: secureStorageService,
+      fcmTokenCubit: fcmTokenCubit,
+      activeStatus: activeStatus,
+      chatMetaCubit: chatMeta,
+      groupMetadataCubit: groupMetadataCubit));
 }
 
 class MyApp extends StatelessWidget {
@@ -161,21 +192,15 @@ class MyApp extends StatelessWidget {
   late final FcmTokenCubit fcmTokenCubit;
   late final ActiveStatusMap activeStatus;
   late final ChatMetaCubit chatMetaCubit;
-
+  late final GroupMetadataCubit groupMetadataCubit;
   MyApp(
-      AppDb db,
-      MessageExchangeStream msgExchangeStream,
-      SecureStorageService secureStorageService,
-      FcmTokenCubit fcmTokenCubit,
-      ActiveStatusMap activeStatus,
-      ChatMetaCubit chatMetaCubit) {
-    this.db = db;
-    this.secureStorageService = secureStorageService;
-    this.msgExchangeStream = msgExchangeStream;
-    this.fcmTokenCubit = fcmTokenCubit;
-    this.chatMetaCubit = chatMetaCubit;
-    this.activeStatus = activeStatus;
-  }
+      {required AppDb this.db,
+      required MessageExchangeStream this.msgExchangeStream,
+      required SecureStorageService this.secureStorageService,
+      required FcmTokenCubit this.fcmTokenCubit,
+      required ActiveStatusMap this.activeStatus,
+      required ChatMetaCubit this.chatMetaCubit,
+      required GroupMetadataCubit this.groupMetadataCubit});
 
   Future<String> getInitialRoute(BuildContext context) async {
     final String? idToken = await secureStorageService.getIdToken();
@@ -199,13 +224,31 @@ class MyApp extends StatelessWidget {
               .getUserId();
       Provider.of<ActiveStatusMap>(context, listen: false).add(userid);
       Provider.of<ActiveStatusMap>(context, listen: false).update(userid, true);
-      // This must be before fetch is calleed
+      // This must be before fetch is called
       Provider.of<ChatMetaCubit>(context, listen: false).setUser(userid);
       // Backend hanldes user new case :)
       // visit route `getUserDetails`
       await fetchUserDetails(
           accessToken, parseIdToken(idToken)["name"], context);
       print(accessToken);
+      await Future.delayed(Duration(seconds: 2), () async {
+        var groups = await RepositoryProvider.of<AppDb>(context, listen: false)
+            .getGroupsMetadata()
+            .get();
+        for (var group in groups) {
+          var groupMembers =
+              await RepositoryProvider.of<AppDb>(context, listen: false)
+                  .getGroupMembers(groupID: group.groupId)
+                  .get();
+          var d = GroupMetadata(
+              groupId: group.groupId,
+              name: group.name,
+              description: group.description == null ? "" : group.description!,
+              groupMembers: groupMembers);
+          Provider.of<GroupMetadataCubit>(context, listen: false).update(d);
+          print("added group ${group.groupId} to cubit");
+        }
+      });
       // visit route `getLaterMessages`
       await fetchLaterMessages(accessToken, null, context);
       return Future.value('/');
@@ -230,7 +273,7 @@ class MyApp extends StatelessWidget {
                     Provider.of<AuthorizationService>(context, listen: false),
                   )),
           BlocProvider<RoomsCubit>(create: (_) => RoomsCubit()),
-          // BlocProvider(create: create)
+          BlocProvider<GroupMetadataCubit>(create: (_) => groupMetadataCubit),
           RepositoryProvider<AppDb>.value(value: db),
           Provider<MessageExchangeStream>.value(value: msgExchangeStream),
           BlocProvider<FcmTokenCubit>.value(value: fcmTokenCubit),

@@ -3526,6 +3526,12 @@ abstract class _$AppDb extends GeneratedDatabase {
         }).map(groupDMs.mapFromRow);
   }
 
+  Selectable<GroupDM> getGroupsMetadata() {
+    return customSelect('SELECT * FROM GroupDMs', variables: [], readsFrom: {
+      groupDMs,
+    }).map(groupDMs.mapFromRow);
+  }
+
   Future<int> addUserToGroup(
       {required String groupId, required String userId}) {
     return customInsert(

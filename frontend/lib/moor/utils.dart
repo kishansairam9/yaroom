@@ -93,7 +93,7 @@ Future<void> updateDb(
     )
         .whenComplete(() {
       chatMeta.update(
-          data['roomId'],
+          data['roomId'] + ":" + data['channelId'],
           !data.containsKey('content') || data['content'] == ''
               ? 'Media'
               : data['content']

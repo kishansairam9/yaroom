@@ -10,8 +10,8 @@ import 'dart:io';
 import 'package:provider/provider.dart';
 import '../../utils/authorizationService.dart';
 import '../../utils/notifiers.dart';
-import '../messaging/groupsView.dart';
 import 'package:http/http.dart' as http;
+import '../../blocs/groupMetadata.dart';
 
 class CreateGroup extends StatefulWidget {
   final data;
@@ -43,7 +43,7 @@ class _CreateGroupState extends State<CreateGroup> {
     FilePickerResult? _paths = await FilePicker.platform
         .pickFiles(type: FileType.image, allowMultiple: false, withData: false);
     if (_paths != null) {
-      media['iconId'] = this.widget.data["group"]["groupId"];
+      media['iconId'] = this.widget.data["groupId"];
       File? croppedFile = await ImageCropper.cropImage(
           sourcePath: _paths.files.first.path!,
           compressFormat: ImageCompressFormat.jpg,
@@ -71,88 +71,89 @@ class _CreateGroupState extends State<CreateGroup> {
     showModalBottomSheet(
         context: context,
         builder: (BuildContext c) {
-          return FutureBuilder(
-              future: RepositoryProvider.of<AppDb>(context)
-                  .getFriendRequests()
-                  .get(),
-              builder: (BuildContext context,
-                  AsyncSnapshot<List<GetFriendRequestsResult>> snapshot) {
-                if (snapshot.hasData) {
-                  var checklist = [];
-                  for (var e in snapshot.data!) {
-                    if (!this.widget.data["members"].contains(e.userId)) {
-                      checklist.add(CheckBox(title: e.name, id: e.userId));
+          return BlocBuilder<GroupMetadataCubit, GroupMetadataMap>(
+            builder: (context, state) {
+              return FutureBuilder(
+                  future: RepositoryProvider.of<AppDb>(context)
+                      .getFriendRequests()
+                      .get(),
+                  builder: (BuildContext context,
+                      AsyncSnapshot<List<GetFriendRequestsResult>> snapshot) {
+                    if (snapshot.hasData) {
+                      var checklist = [];
+                      for (var e in snapshot.data!) {
+                        if (!state
+                            .data[this.widget.data["groupId"]]!.groupMembers
+                            .contains(e.userId)) {
+                          checklist.add(CheckBox(title: e.name, id: e.userId));
+                        }
+                      }
+                      return Scaffold(
+                        appBar: AppBar(
+                          leading: Builder(
+                              builder: (context) => IconButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  icon: Icon(Icons.arrow_back))),
+                          title: Text("Add more people!"),
+                          actions: [
+                            TextButton(
+                                onPressed: () async {
+                                  await editGroup(
+                                      jsonEncode(<String, dynamic>{
+                                        "groupId": this.widget.data["groupId"],
+                                        "name": state
+                                            .data[this.widget.data["groupId"]]!
+                                            .name,
+                                        "description": state
+                                            .data[this.widget.data["groupId"]]!
+                                            .description,
+                                        "groupMembers": checklist
+                                            .map((e) => (e.value) ? e.id : null)
+                                            .toList()
+                                      }),
+                                      context);
+                                  for (var user in checklist) {
+                                    await RepositoryProvider.of<AppDb>(context,
+                                            listen: false)
+                                        .addUserToGroup(
+                                            groupId:
+                                                this.widget.data["groupId"],
+                                            userId: user.id);
+                                  }
+                                  Navigator.pop(context);
+                                },
+                                child: Text(
+                                  "ADD",
+                                  style: TextStyle(color: Colors.white),
+                                ))
+                          ],
+                        ),
+                        body: checklist.length == 0
+                            ? Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Text(
+                                    "All your friends are added to the group!"),
+                              )
+                            : ListView(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16.0),
+                                children: [...checklist],
+                              ),
+                      );
+                    } else if (snapshot.hasError) {
+                      print(snapshot.error);
+                      return SnackBar(
+                          content: Text(
+                              'Error has occured while reading from local DB'));
                     }
-                  }
-                  return Scaffold(
-                    appBar: AppBar(
-                      leading: Builder(
-                          builder: (context) => IconButton(
-                              onPressed: () => Navigator.pop(context),
-                              icon: Icon(Icons.arrow_back))),
-                      title: Text("Add more people!"),
-                      actions: [
-                        TextButton(
-                            onPressed: () async {
-                              await editGroup(
-                                  jsonEncode(<String, dynamic>{
-                                    "groupId": this.widget.data["group"]
-                                        ["groupId"],
-                                    "name": this.widget.data["group"]["name"],
-                                    "description": this.widget.data["group"]
-                                        ["description"],
-                                    "groupIcon": this.widget.data["group"]
-                                        ["groupIcon"],
-                                    "groupMembers": checklist
-                                        .map((e) => (e.value) ? e.id : null)
-                                        .toList()
-                                  }),
-                                  context);
-                              for (var user in checklist) {
-                                await RepositoryProvider.of<AppDb>(context,
-                                        listen: false)
-                                    .addUserToGroup(
-                                        groupId: this.widget.data["group"]
-                                            ["groupId"],
-                                        userId: user.id);
-                              }
-                              Navigator.pop(context);
-                            },
-                            child: Text(
-                              "ADD",
-                              style: TextStyle(color: Colors.white),
-                            ))
-                      ],
-                    ),
-                    body: checklist.length == 0
-                        ? Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Text(
-                                "All your friends are added to the group!"),
-                          )
-                        : ListView(
-                            padding: const EdgeInsets.symmetric(vertical: 16.0),
-                            children: [...checklist],
-                          ),
-                  );
-                } else if (snapshot.hasError) {
-                  print(snapshot.error);
-                  return SnackBar(
-                      content: Text(
-                          'Error has occured while reading from local DB'));
-                }
-                return Container();
-              });
+                    return Container();
+                  });
+            },
+          );
         });
   }
 
-  _createForm() {
-    // var _groupData = {
-    //   "groupId": this.widget.data["group"]["groupId"],
-    //   "name": this.widget.data["group"]["name"],
-    //   "description": this.widget.data["group"]["description"],
-    //   "groupIcon": this.widget.data["group"]["groupIcon"],
-    // };
+  Widget _createForm(String groupId, String name, String description) {
     return Form(
       key: _formKey,
       child: Container(
@@ -162,20 +163,20 @@ class _CreateGroupState extends State<CreateGroup> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             TextFormField(
-              initialValue: this.widget.data["group"]["name"],
+              initialValue: name,
               decoration: const InputDecoration(
                   icon: Icon(Icons.person_add), labelText: 'Enter Group Name'),
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Please enter group name';
                 } else {
-                  this.widget.data["group"]["name"] = value;
+                  name = value;
                 }
                 return null;
               },
             ),
             TextFormField(
-              initialValue: this.widget.data["group"]["description"],
+              initialValue: description,
               decoration: const InputDecoration(
                   icon: Icon(Icons.text_snippet),
                   labelText: 'Enter Group Description'),
@@ -183,7 +184,7 @@ class _CreateGroupState extends State<CreateGroup> {
                 if (value == null) {
                   return 'Please enter description';
                 } else {
-                  this.widget.data["group"]["description"] = value;
+                  description = value;
                 }
                 return null;
               },
@@ -199,11 +200,9 @@ class _CreateGroupState extends State<CreateGroup> {
                     );
                     var res = await editGroup(
                         jsonEncode(<String, dynamic>{
-                          "groupId": this.widget.data["group"]["groupId"],
-                          "name": this.widget.data["group"]["name"],
-                          "description": this.widget.data["group"]
-                              ["description"],
-                          "groupIcon": this.widget.data["group"]["groupIcon"],
+                          "groupId": groupId,
+                          "name": name,
+                          "description": description,
                           "groupMembers": [
                             Provider.of<UserId>(context, listen: false)
                           ]
@@ -217,28 +216,12 @@ class _CreateGroupState extends State<CreateGroup> {
                       );
                       return;
                     }
-                    this.widget.data["group"]["groupId"] =
-                        jsonDecode(res)["groupId"];
-                    await RepositoryProvider.of<AppDb>(context, listen: false)
-                        .createGroup(
-                            groupId: this.widget.data["group"]["groupId"],
-                            name: this.widget.data["group"]["name"],
-                            description: this.widget.data["group"]
-                                ["description"]);
-                    await RepositoryProvider.of<AppDb>(context, listen: false)
-                        .addUserToGroup(
-                            groupId: this.widget.data["group"]["groupId"],
-                            userId:
-                                Provider.of<UserId>(context, listen: false));
+                    var group = jsonDecode(res);
+                    groupId = group["groupId"];
                     ScaffoldMessenger.of(context).clearSnackBars();
-                    await Provider.of<GroupsList>(context, listen: false)
-                        .triggerRerender();
                     await Navigator.pushReplacementNamed(context, '/groupchat',
                         arguments: GroupChatPageArguments(
-                          groupId: this.widget.data["group"]["groupId"],
-                          name: this.widget.data["group"]["name"],
-                          description: this.widget.data["group"]["description"],
-                          image: this.widget.data["group"]["groupIcon"],
+                          groupId: groupId,
                         ));
                   }
                 },
@@ -258,16 +241,18 @@ class _CreateGroupState extends State<CreateGroup> {
           leading: Builder(
               builder: (context) => IconButton(
                   onPressed: () async {
-                    await Navigator.pushReplacementNamed(context, '/groupchat',
-                        arguments: GroupChatPageArguments(
-                          groupId: this.widget.data["group"]["groupId"],
-                          name: this.widget.data["group"]["name"],
-                          description: this.widget.data["group"]["description"],
-                          image: this.widget.data["group"]["groupIcon"],
-                        ));
+                    if (this.widget.data["groupId"] == "")
+                      Navigator.pop(context);
+                    else {
+                      await Navigator.pushReplacementNamed(
+                          context, '/groupchat',
+                          arguments: GroupChatPageArguments(
+                            groupId: this.widget.data["groupId"],
+                          ));
+                    }
                   },
                   icon: Icon(Icons.arrow_back))),
-          title: Text(this.widget.data["group"]["groupId"] == ""
+          title: Text(this.widget.data["groupId"] == ""
               ? "Create Group"
               : "Group Settings"),
           actions: [
@@ -294,8 +279,7 @@ class _CreateGroupState extends State<CreateGroup> {
                       return Image(
                           height: 300,
                           width: 300,
-                          image: iconImageWrapper(
-                              this.widget.data["group"]["groupId"]));
+                          image: iconImageWrapper(this.widget.data["groupId"]));
                     }
                     return CircularProgressIndicator();
                   }),
@@ -339,7 +323,19 @@ class _CreateGroupState extends State<CreateGroup> {
                   },
                 ),
               ),
-              _createForm()
+              BlocBuilder<GroupMetadataCubit, GroupMetadataMap>(
+                builder: (context, state) {
+                  return _createForm(
+                      this.widget.data["groupId"],
+                      state.data[this.widget.data["groupId"]] == null
+                          ? ""
+                          : state.data[this.widget.data["groupId"]]!.name,
+                      state.data[this.widget.data["groupId"]] == null
+                          ? ""
+                          : state
+                              .data[this.widget.data["groupId"]]!.description);
+                },
+              )
             ],
           ),
         ));

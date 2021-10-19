@@ -20,7 +20,7 @@ ImageProvider iconImageWrapper(String? src) {
     url += "/" + src;
   }
   url += "?time=" + DateTime.now().toString();
-  print("Sent image request to $url");
+  // print("Sent image request to $url");
   return NetworkImage(url);
 }
 
@@ -46,40 +46,6 @@ Future<void> saveFileToMediaStore(File file, String name) async {
   await mediaStore.addItem(file: file, name: name);
 }
 
-class CounterStorage {
-  Future<String> get _localPath async {
-    final directory = await getApplicationDocumentsDirectory();
-
-    return directory.path;
-  }
-
-  Future<File> _localFile(String filename) async {
-    final path = await _localPath;
-    return File('$path/' + filename);
-  }
-
-  Future<int> readCounter(String filename) async {
-    try {
-      final file = await _localFile(filename);
-
-      // Read the file
-      final contents = await file.readAsString();
-
-      return int.parse(contents);
-    } catch (e) {
-      // If encountering an error, return 0
-      return 0;
-    }
-  }
-
-  Future<File> writeCounter(String filename, Uint8List bytes) async {
-    final file = await _localFile(filename);
-
-    // Write the file
-    return file.writeAsBytes(bytes);
-  }
-}
-
 class RoomArguments extends HomePageArguments {
   RoomArguments({roomId, roomName, channelId})
       : super(
@@ -96,20 +62,6 @@ class FilePickerDetails {
   int filesAttached;
   Map<dynamic, dynamic> media;
   FilePickerDetails({required this.media, required this.filesAttached});
-  // void updateState(Map<dynamic, dynamic> media, int i) {
-  //   this.media = media;
-  //   filesAttached = i;
-  //   print(filesAttached);
-  //   print(media);
-  // }
-
-  // Map<dynamic, dynamic> getMedia() {
-  //   return media;
-  // }
-
-  // int getFilesAttached() {
-  //   return filesAttached;
-  // }
 }
 
 class FilePickerCubit extends Cubit<FilePickerDetails> {
@@ -133,17 +85,9 @@ class IconPickerCubit extends Cubit<FilePickerDetails> {
 }
 
 class GroupChatPageArguments {
-  late final String groupId, name;
-  late final String? image, description;
+  late final String groupId;
 
-  GroupChatPageArguments(
-      {required this.groupId,
-      required this.name,
-      this.image,
-      this.description});
+  GroupChatPageArguments({required this.groupId});
 }
 
-const PENDING = 1;
-const FRIEND = 2;
-const REJECTED = 3;
-const RemoveFrined = 4;
+enum FriendRequestType { placeholder, pending, friend, reject, removeFriend }

@@ -5,8 +5,7 @@ import 'package:yaroom/utils/backendRequests.dart';
 import '../../utils/types.dart';
 import '../../utils/notifiers.dart';
 import 'contactView.dart';
-import '../createOrAdd/friend.dart';
-import '../messaging/chatsView.dart';
+import '../edit/friend.dart';
 
 class FriendsView extends StatefulWidget {
   const FriendsView({Key? key}) : super(key: key);
@@ -66,7 +65,7 @@ class _FriendsViewState extends State<FriendsView> {
                               name: result.name,
                               about: result.about,
                               userId: result.userId);
-                          if (result.status != FRIEND)
+                          if (result.status != FriendRequestType.pending)
                             return const SizedBox(
                               height: 0,
                             );
@@ -106,7 +105,8 @@ class _FriendsViewState extends State<FriendsView> {
                                 physics: NeverScrollableScrollPhysics(),
                                 itemCount: snapshot.data!.length,
                                 separatorBuilder: (_, index) =>
-                                    snapshot.data![index].status == PENDING
+                                    snapshot.data![index].status ==
+                                            FriendRequestType.pending
                                         ? const Divider()
                                         : SizedBox(
                                             height: 0,
@@ -117,7 +117,8 @@ class _FriendsViewState extends State<FriendsView> {
                                       name: result.name,
                                       about: result.about,
                                       userId: result.userId);
-                                  if (result.status != PENDING)
+                                  if (result.status !=
+                                      FriendRequestType.pending)
                                     return const SizedBox(
                                       height: 0,
                                     );
@@ -140,19 +141,21 @@ class _FriendsViewState extends State<FriendsView> {
                                         (DismissDirection direction) async {
                                       await friendRequest(
                                           f.userId,
-                                          direction ==
-                                                  DismissDirection.endToStart
-                                              ? FRIEND
-                                              : REJECTED,
+                                          (direction ==
+                                                  DismissDirection.endToStart)
+                                              ? FriendRequestType.friend.index
+                                              : FriendRequestType.reject.index,
                                           context);
                                       await RepositoryProvider.of<AppDb>(
                                               context)
                                           .updateFriendRequest(
-                                              status: direction ==
+                                              status: (direction ==
                                                       DismissDirection
-                                                          .endToStart
-                                                  ? FRIEND
-                                                  : PENDING,
+                                                          .endToStart)
+                                                  ? FriendRequestType
+                                                      .friend.index
+                                                  : FriendRequestType
+                                                      .pending.index,
                                               userId: f.userId);
                                       await Provider.of<DMsList>(context,
                                               listen: false)
