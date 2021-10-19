@@ -15,6 +15,7 @@ import '../../utils/notifiers.dart';
 import '../../blocs/groupChats.dart';
 import 'package:http/http.dart' as http;
 import '../../blocs/groupMetadata.dart';
+import '../../blocs/activeStatus.dart';
 
 class GroupChatPage extends StatefulWidget {
   late final String groupId;
@@ -448,7 +449,6 @@ class GroupChatPageState extends State<GroupChatPage>
             );
           },
         ),
-        // subtitle: Text(widget.name),
       ),
       Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -543,17 +543,49 @@ class GroupChatPageState extends State<GroupChatPage>
                               children: [
                                 _getDrawerHeader(
                                     groupMembers.map((User e) => e.userId)),
-                                ...groupMembers.map((User e) => ListTile(
-                                    onTap: () => _showContact(context, e),
-                                    tileColor: Colors.transparent,
-                                    leading: CircleAvatar(
-                                      backgroundColor: Colors.grey[350],
-                                      foregroundImage:
-                                          iconImageWrapper(e.userId),
-                                    ),
-                                    title: Text(
-                                      e.name,
-                                    )))
+                                ...groupMembers.map((User e) =>
+                                    BlocBuilder<ActiveStatusCubit, bool>(
+                                      bloc:
+                                          Provider.of<ActiveStatusMap>(context)
+                                              .get(e.userId),
+                                      builder: (context, state) {
+                                        return ListTile(
+                                            onTap: () => showModalBottomSheet(
+                                                context: context,
+                                                builder: (BuildContext c) {
+                                                  return ViewContact(e);
+                                                }),
+                                            tileColor: Colors.transparent,
+                                            leading: Stack(
+                                              children: [
+                                                CircleAvatar(
+                                                  backgroundColor:
+                                                      Colors.grey[350],
+                                                  foregroundImage:
+                                                      iconImageWrapper(
+                                                          e.userId),
+                                                ),
+                                                Positioned(
+                                                    bottom: 0,
+                                                    right: 0,
+                                                    child: Container(
+                                                        width: 15,
+                                                        height: 15,
+                                                        decoration:
+                                                            new BoxDecoration(
+                                                          color: state
+                                                              ? Colors.green
+                                                              : Colors.grey,
+                                                          shape:
+                                                              BoxShape.circle,
+                                                        )))
+                                              ],
+                                            ),
+                                            title: Text(
+                                              e.name,
+                                            ));
+                                      },
+                                    ))
                               ],
                             )),
                             appBar: AppBar(

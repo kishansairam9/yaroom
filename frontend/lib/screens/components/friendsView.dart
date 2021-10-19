@@ -6,6 +6,7 @@ import '../../utils/types.dart';
 import '../../utils/notifiers.dart';
 import 'contactView.dart';
 import '../edit/friend.dart';
+import '../../blocs/activeStatus.dart';
 
 class FriendsView extends StatefulWidget {
   const FriendsView({Key? key}) : super(key: key);
@@ -57,32 +58,57 @@ class _FriendsViewState extends State<FriendsView> {
                 ),
                 body: TabBarView(
                   children: [
-                    ListView.builder(
-                        itemCount: snapshot.data!.length,
-                        itemBuilder: (context, index) {
-                          var result = snapshot.data![index];
-                          User f = User(
-                              name: result.name,
-                              about: result.about,
-                              userId: result.userId);
-                          if (result.status != FriendRequestType.pending)
-                            return const SizedBox(
-                              height: 0,
+                    ListView(
+                        children:
+                            snapshot.data!.map((GetFriendRequestsResult e) {
+                      if (e.status != FriendRequestType.friend.index) {
+                        return const SizedBox(
+                          height: 0,
+                        );
+                      }
+                      return BlocBuilder<ActiveStatusCubit, bool>(
+                          bloc: Provider.of<ActiveStatusMap>(context)
+                              .get(e.userId),
+                          builder: (context, state) {
+                            return ListTile(
+                              onTap: () => showModalBottomSheet(
+                                  context: context,
+                                  builder: (BuildContext c) {
+                                    return ViewContact(e);
+                                  }),
+                              tileColor: Colors.transparent,
+                              leading: Stack(
+                                children: [
+                                  CircleAvatar(
+                                    backgroundColor: Colors.grey[350],
+                                    foregroundImage: iconImageWrapper(e.userId),
+                                  ),
+                                  Positioned(
+                                      bottom: 0,
+                                      right: 0,
+                                      child: Container(
+                                          width: 15,
+                                          height: 15,
+                                          decoration: new BoxDecoration(
+                                            color: state
+                                                ? Colors.green
+                                                : Colors.grey,
+                                            shape: BoxShape.circle,
+                                          )))
+                                ],
+                              ),
+                              title: Text(
+                                e.name,
+                              ),
+                              trailing: IconButton(
+                                  onPressed: () => Navigator.of(context)
+                                      .pushNamed('/chat',
+                                          arguments: ChatPageArguments(
+                                              userId: e.userId, name: e.name)),
+                                  icon: Icon(Icons.message_rounded)),
                             );
-                          return ListTile(
-                            onTap: () => _showContact(context, f),
-                            leading: CircleAvatar(
-                                foregroundImage: iconImageWrapper(f.userId)),
-                            title: Text(f.name),
-                            subtitle: Text("Active"),
-                            trailing: IconButton(
-                                onPressed: () => Navigator.of(context)
-                                    .pushNamed('/chat',
-                                        arguments: ChatPageArguments(
-                                            userId: f.userId, name: f.name)),
-                                icon: Icon(Icons.message_rounded)),
-                          );
-                        }),
+                          });
+                    }).toList()),
                     Scaffold(
                       bottomSheet: Container(
                           height: 40,

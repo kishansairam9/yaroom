@@ -228,12 +228,6 @@ class HomePageState extends State<HomePage> {
                                   ])
                             ])),
                         ...roomMembersSnapshot.data!.map((User e) =>
-                            // BlocProvider(
-                            //   create: (context) =>
-                            //       ActiveStatusCubit(initialState: false),
-                            //   child: Builder(
-                            //     builder: (context) {
-                            //       return
                             BlocBuilder<ActiveStatusCubit, bool>(
                               bloc: Provider.of<ActiveStatusMap>(context)
                                   .get(e.userId),
