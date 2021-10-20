@@ -240,6 +240,8 @@ class MyApp extends StatelessWidget {
       Provider.of<ChatMetaCubit>(context, listen: false).setUser(userid);
       // Backend hanldes user new case :)
       // visit route `getUserDetails`
+      print(parseIdToken(idToken));
+      print(parseIdToken(idToken)["name"]);
       await fetchUserDetails(
           accessToken, parseIdToken(idToken)["name"], context);
       print(accessToken);

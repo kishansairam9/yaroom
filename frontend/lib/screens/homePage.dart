@@ -27,19 +27,21 @@ class HomePage extends StatefulWidget {
   late final String? channelId;
 
   HomePage(HomePageArguments args) {
-    if (args.index == null) {
-      initIndex = 1;
-      this.roomId = null;
-      this.roomName = null;
-      this.channelId = null;
-      return;
-    }
     if (args.index == 0) {
       this.roomId = args.roomId!;
       this.roomName = args.roomName!;
       this.channelId = args.channelId;
+      this.initIndex = 0;
+      return;
     }
-    this.initIndex = args.index!;
+    if (args.index == null) {
+      initIndex = 1;
+    } else {
+      this.initIndex = args.index!;
+    }
+    this.roomId = null;
+    this.roomName = null;
+    this.channelId = null;
   }
 
   @override
