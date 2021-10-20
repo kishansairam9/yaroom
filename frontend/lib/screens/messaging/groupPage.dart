@@ -507,7 +507,14 @@ class GroupChatPageState extends State<GroupChatPage>
                                   .stream
                                   .where((encodedData) {
                             var data = jsonDecode(encodedData);
-                            return data['groupId'] == widget.groupId;
+                            if (data.containsKey('error') ||
+                                data.containsKey('active') ||
+                                data.containsKey('update') ||
+                                data.containsKey('exit')) {
+                              return false;
+                            }
+                            return data['type'] == 'GroupMessage' &&
+                                data['groupId'] == widget.groupId;
                           }).listen((encodedData) {
                             var data = jsonDecode(encodedData);
                             cubit.addMessage(

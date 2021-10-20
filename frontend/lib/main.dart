@@ -125,6 +125,7 @@ Future<void> main() async {
             description: data["Description"]);
         if (data["Userslist"] != null) {
           for (var user in data["Userslist"]) {
+            await db.addUser(userId: user["userId"], name: user["name"]);
             await db.addUserToGroup(
                 groupId: data["Groupid"], userId: user["userId"]);
           }
@@ -205,13 +206,13 @@ class MyApp extends StatelessWidget {
   late final ChatMetaCubit chatMetaCubit;
   late final GroupMetadataCubit groupMetadataCubit;
   MyApp(
-      {required AppDb this.db,
-      required MessageExchangeStream this.msgExchangeStream,
-      required SecureStorageService this.secureStorageService,
-      required FcmTokenCubit this.fcmTokenCubit,
-      required ActiveStatusMap this.activeStatus,
-      required ChatMetaCubit this.chatMetaCubit,
-      required GroupMetadataCubit this.groupMetadataCubit});
+      {required this.db,
+      required this.msgExchangeStream,
+      required this.secureStorageService,
+      required this.fcmTokenCubit,
+      required this.activeStatus,
+      required this.chatMetaCubit,
+      required this.groupMetadataCubit});
 
   Future<String> getInitialRoute(BuildContext context) async {
     final String? idToken = await secureStorageService.getIdToken();

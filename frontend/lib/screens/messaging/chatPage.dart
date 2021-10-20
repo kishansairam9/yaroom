@@ -395,8 +395,15 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                       .stream
                       .where((encodedData) {
                 var data = jsonDecode(encodedData);
-                return (data['fromUser'] == widget.userId ||
-                    data['toUser'] == widget.userId);
+                if (data.containsKey('error') ||
+                    data.containsKey('active') ||
+                    data.containsKey('update') ||
+                    data.containsKey('exit')) {
+                  return false;
+                }
+                return (data['type'] == 'ChatMessage' &&
+                    (data['fromUser'] == widget.userId ||
+                        data['toUser'] == widget.userId));
               }).listen((encodedData) {
                 var data = jsonDecode(encodedData);
                 cubit.addMessage(
