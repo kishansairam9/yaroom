@@ -24,6 +24,8 @@ ImageProvider iconImageWrapper(String? src) {
   return NetworkImage(url);
 }
 
+StreamController<String>? foregroundNotifSelect;
+
 class HomePageArguments {
   late final int? index;
   late final String? roomId;

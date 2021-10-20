@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:bottom_navy_bar/bottom_navy_bar.dart';
 import 'package:provider/provider.dart';
@@ -55,35 +58,38 @@ class HomePageState extends State<HomePage> {
 
   HomePageState({required this.currentIndex});
 
-  Future<void> setupInteractedMessage() async {
-    // Get any messages which caused the application to open from
-    // a terminated state.
-    RemoteMessage? initialMessage =
-        await FirebaseMessaging.instance.getInitialMessage();
-
-    // If the message also contains a data property with a "type" of "chat",
-    // navigate to a chat screen
-    if (initialMessage != null &&
-        initialMessage.data['type'] == 'ChatMessage') {
-      List<User> data = await RepositoryProvider.of<AppDb>(context)
-          .getUserById(userId: initialMessage.data['fromUser'])
-          .get();
-      Navigator.pushNamed(context, '/chat',
-          arguments:
-              ChatPageArguments(userId: data[0].userId, name: data[0].name));
-    }
-
-    // Also handle any interaction when the app is in the background via a
-    // Stream listener
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) async {
-      if (message.data['type'] == 'ChatMessage') {
+  Future<void> notificationInteractionHandler(
+      Map<String, dynamic> content) async {
+    print("Interaction handling for $content");
+    if (content.containsKey('type')) {
+      if (content['type'] == 'ChatMessage') {
         List<User> data = await RepositoryProvider.of<AppDb>(context)
-            .getUserById(userId: message.data['fromUser'])
+            .getUserById(userId: content['fromUser'])
             .get();
         Navigator.pushNamed(context, '/chat',
             arguments:
                 ChatPageArguments(userId: data[0].userId, name: data[0].name));
       }
+    }
+  }
+
+  Future<void> foregroundNotifInteractions() async {
+    foregroundNotifSelect?.stream.listen((String content) async {
+      await notificationInteractionHandler(jsonDecode(content));
+    });
+  }
+
+  Future<void> backgroundNotifInteractions() async {
+    // Get any messages which caused the application to open from a terminated state.
+    RemoteMessage? initialMessage =
+        await FirebaseMessaging.instance.getInitialMessage();
+    if (initialMessage != null) {
+      await notificationInteractionHandler(initialMessage.data);
+    }
+
+    // Handle any interaction when the app is in the background
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) async {
+      await notificationInteractionHandler(message.data);
     });
   }
 
@@ -91,7 +97,8 @@ class HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: currentIndex);
-    setupInteractedMessage();
+    backgroundNotifInteractions();
+    foregroundNotifInteractions();
   }
 
   @override

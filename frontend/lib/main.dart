@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -83,12 +85,22 @@ Future<void> main() async {
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
+  foregroundNotifSelect = StreamController();
+
   await flutterLocalNotificationsPlugin
       .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>()
       ?.createNotificationChannel(channel);
-  await flutterLocalNotificationsPlugin.initialize(InitializationSettings(
-      android: AndroidInitializationSettings('@mipmap/ic_launcher')));
+  await flutterLocalNotificationsPlugin.initialize(
+      InitializationSettings(
+          android: AndroidInitializationSettings('@mipmap/ic_launcher')),
+      onSelectNotification: (String? payload) async {
+    print("--------------SELECTED NOTIF--------------\n");
+    print("$payload\n");
+    if (payload != null) {
+      foregroundNotifSelect?.sink.add(payload);
+    }
+  });
 
   HydratedBloc.storage = await HydratedStorage.build(
     storageDirectory: kIsWeb
@@ -172,14 +184,10 @@ Future<void> main() async {
           notification.title,
           notification.body,
           NotificationDetails(
-            android: AndroidNotificationDetails(
-              channel.id,
-              channel.name,
-              channelDescription: channel.description,
-              // icon: android.smallIcon,
-              // other properties...
-            ),
-          ));
+            android: AndroidNotificationDetails(channel.id, channel.name,
+                channelDescription: channel.description, tag: android.tag),
+          ),
+          payload: jsonEncode(message.data));
     }
   });
 
