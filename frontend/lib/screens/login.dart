@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:yaroom/blocs/activeStatus.dart';
 import 'package:yaroom/blocs/chatMeta.dart';
+import 'package:yaroom/blocs/roomMetadata.dart';
 import '../blocs/fcmToken.dart';
 import '../utils/messageExchange.dart';
 import '../utils/authorizationService.dart';
@@ -101,6 +102,33 @@ class LandingPage extends StatelessWidget {
               groupMembers: groupMembers);
           Provider.of<GroupMetadataCubit>(context, listen: false).update(d);
           print("added group ${group.groupId} to cubit");
+        }
+      });
+      await Future.delayed(Duration(seconds: 2), () async {
+        var rooms = await RepositoryProvider.of<AppDb>(context, listen: false)
+            .getRoomsMetadata()
+            .get();
+        for (var room in rooms) {
+          var roomMembers =
+              await RepositoryProvider.of<AppDb>(context, listen: false)
+                  .getRoomMembers(roomID: room.roomId)
+                  .get();
+          var roomChannels = new Map<String, String>();
+          var ChannelList =
+              await RepositoryProvider.of<AppDb>(context, listen: false)
+                  .getChannelsOfRoom(roomID: room.roomId)
+                  .get();
+          for (var channel in ChannelList) {
+            roomChannels[channel.channelId] = channel.channelName;
+          }
+          var d = RoomMetadata(
+              roomId: room.roomId,
+              name: room.name,
+              description: room.description == null ? "" : room.description!,
+              roomMembers: roomMembers,
+              roomChannels: roomChannels);
+          Provider.of<RoomMetadataCubit>(context, listen: false).update(d);
+          print("added room ${room.roomId} to cubit");
         }
       });
 

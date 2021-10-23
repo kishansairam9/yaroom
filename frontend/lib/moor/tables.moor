@@ -179,6 +179,7 @@ updateFriendRequest(:userId as TEXT, :status as INT): UPDATE FriendRequests SET 
 -- Groups Table
 -------------
 createGroup(:groupId AS TEXT, :name AS TEXT, :description AS TEXT OR NULL): INSERT OR REPLACE INTO GroupDMs VALUES (:groupId, :name, :description);
+deleteGroup(:groupId AS TEXT): DELETE FROM GroupDMs WHERE groupId = :groupId; 
 getGroupsNameMatching(:match AS TEXT): SELECT * FROM GroupDMs WHERE LOWER(name) LIKE '%' || :match || '%';
 
 getGroupsMetadata: SELECT * FROM GroupDMs;
@@ -218,8 +219,10 @@ searchGroupChatMessages(:query AS TEXT, :limit AS INT OR NULL): SELECT c.content
 -- Rooms
 --------
 createRoom(:roomId AS TEXT, :name AS TEXT, :description AS TEXT OR NULL): INSERT OR REPLACE INTO RoomsList VALUES (:roomId, :name, :description);
-
+deleteRoom(:roomId AS TEXT): DELETE FROM RoomsList WHERE roomId = :roomId; 
 getRoomDetails(:roomId AS TEXT): SELECT * FROM RoomsList WHERE roomId = :roomId;
+
+getRoomsMetadata: SELECT * FROM RoomsList;
 
 -------------
 -- Rooms-User Mapping Table
@@ -229,6 +232,7 @@ addUserToRoom(:roomId AS TEXT, :userId AS TEXT): INSERT OR REPLACE INTO RoomsUse
 getRoomsOfUser(:userID AS TEXT): SELECT DISTINCT R.roomId, R.name, R.description FROM RoomsList AS R INNER JOIN RoomsUserMapping as RM ON R.roomId = RM.roomId WHERE RM.userId = :userID;   
 
 getRoomMembers(:roomID AS TEXT): SELECT U.* FROM Users AS U, (SELECT DISTINCT userId FROM RoomsUserMapping AS RM WHERE RM.roomId = :roomID) AS UID WHERE U.userId = UID.userId; 
+removeUserFromRoom(:roomId AS TEXT, :userId AS TEXT): DELETE from RoomsUserMapping WHERE ((userId = :userId) AND (roomId = :roomId));
 
 -------------
 -- Rooms-Channels Mapping Table

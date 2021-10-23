@@ -201,7 +201,7 @@ class RoomState extends State<Room> {
                                         Text(data['name']),
                                         IconButton(
                                           icon: const Icon(Icons.file_download),
-                                          tooltip: 'Increase volume by 10',
+                                          tooltip: 'download',
                                           onPressed: () {},
                                         ),
                                       ],
@@ -292,7 +292,7 @@ class RoomState extends State<Room> {
                                           IconButton(
                                             icon:
                                                 const Icon(Icons.file_download),
-                                            tooltip: 'Increase volume by 10',
+                                            tooltip: 'download',
                                             onPressed: () {},
                                           ),
                                         ],
@@ -305,243 +305,6 @@ class RoomState extends State<Room> {
         );
       }
     }
-
-    // if (msg.media != null && msg.content != null) {
-    //   return Row(
-    //     children: [
-    //       Flexible(
-    //           flex: 1,
-    //           // child: Padding(
-    //           //     padding: EdgeInsets.only(right: 5.0, top: 0),
-    //           child: Align(
-    //             alignment: Alignment.topCenter,
-    //             child: CircleAvatar(
-    //               backgroundColor: Colors.grey[350],
-    //               foregroundImage: curUser.profileImg == null
-    //                   ? null
-    //                   : NetworkImage('${curUser.profileImg}'),
-    //               backgroundImage: AssetImage('assets/no-profile.png'),
-    //               radius: 20.0,
-    //             ),
-    //           )
-    //           // )
-    //           ),
-    //       Flexible(
-    //           flex: 10,
-    //           child: Container(
-    //               padding: EdgeInsets.symmetric(horizontal: 10.0),
-    //               // margin: EdgeInsets.only(top: 7.0, bottom: 7.0),
-    //               decoration: BoxDecoration(
-    //                 borderRadius: BorderRadius.all(Radius.circular(15.0)),
-    //                 // color: Colors.blueGrey,
-    //               ),
-    //               child: Column(
-    //                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    //                   children: [
-    //                     Align(
-    //                         alignment: Alignment.topLeft,
-    //                         child: Row(
-    //                           children: [
-    //                             Text(
-    //                               curUser.name,
-    //                               style: TextStyle(
-    //                                   // color: Colors.grey,
-    //                                   fontSize: Theme.of(context)
-    //                                       .textTheme
-    //                                       .subtitle1!
-    //                                       .fontSize,
-    //                                   fontWeight: FontWeight.bold),
-    //                             ),
-    //                             SizedBox(
-    //                               width: 5,
-    //                             ),
-    //                             Text(
-    //                               dateStr + " at " + time,
-    //                               style: TextStyle(
-    //                                   color: Colors.grey,
-    //                                   fontSize: Theme.of(context)
-    //                                       .textTheme
-    //                                       .subtitle2!
-    //                                       .fontSize),
-    //                             )
-    //                           ],
-    //                         )),
-    //                     SizedBox(
-    //                       height: 10,
-    //                     ),
-    //                     Column(
-    //                       children: [
-    //                         Align(
-    //                           alignment: Alignment.centerLeft,
-    //                           child: Text(
-    //                             msg.content!,
-    //                             textAlign: TextAlign.left,
-    //                             style: TextStyle(color: Colors.white),
-    //                           ),
-    //                         ),
-    //                         Align(
-    //                           alignment: Alignment.centerLeft,
-    //                           child: Text(
-    //                             msg.media!,
-    //                             textAlign: TextAlign.left,
-    //                             style: TextStyle(color: Colors.white),
-    //                           ),
-    //                         ),
-    //                       ],
-    //                     ),
-    //                   ]))),
-    //     ],
-    //   );
-    // }
-    // if (msg.media != null && msg.content == null) {
-    //   return Row(
-    //     children: [
-    //       Flexible(
-    //           flex: 1,
-    //           // child: Padding(
-    //           //     padding: EdgeInsets.only(right: 5.0, top: 0),
-    //           child: Align(
-    //             alignment: Alignment.topCenter,
-    //             child: CircleAvatar(
-    //               backgroundColor: Colors.grey[350],
-    //               foregroundImage: curUser.profileImg == null
-    //                   ? null
-    //                   : NetworkImage('${curUser.profileImg}'),
-    //               backgroundImage: AssetImage('assets/no-profile.png'),
-    //               radius: 20.0,
-    //             ),
-    //           )
-    //           // )
-    //           ),
-    //       Flexible(
-    //           flex: 10,
-    //           child: Container(
-    //               padding: EdgeInsets.symmetric(horizontal: 10.0),
-    //               // margin: EdgeInsets.only(top: 7.0, bottom: 7.0),
-    //               decoration: BoxDecoration(
-    //                 borderRadius: BorderRadius.all(Radius.circular(15.0)),
-    //                 // color: Colors.blueGrey,
-    //               ),
-    //               child: Column(
-    //                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    //                   children: [
-    //                     Align(
-    //                         alignment: Alignment.topLeft,
-    //                         child: Row(
-    //                           children: [
-    //                             Text(
-    //                               curUser.name,
-    //                               style: TextStyle(
-    //                                   // color: Colors.grey,
-    //                                   fontSize: Theme.of(context)
-    //                                       .textTheme
-    //                                       .subtitle1!
-    //                                       .fontSize,
-    //                                   fontWeight: FontWeight.bold),
-    //                             ),
-    //                             SizedBox(
-    //                               width: 5,
-    //                             ),
-    //                             Text(
-    //                               dateStr + " at " + time,
-    //                               style: TextStyle(
-    //                                   color: Colors.grey,
-    //                                   fontSize: Theme.of(context)
-    //                                       .textTheme
-    //                                       .subtitle2!
-    //                                       .fontSize),
-    //                             )
-    //                           ],
-    //                         )),
-    //                     SizedBox(
-    //                       height: 10,
-    //                     ),
-    //                     Align(
-    //                         alignment: Alignment.centerLeft,
-    //                         child: Text(
-    //                           msg.media!,
-    //                           textAlign: TextAlign.left,
-    //                           style: TextStyle(color: Colors.white),
-    //                         )),
-    //                   ]))),
-    //     ],
-    //   );
-    // }
-    // if (msg.media == null && msg.content != null) {
-    //   return Row(
-    //     children: [
-    //       Flexible(
-    //           flex: 1,
-    //           // child: Padding(
-    //           //     padding: EdgeInsets.only(right: 5.0, top: 0),
-    //           child: Align(
-    //             alignment: Alignment.topCenter,
-    //             child: CircleAvatar(
-    //               backgroundColor: Colors.grey[350],
-    //               foregroundImage: curUser.profileImg == null
-    //                   ? null
-    //                   : NetworkImage('${curUser.profileImg}'),
-    //               backgroundImage: AssetImage('assets/no-profile.png'),
-    //               radius: 20.0,
-    //             ),
-    //           )
-    //           // )
-    //           ),
-    //       Flexible(
-    //           flex: 10,
-    //           child: Container(
-    //               padding: EdgeInsets.symmetric(horizontal: 10.0),
-    //               // margin: EdgeInsets.only(top: 7.0, bottom: 7.0),
-    //               decoration: BoxDecoration(
-    //                 borderRadius: BorderRadius.all(Radius.circular(15.0)),
-    //                 // color: Colors.blueGrey,
-    //               ),
-    //               child: Column(
-    //                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    //                   children: [
-    //                     Align(
-    //                         alignment: Alignment.topLeft,
-    //                         child: Row(
-    //                           children: [
-    //                             Text(
-    //                               curUser.name,
-    //                               style: TextStyle(
-    //                                   // color: Colors.grey,
-    //                                   fontSize: Theme.of(context)
-    //                                       .textTheme
-    //                                       .subtitle1!
-    //                                       .fontSize,
-    //                                   fontWeight: FontWeight.bold),
-    //                             ),
-    //                             SizedBox(
-    //                               width: 5,
-    //                             ),
-    //                             Text(
-    //                               dateStr + " at " + time,
-    //                               style: TextStyle(
-    //                                   color: Colors.grey,
-    //                                   fontSize: Theme.of(context)
-    //                                       .textTheme
-    //                                       .subtitle2!
-    //                                       .fontSize),
-    //                             )
-    //                           ],
-    //                         )),
-    //                     SizedBox(
-    //                       height: 10,
-    //                     ),
-    //                     Align(
-    //                         alignment: Alignment.centerLeft,
-    //                         child: Text(
-    //                           msg.content!,
-    //                           textAlign: TextAlign.left,
-    //                           style: TextStyle(color: Colors.white),
-    //                         )),
-    //                   ]))),
-    //     ],
-    //   );
-    // }
-    // return Container();
   }
 
   _buildMessage(BuildContext context, RoomsMessage msg, bool prevIsSame,
@@ -804,8 +567,20 @@ class RoomState extends State<Room> {
                                                 listen: false)
                                             .stream
                                             .where((encodedData) {
+                                      if (encodedData == "" ||
+                                          encodedData == "null" ||
+                                          encodedData == "true" ||
+                                          encodedData == "false") return false;
                                       var data = jsonDecode(encodedData);
-                                      return data['roomId'] == widget.roomId;
+                                      if (data.containsKey('error') ||
+                                          data.containsKey('active') ||
+                                          data.containsKey('update') ||
+                                          data.containsKey('friendRequest') ||
+                                          data.containsKey('exit')) {
+                                        return false;
+                                      }
+                                      return data['type'] == 'RoomMessage' &&
+                                          data['roomId'] == widget.roomId;
                                     }).listen((encodedData) {
                                       var data = jsonDecode(encodedData);
                                       cubit.addMessage(

@@ -52,6 +52,31 @@ Future<dynamic> editGroup(dynamic obj, BuildContext context) async {
   }
 }
 
+Future<dynamic> editRoom(dynamic obj, BuildContext context) async {
+  String? accessToken =
+      await Provider.of<AuthorizationService>(context, listen: false)
+          .getValidAccessToken();
+  if (accessToken == null) {
+    return Future.value('/signin');
+  }
+  try {
+    print(obj);
+    var response = await http.post(
+        Uri.parse('http://localhost:8884/v1/editRoomDetails'),
+        body: obj,
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+          'Authorization': "Bearer $accessToken",
+        });
+    print("Room edit response ${response.statusCode} ${response.body}");
+    if (response.statusCode == 200) return response.body;
+    throw response.body;
+  } catch (e) {
+    print("Exception occured in room create/edit $e");
+    return null;
+  }
+}
+
 Future<dynamic> exitGroup(String groupId, BuildContext context) async {
   String? accessToken =
       await Provider.of<AuthorizationService>(context, listen: false)
@@ -74,6 +99,32 @@ Future<dynamic> exitGroup(String groupId, BuildContext context) async {
     return response.body;
   } catch (e) {
     print("Exception occured while exiting user from group $e");
+    return null;
+  }
+}
+
+Future<dynamic> exitRoom(String roomId, BuildContext context) async {
+  String? accessToken =
+      await Provider.of<AuthorizationService>(context, listen: false)
+          .getValidAccessToken();
+  if (accessToken == null) {
+    return Future.value('/signin');
+  }
+  try {
+    var response =
+        await http.post(Uri.parse('http://localhost:8884/v1/exitRoom'),
+            body: jsonEncode(<String, dynamic>{
+              "roomId": roomId,
+              "user": [Provider.of<UserId>(context, listen: false)]
+            }),
+            headers: <String, String>{
+          'Content-Type': 'application/json',
+          'Authorization': "Bearer $accessToken",
+        });
+    print("Room exit response ${response.statusCode} ${response.body}");
+    return response.body;
+  } catch (e) {
+    print("Exception occured while exiting user from room $e");
     return null;
   }
 }

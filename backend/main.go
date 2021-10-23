@@ -123,6 +123,12 @@ func main() {
 		// Exit Group
 		secured.POST("/exitGroup", exitGroupHandler)
 
+		//Room Details
+		secured.GET("/editRoomDetails", updateRoomHandler)
+
+		//Exit Room
+		secured.POST("/exitRoom", exitRoomHandler)
+
 		// Friend Requests
 		secured.POST("/friendRequest", friendRequestHandler)
 

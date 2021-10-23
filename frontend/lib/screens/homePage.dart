@@ -1,8 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:bottom_navy_bar/bottom_navy_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:yaroom/blocs/activeStatus.dart';
+import 'package:yaroom/blocs/roomMetadata.dart';
 import 'package:yaroom/blocs/rooms.dart';
+import 'package:yaroom/utils/backendRequests.dart';
 import 'components/searchDelegate.dart';
 import 'package:yaroom/blocs/fcmToken.dart';
 import 'package:yaroom/screens/components/contactView.dart';
@@ -210,10 +214,17 @@ class HomePageState extends State<HomePage> {
                                     Column(
                                       children: [
                                         IconButton(
-                                            onPressed: () => {},
-                                            tooltip: "Pinned Messages",
-                                            icon: Icon(Icons.push_pin)),
-                                        Text("Pins")
+                                            onPressed: () => {
+                                                  Navigator
+                                                      .pushReplacementNamed(
+                                                          context, '/editroom',
+                                                          arguments: {
+                                                        "roomId": roomId
+                                                      })
+                                                },
+                                            tooltip: "Edit Room",
+                                            icon: Icon(Icons.edit)),
+                                        Text("Edit")
                                       ],
                                     ),
                                     Column(
@@ -224,7 +235,48 @@ class HomePageState extends State<HomePage> {
                                             icon: Icon(Icons.search)),
                                         Text("Search")
                                       ],
-                                    )
+                                    ),
+                                    Column(
+                                      children: [
+                                        IconButton(
+                                            onPressed: () => {
+                                                  showDialog(
+                                                      context: context,
+                                                      builder: (_) {
+                                                        return AlertDialog(
+                                                            title: Text(
+                                                                "Exit Room"),
+                                                            content: Text(
+                                                                "Are you sure you want to exit the room? The related chat will no longer be displayed to you."),
+                                                            actions: [
+                                                              TextButton(
+                                                                  onPressed:
+                                                                      () async {
+                                                                    // request to backend to remove user from group
+                                                                    await exitRoom(
+                                                                        roomId,
+                                                                        context);
+                                                                    await Navigator
+                                                                        .pushReplacementNamed(
+                                                                            context,
+                                                                            '/');
+                                                                  },
+                                                                  child: Text(
+                                                                      "Yes")),
+                                                              TextButton(
+                                                                  onPressed: () =>
+                                                                      Navigator.pop(
+                                                                          context),
+                                                                  child: Text(
+                                                                      "No"))
+                                                            ]);
+                                                      })
+                                                },
+                                            tooltip: "Exit Room",
+                                            icon: Icon(Icons.exit_to_app)),
+                                        Text("Exit")
+                                      ],
+                                    ),
                                   ])
                             ])),
                         ...roomMembersSnapshot.data!.map((User e) =>
@@ -290,36 +342,56 @@ class HomePageState extends State<HomePage> {
         });
   }
 
-  Widget addChannel() {
-    var ChannelController = TextEditingController();
-    return AlertDialog(
-      scrollable: true,
-      title: Text('Add Channel'),
-      content: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Form(
-          child: Column(
-            children: <Widget>[
-              TextFormField(
-                controller: ChannelController,
-                decoration: InputDecoration(
-                  labelText: 'Name',
-                  icon: Icon(Icons.create),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      actions: [
-        ElevatedButton(
-            child: Text("Submit"),
-            onPressed: () {
-              if (ChannelController.text != '') {}
-            }),
-      ],
-    );
-  }
+  // Widget addChannel() {
+  //   var ChannelController = TextEditingController();
+  //   // return BlocBuilder<RoomMetadataCubit, RoomMetadataMap>(
+  //   //   builder: (context, state) {
+  //   return AlertDialog(
+  //     scrollable: true,
+  //     title: Text('Add Channel'),
+  //     content: Padding(
+  //       padding: const EdgeInsets.all(8.0),
+  //       child: Form(
+  //         child: Column(
+  //           children: <Widget>[
+  //             TextFormField(
+  //               controller: ChannelController,
+  //               decoration: InputDecoration(
+  //                 labelText: 'Name',
+  //                 icon: Icon(Icons.create),
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     ),
+  //     actions: [
+  //       ElevatedButton(
+  //           child: Text("Submit"),
+  //           onPressed: () async {
+  //             if (ChannelController.text != '') {
+  //               var newRoomChannels =
+  //                   state.data[this.widget.roomId]!.roomChannels;
+  //               newRoomChannels[""] = ChannelController.text;
+  //               await editRoom(
+  //                   jsonEncode(<String, dynamic>{
+  //                     "roomId": this.widget.roomId,
+  //                     "name": state.data[this.widget.roomId]!.name,
+  //                     "description":
+  //                         state.data[this.widget.roomId]!.description,
+  //                     "roomMembers":
+  //                         state.data[this.widget.roomId]!.roomMembers,
+  //                     "channelsList":
+  //                         state.data[this.widget.data["roomId"]]!.roomChannels
+  //                   }),
+  //                   context);
+  //             }
+  //           }),
+  //     ],
+  //   );
+  //   //   },
+  //   // );
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -338,129 +410,249 @@ class HomePageState extends State<HomePage> {
           ? state.lastOpened[roomId]
           : null;
 
-      return SafeArea(
-        child: Scaffold(
-          key: _scaffoldkey,
-          appBar: currentIndex == 0
-              ? (PreferredSize(
-                  child: roomId == null
-                      ? AppBar()
-                      : _getRoomAppBar(context, roomId, channelId),
-                  preferredSize: Size.fromHeight(kToolbarHeight)))
-              : AppBar(
-                  automaticallyImplyLeading: false,
-                  actions: [
-                    Builder(
-                      builder: (context) => IconButton(
-                        onPressed: () async {
-                          // Invalidate fcm token
-                          final String? accessToken =
+      return BlocBuilder<RoomMetadataCubit, RoomMetadataMap>(
+        builder: (context, metastate) {
+          return SafeArea(
+            child: Scaffold(
+              key: _scaffoldkey,
+              appBar: currentIndex == 0
+                  ? (PreferredSize(
+                      child: roomId == null
+                          ? AppBar()
+                          : _getRoomAppBar(context, roomId, channelId),
+                      preferredSize: Size.fromHeight(kToolbarHeight)))
+                  : AppBar(
+                      automaticallyImplyLeading: false,
+                      actions: [
+                        Builder(
+                          builder: (context) => IconButton(
+                            onPressed: () async {
+                              // Invalidate fcm token
+                              final String? accessToken =
+                                  await Provider.of<AuthorizationService>(
+                                          context,
+                                          listen: false)
+                                      .getValidAccessToken();
+                              await invalidateFCMToken(
+                                  BlocProvider.of<FcmTokenCubit>(context,
+                                      listen: false),
+                                  accessToken!);
+                              // Logout
                               await Provider.of<AuthorizationService>(context,
                                       listen: false)
-                                  .getValidAccessToken();
-                          await invalidateFCMToken(
-                              BlocProvider.of<FcmTokenCubit>(context,
-                                  listen: false),
-                              accessToken!);
-                          // Logout
-                          await Provider.of<AuthorizationService>(context,
-                                  listen: false)
-                              .logout(context);
-                          // Clear DB
-                          await Provider.of<AppDb>(context, listen: false)
-                              .deleteAll();
-                          await Provider.of<AppDb>(context, listen: false)
-                              .createAll();
-                          // Close websocket
-                          Provider.of<MessageExchangeStream>(context,
-                                  listen: false)
-                              .close();
-                          await Navigator.of(context)
-                              .pushNamedAndRemoveUntil('/signin', (_) => false);
-                        },
-                        icon: Icon(Icons.logout),
-                        tooltip: 'Log Out',
-                      ),
+                                  .logout(context);
+                              // Clear DB
+                              await Provider.of<AppDb>(context, listen: false)
+                                  .deleteAll();
+                              await Provider.of<AppDb>(context, listen: false)
+                                  .createAll();
+                              // Close websocket
+                              Provider.of<MessageExchangeStream>(context,
+                                      listen: false)
+                                  .close();
+                              await Navigator.of(context)
+                                  .pushNamedAndRemoveUntil(
+                                      '/signin', (_) => false);
+                            },
+                            icon: Icon(Icons.logout),
+                            tooltip: 'Log Out',
+                          ),
+                        ),
+                        IconButton(
+                            onPressed: () async {
+                              await Navigator.of(context)
+                                  .pushNamed("/settings");
+                            },
+                            icon: Icon(Icons.settings))
+                      ],
                     ),
-                    IconButton(
-                        onPressed: () async {
-                          await Navigator.of(context).pushNamed("/settings");
-                        },
-                        icon: Icon(Icons.settings))
+              drawer: currentIndex == 0
+                  ? Drawer(
+                      child: Row(
+                        children: [
+                          Expanded(
+                              flex: 15,
+                              child: Column(
+                                children: [
+                                  Expanded(child: RoomListView()),
+                                  Column(children: [
+                                    CircleAvatar(
+                                        backgroundColor: Colors.grey[350],
+                                        foregroundImage:
+                                            AssetImage("assets/yaroom.png"),
+                                        radius: 27.0,
+                                        child: IconButton(
+                                            onPressed: () =>
+                                                Navigator.of(context).pushNamed(
+                                                    "/editroom",
+                                                    arguments: {"roomId": ""}),
+                                            icon: Icon(Icons.add))),
+                                    SizedBox(
+                                      height: 6,
+                                    )
+                                  ]),
+                                ],
+                              )),
+                          Expanded(
+                            flex: 90,
+                            child: Column(
+                              children: [
+                                Expanded(
+                                  // flex: 90,
+                                  child: (roomflag == false
+                                      ? SelectRoomPage()
+                                      : ChannelsView(
+                                          roomId: roomId!,
+                                        )),
+                                ),
+                                // Expanded(
+                                //   child:
+                                ListTile(
+                                  minVerticalPadding: 5,
+                                  leading: Text("+"),
+                                  title: Text("Add Channel"),
+                                  onTap: () {
+                                    BuildContext dialogContext;
+                                    showDialog(
+                                        context: context,
+                                        builder: (BuildContext context) {
+                                          var ChannelController =
+                                              TextEditingController();
+                                          dialogContext = context;
+                                          return AlertDialog(
+                                            scrollable: true,
+                                            title: Text('Add Channel'),
+                                            content: Padding(
+                                              padding:
+                                                  const EdgeInsets.all(8.0),
+                                              child: Form(
+                                                child: Column(
+                                                  children: <Widget>[
+                                                    TextFormField(
+                                                      controller:
+                                                          ChannelController,
+                                                      decoration:
+                                                          InputDecoration(
+                                                        labelText: 'Name',
+                                                        icon:
+                                                            Icon(Icons.create),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                            actions: [
+                                              ElevatedButton(
+                                                  child: Text("Submit"),
+                                                  onPressed: () async {
+                                                    if (ChannelController
+                                                            .text !=
+                                                        '') {
+                                                      var newRoomChannels =
+                                                          metastate
+                                                              .data[roomId]!
+                                                              .roomChannels;
+                                                      newRoomChannels[""] =
+                                                          ChannelController
+                                                              .text;
+
+                                                      var res = await editRoom(
+                                                          jsonEncode(<String,
+                                                              dynamic>{
+                                                            "roomId": roomId,
+                                                            "name": metastate
+                                                                .data[roomId]!
+                                                                .name,
+                                                            "description":
+                                                                metastate
+                                                                    .data[
+                                                                        roomId]!
+                                                                    .description,
+                                                            "roomMembers":
+                                                                metastate
+                                                                    .data[
+                                                                        roomId]!
+                                                                    .roomMembers
+                                                                    .map((e) =>
+                                                                        e.userId)
+                                                                    .toList(),
+                                                            "channelsList":
+                                                                newRoomChannels
+                                                          }),
+                                                          context);
+                                                      if (res == null) {
+                                                        ScaffoldMessenger.of(
+                                                                context)
+                                                            .clearSnackBars();
+                                                        ScaffoldMessenger.of(
+                                                                context)
+                                                            .showSnackBar(
+                                                          const SnackBar(
+                                                              content: Text(
+                                                                  'Channel Create Failed, try again!')),
+                                                        );
+                                                        return;
+                                                      }
+                                                      Navigator.pop(
+                                                          dialogContext);
+                                                    }
+                                                  }),
+                                            ],
+                                          );
+                                        });
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : null,
+              endDrawer: currentIndex == 0
+                  ? (roomflag == false
+                      ? (SelectRoomPage())
+                      : _getEndDrawer(context, roomId))
+                  : null,
+              body: SizedBox.expand(
+                child: PageView(
+                  controller: _pageController,
+                  onPageChanged: (index) {
+                    setState(() => currentIndex = index);
+                  },
+                  children: <Widget>[
+                    roomflag == false
+                        ? SelectRoomPage()
+                        : Room(roomId: roomId!, channelId: channelId),
+                    ChatView(),
+                    GroupChatView(),
+                    FriendsView(),
                   ],
                 ),
-          drawer: currentIndex == 0
-              ? Drawer(
-                  child: Row(
-                    children: [
-                      Expanded(flex: 15, child: RoomListView()),
-                      Expanded(
-                        flex: 90,
-                        child: (roomflag == false
-                            ? SelectRoomPage()
-                            : ChannelsView(
-                                roomId: roomId!,
-                              )),
-                      ),
-                      Expanded(
-                        child: ListTile(
-                          minVerticalPadding: 5,
-                          leading: Text("+"),
-                          title: Text("Add Channel"),
-                          onTap: () {
-                            showDialog(
-                                context: context,
-                                builder: (BuildContext context) {
-                                  return addChannel();
-                                });
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              : null,
-          endDrawer: currentIndex == 0
-              ? (roomflag == false
-                  ? (SelectRoomPage())
-                  : _getEndDrawer(context, roomId))
-              : null,
-          body: SizedBox.expand(
-            child: PageView(
-              controller: _pageController,
-              onPageChanged: (index) {
-                setState(() => currentIndex = index);
-              },
-              children: <Widget>[
-                roomflag == false
-                    ? SelectRoomPage()
-                    : Room(roomId: roomId!, channelId: channelId),
-                ChatView(),
-                GroupChatView(),
-                FriendsView(),
-              ],
+              ),
+              bottomNavigationBar: BottomNavyBar(
+                  selectedIndex: currentIndex,
+                  onItemSelected: (index) {
+                    setState(() => currentIndex = index);
+                    _pageController.jumpToPage(index);
+                  },
+                  items: <BottomNavyBarItem>[
+                    BottomNavyBarItem(
+                        title: Text('Rooms'),
+                        icon: CircleAvatar(
+                            radius: 15,
+                            foregroundImage: AssetImage("assets/yaroom.png"))),
+                    BottomNavyBarItem(
+                        title: Text('Messages'), icon: Icon(Icons.chat_bubble)),
+                    BottomNavyBarItem(
+                        title: Text('Groups'), icon: Icon(Icons.group)),
+                    BottomNavyBarItem(
+                        title: Text('Friends'), icon: Icon(Icons.person)),
+                  ]),
             ),
-          ),
-          bottomNavigationBar: BottomNavyBar(
-              selectedIndex: currentIndex,
-              onItemSelected: (index) {
-                setState(() => currentIndex = index);
-                _pageController.jumpToPage(index);
-              },
-              items: <BottomNavyBarItem>[
-                BottomNavyBarItem(
-                    title: Text('Rooms'),
-                    icon: CircleAvatar(
-                        radius: 15,
-                        foregroundImage: AssetImage("assets/yaroom.png"))),
-                BottomNavyBarItem(
-                    title: Text('Messages'), icon: Icon(Icons.chat_bubble)),
-                BottomNavyBarItem(
-                    title: Text('Groups'), icon: Icon(Icons.group)),
-                BottomNavyBarItem(
-                    title: Text('Friends'), icon: Icon(Icons.person)),
-              ]),
-        ),
+          );
+        },
       );
     });
   }

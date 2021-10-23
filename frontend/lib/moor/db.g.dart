@@ -3515,6 +3515,15 @@ abstract class _$AppDb extends GeneratedDatabase {
     );
   }
 
+  Future<int> deleteGroup({required String groupId}) {
+    return customUpdate(
+      'DELETE FROM GroupDMs WHERE groupId = ?1',
+      variables: [Variable<String>(groupId)],
+      updates: {groupDMs},
+      updateKind: UpdateKind.delete,
+    );
+  }
+
   Selectable<GroupDM> getGroupsNameMatching({required String match}) {
     return customSelect(
         'SELECT * FROM GroupDMs WHERE LOWER(name) LIKE \'%\' || ?1 || \'%\'',
@@ -3698,6 +3707,15 @@ abstract class _$AppDb extends GeneratedDatabase {
     );
   }
 
+  Future<int> deleteRoom({required String roomId}) {
+    return customUpdate(
+      'DELETE FROM RoomsList WHERE roomId = ?1',
+      variables: [Variable<String>(roomId)],
+      updates: {roomsList},
+      updateKind: UpdateKind.delete,
+    );
+  }
+
   Selectable<RoomsListData> getRoomDetails({required String roomId}) {
     return customSelect('SELECT * FROM RoomsList WHERE roomId = ?1',
         variables: [
@@ -3706,6 +3724,12 @@ abstract class _$AppDb extends GeneratedDatabase {
         readsFrom: {
           roomsList,
         }).map(roomsList.mapFromRow);
+  }
+
+  Selectable<RoomsListData> getRoomsMetadata() {
+    return customSelect('SELECT * FROM RoomsList', variables: [], readsFrom: {
+      roomsList,
+    }).map(roomsList.mapFromRow);
   }
 
   Future<int> addUserToRoom({required String roomsId, required String userId}) {
@@ -3738,6 +3762,16 @@ abstract class _$AppDb extends GeneratedDatabase {
           users,
           roomsUserMapping,
         }).map(users.mapFromRow);
+  }
+
+  Future<int> removeUserFromRoom(
+      {required String userId, required String roomId}) {
+    return customUpdate(
+      'DELETE FROM RoomsUserMapping WHERE((userId = ?1)AND(roomId = ?2))',
+      variables: [Variable<String>(userId), Variable<String>(roomId)],
+      updates: {roomsUserMapping},
+      updateKind: UpdateKind.delete,
+    );
   }
 
   Future<int> addChannelsToRoom(

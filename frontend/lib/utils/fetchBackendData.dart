@@ -70,31 +70,36 @@ Future<void> populateUserData(data, context) async {
     }
   }
 
-  // if (roomsData != null) {
-  //   for (var room in roomsData) {
-  //     await RepositoryProvider.of<AppDb>(context, listen: false).createRoom(
-  //         roomId: room['Roomid'],
-  //         name: room['Name'],
-  //         description: room['Description']);
-  //     if (room['Userslist'] != null) {
-  //       for (var user in room['Userslist']) {
-  //         if (!userIdList.contains(user['Userid'])) {
-  //           await RepositoryProvider.of<AppDb>(context, listen: false)
-  //               .addUser(userId: user['Userid'], name: user['Name']);
-  //           userIdList.add(user['Userid']);
-  //         }
-  //         await RepositoryProvider.of<AppDb>(context, listen: false)
-  //             .addUserToRoom(roomsId: room['Roomid'], userId: user['Userid']);
-  //       }
-  //     }
-  //     if (room['Channelslist'] != null) {
-  //       room['Channelslist'].forEach((k, v) async =>
-  //           await RepositoryProvider.of<AppDb>(context, listen: false)
-  //               .addChannelsToRoom(
-  //                   roomId: room['Roomid'], channelId: k, channelName: v));
-  //     }
-  //   }
-  // }
+  if (roomsData != null) {
+    for (var room in roomsData) {
+      if (room != null) {
+        await RepositoryProvider.of<AppDb>(context, listen: false).createRoom(
+          roomId: room['Roomid'],
+          name: room['Name'],
+          description:
+              (room['Description'] == null ? null : room['Description']),
+        );
+        if (room['Userslist'] != null) {
+          for (var user in room['Userslist']) {
+            if (!userIdList.contains(user['userId'])) {
+              await RepositoryProvider.of<AppDb>(context, listen: false)
+                  .addUser(userId: user['userId'], name: user['name']);
+              userIdList.add(user['userId']);
+            }
+            await RepositoryProvider.of<AppDb>(context, listen: false)
+                .addUserToRoom(roomsId: room['Roomid'], userId: user['userId']);
+          }
+        }
+        if (room['Channelslist'] != null) {
+          for (var k in room['Channelslist'].keys){
+            await RepositoryProvider.of<AppDb>(context, listen: false)
+                  .addChannelsToRoom(
+                      roomId: room['Roomid'], channelId: k, channelName: room['Channelslist'][k]);
+          }
+        }
+      }
+    }
+  }
 }
 
 Future<void> fetchUserDetails(

@@ -40,3 +40,28 @@ class GroupsList extends ChangeNotifier {
     return Future.value(true);
   }
 }
+
+
+class RoomList extends ChangeNotifier {
+  List<RoomsListData> roomData = [];
+  Future<bool> getRoomData(context) async {
+    this.roomData = await RepositoryProvider.of<AppDb>(context)
+        .getRoomsOfUser(userID: Provider.of<UserId>(context, listen: false))
+        .get();
+    print(this.roomData);
+    return Future.value(true);
+  }
+
+  Future<bool> removeRoom(context, roomId) async {
+    await RepositoryProvider.of<AppDb>(context).removeUserFromRoom(
+        roomId: roomId, userId: Provider.of<UserId>(context, listen: false));
+    this.roomData.removeWhere((element) => element.roomId == roomId);
+    notifyListeners();
+    return Future.value(true);
+  }
+
+  Future<bool> triggerRerender() async {
+    notifyListeners();
+    return Future.value(true);
+  }
+}

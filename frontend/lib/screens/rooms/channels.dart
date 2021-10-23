@@ -137,7 +137,6 @@ class ChannelsTileState extends State<ChannelsTile> {
                   }
                 }
               }
-              
             }),
         ElevatedButton(
             child: Text("Delete Channel"),
@@ -151,7 +150,6 @@ class ChannelsTileState extends State<ChannelsTile> {
                   newChannels.add(channels[i]);
                 }
               }
-            
             })
       ],
     );
@@ -173,17 +171,22 @@ class ChannelsTileState extends State<ChannelsTile> {
               return editChannel(widget.channelId);
             });
       },
-      title: Text("# " + widget.name),
-      trailing: _unread
-          ? Container(
-              width: 15.0,
-              height: 15.0,
-              decoration: BoxDecoration(
-                color: Colors.orange,
-                shape: BoxShape.circle,
-              ),
-            )
-          : Container(),
+      title: !_unread
+          ? Text("# " + widget.name)
+          : Text(
+              "# " + widget.name,
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+      // trailing: _unread
+      //     ? Container(
+      //         width: 15.0,
+      //         height: 15.0,
+      //         decoration: BoxDecoration(
+      //           color: Colors.orange,
+      //           shape: BoxShape.circle,
+      //         ),
+      //       )
+      //     : Container(),
     );
   }
 }

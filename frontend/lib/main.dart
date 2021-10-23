@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:yaroom/blocs/roomMetadata.dart';
 import './utils/connectivity.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:path_provider/path_provider.dart';
@@ -101,6 +102,8 @@ Future<void> main() async {
   var msgStream = MessageExchangeStream();
   var groupMetadataCubit =
       GroupMetadataCubit(initialState: GroupMetadataMap(Map()));
+  var roomMetadataCubit =
+      RoomMetadataCubit(initialState: RoomMetadataMap(Map()));
   msgStream.stream.listen((encodedData) async {
     print("Got encoded data::::::\n" + encodedData);
     if (encodedData == "" ||
@@ -139,10 +142,56 @@ Future<void> main() async {
         print("added group ${data["Groupid"]} to cubit");
         var get = groupMetadataCubit.state.data[data["Groupid"]];
         print("after update, name: ${get?.name}, desc: ${get?.description}");
+      } else if (data['update'] == 'room') {
+        await db.createRoom(
+            roomId: data["Roomid"],
+            name: data["Name"],
+            description: data["Description"]);
+        for (var user in data["Userslist"]) {
+          await db.addUserToRoom(
+              roomsId: data["Roomid"], userId: user["userId"]);
+        }
+        var roomChannels = new Map<String, String>();
+        for (var channel in data["Channelslist"].keys) {
+          await db.addChannelsToRoom(
+              roomId: data["Roomid"],
+              channelId: channel,
+              channelName: data["Channelslist"][channel]);
+          roomChannels[channel] = data["Channelslist"][channel];
+        }
+        var roomMembers = await db.getRoomMembers(roomID: data["Roomid"]).get();
+
+        var d = RoomMetadata(
+            roomId: data["Roomid"],
+            name: data["Name"],
+            description:
+                data["Description"] == null ? "" : data["Description"]!,
+            roomMembers: roomMembers,
+            roomChannels: roomChannels);
+        roomMetadataCubit.update(d);
+        print("added room ${data["Roomid"]} to cubit");
+        var get = roomMetadataCubit.state.data[data["Roomid"]];
+        print("after update, name: ${get?.name}, desc: ${get?.description}");
       }
       print("Update type");
       return;
+    }else if (data.containsKey("exit")) {
+      if (data['exit'] == 'group') {
+        await db.removeUserFromGroup(
+            groupId: data["Groupid"], userId: data["delUser"]);
+        groupMetadataCubit.delete(data["Groupid"]);
+        await db.deleteGroup(groupId: data["Groupid"]);
+      }
+      if (data['exit'] == 'room') {
+        await db.removeUserFromGroup(
+            groupId: data["Roomid"], userId: data["delUser"]);
+        groupMetadataCubit.delete(data["Roomid"]);
+        await db.deleteRoom(roomId: data["Roomid"]);
+      }
+      print("exit type");
+      return;
     }
+
     await updateDb(db, data, chatMeta);
   }, onError: (e) {
     print("WS stream returned error $e");
@@ -182,7 +231,8 @@ Future<void> main() async {
       fcmTokenCubit: fcmTokenCubit,
       activeStatus: activeStatus,
       chatMetaCubit: chatMeta,
-      groupMetadataCubit: groupMetadataCubit));
+      groupMetadataCubit: groupMetadataCubit,
+      roomMetadataCubit: roomMetadataCubit));
 }
 
 class MyApp extends StatelessWidget {
@@ -193,6 +243,8 @@ class MyApp extends StatelessWidget {
   late final ActiveStatusMap activeStatus;
   late final ChatMetaCubit chatMetaCubit;
   late final GroupMetadataCubit groupMetadataCubit;
+  late final RoomMetadataCubit roomMetadataCubit;
+
   MyApp(
       {required AppDb this.db,
       required MessageExchangeStream this.msgExchangeStream,
@@ -200,7 +252,8 @@ class MyApp extends StatelessWidget {
       required FcmTokenCubit this.fcmTokenCubit,
       required ActiveStatusMap this.activeStatus,
       required ChatMetaCubit this.chatMetaCubit,
-      required GroupMetadataCubit this.groupMetadataCubit});
+      required GroupMetadataCubit this.groupMetadataCubit,
+      required RoomMetadataCubit this.roomMetadataCubit});
 
   Future<String> getInitialRoute(BuildContext context) async {
     final String? idToken = await secureStorageService.getIdToken();
@@ -249,6 +302,33 @@ class MyApp extends StatelessWidget {
           print("added group ${group.groupId} to cubit");
         }
       });
+      await Future.delayed(Duration(seconds: 2), () async {
+        var rooms = await RepositoryProvider.of<AppDb>(context, listen: false)
+            .getRoomsMetadata()
+            .get();
+        for (var room in rooms) {
+          var roomMembers =
+              await RepositoryProvider.of<AppDb>(context, listen: false)
+                  .getRoomMembers(roomID: room.roomId)
+                  .get();
+          var roomChannels = new Map<String, String>();
+          var ChannelList =
+              await RepositoryProvider.of<AppDb>(context, listen: false)
+                  .getChannelsOfRoom(roomID: room.roomId)
+                  .get();
+          for (var channel in ChannelList) {
+            roomChannels[channel.channelId] = channel.channelName;
+          }
+          var d = RoomMetadata(
+              roomId: room.roomId,
+              name: room.name,
+              description: room.description == null ? "" : room.description!,
+              roomMembers: roomMembers,
+              roomChannels: roomChannels);
+          Provider.of<RoomMetadataCubit>(context, listen: false).update(d);
+          print("added room ${room.roomId} to cubit");
+        }
+      });
       // visit route `getLaterMessages`
       await fetchLaterMessages(accessToken, null, context);
       return Future.value('/');
@@ -274,6 +354,7 @@ class MyApp extends StatelessWidget {
                   )),
           BlocProvider<RoomsCubit>(create: (_) => RoomsCubit()),
           BlocProvider<GroupMetadataCubit>(create: (_) => groupMetadataCubit),
+          BlocProvider<RoomMetadataCubit>(create: (_) => roomMetadataCubit),
           RepositoryProvider<AppDb>.value(value: db),
           Provider<MessageExchangeStream>.value(value: msgExchangeStream),
           BlocProvider<FcmTokenCubit>.value(value: fcmTokenCubit),
@@ -282,6 +363,7 @@ class MyApp extends StatelessWidget {
           ChangeNotifierProvider<GroupsList>(
             create: (_) => GroupsList(),
           ),
+          ChangeNotifierProvider<RoomList>(create: (_) => RoomList()),
           BlocProvider(create: (context) {
             return FilePickerCubit(
                 initialState:

@@ -395,8 +395,15 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                       .stream
                       .where((encodedData) {
                 var data = jsonDecode(encodedData);
-                return (data['fromUser'] == widget.userId ||
-                    data['toUser'] == widget.userId);
+                if (data.containsKey('error') ||
+                    data.containsKey('active') ||
+                    data.containsKey('update') ||
+                    data.containsKey('exit')) {
+                  return false;
+                }
+                return (data['type'] == 'ChatMessage' &&
+                    (data['fromUser'] == widget.userId ||
+                        data['toUser'] == widget.userId));
               }).listen((encodedData) {
                 var data = jsonDecode(encodedData);
                 cubit.addMessage(
@@ -416,60 +423,71 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
               });
               return cubit;
             }, child: Builder(builder: (context) {
-              return Scaffold(
-                  appBar: AppBar(
-                    automaticallyImplyLeading: false,
-                    leading: IconButton(
-                      icon: Icon(Icons.arrow_back),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                    titleSpacing: 0,
-                    title: ListTile(
-                      onTap: () => _showContact(context),
-                      contentPadding: EdgeInsets.only(left: 0.0, right: 0.0),
-                      tileColor: Colors.transparent,
-                      leading: CircleAvatar(
-                        backgroundColor: Colors.grey[350],
-                        foregroundImage: iconImageWrapper(widget.userId),
-                      ),
-                      title: Text(
-                        widget.name,
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
-                    actions: <Widget>[
-                      IconButton(
-                        onPressed: () => {
-                          showSearch(
-                              context: context,
-                              delegate: ExchangeSearchDelegate(
-                                  exchangeId: getExchangeId(),
-                                  msgType: "ChatMessage",
-                                  limit: 100))
+              return WillPopScope(
+                onWillPop: () async {
+                  Provider.of<ChatMetaCubit>(context, listen: false)
+                      .read(getExchangeId());
+                  return true;
+                },
+                child: Scaffold(
+                    appBar: AppBar(
+                      automaticallyImplyLeading: false,
+                      leading: IconButton(
+                        icon: Icon(Icons.arrow_back),
+                        onPressed: () {
+                          Provider.of<ChatMetaCubit>(context, listen: false)
+                              .read(getExchangeId());
+                          Navigator.of(context).pop();
                         },
-                        icon: Icon(Icons.search),
-                        tooltip: 'Search',
                       ),
-                      IconButton(
-                        onPressed: () => {},
-                        icon: Icon(Icons.more_vert),
-                        tooltip: 'More',
-                      )
-                    ],
-                  ),
-                  body: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.max,
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: <Widget>[
-                        BlocBuilder<UserChatCubit, List<ChatMessage>>(
-                            builder: (BuildContext context,
-                                    List<ChatMessage> state) =>
-                                _buildMessagesView(state)),
-                        MsgBox(
-                            sendMessage: _sendMessage,
-                            callIfEmojiClosedAndBackPress: onBackPress)
-                      ]));
+                      titleSpacing: 0,
+                      title: ListTile(
+                        onTap: () => _showContact(context),
+                        contentPadding: EdgeInsets.only(left: 0.0, right: 0.0),
+                        tileColor: Colors.transparent,
+                        leading: CircleAvatar(
+                          backgroundColor: Colors.grey[350],
+                          foregroundImage: iconImageWrapper(widget.userId),
+                        ),
+                        title: Text(
+                          widget.name,
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                      actions: <Widget>[
+                        IconButton(
+                          onPressed: () => {
+                            showSearch(
+                                context: context,
+                                delegate: ExchangeSearchDelegate(
+                                    exchangeId: getExchangeId(),
+                                    msgType: "ChatMessage",
+                                    limit: 100))
+                          },
+                          icon: Icon(Icons.search),
+                          tooltip: 'Search',
+                        ),
+                        IconButton(
+                          onPressed: () => {},
+                          icon: Icon(Icons.more_vert),
+                          tooltip: 'More',
+                        )
+                      ],
+                    ),
+                    body: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.max,
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: <Widget>[
+                          BlocBuilder<UserChatCubit, List<ChatMessage>>(
+                              builder: (BuildContext context,
+                                      List<ChatMessage> state) =>
+                                  _buildMessagesView(state)),
+                          MsgBox(
+                              sendMessage: _sendMessage,
+                              callIfEmojiClosedAndBackPress: onBackPress)
+                        ])),
+              );
             }));
           } else if (snapshot.hasError) {
             print(snapshot.error);

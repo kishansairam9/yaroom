@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:yaroom/screens/edit/room.dart';
 import '../screens/homePage.dart';
 import '../screens/settingsPage.dart';
 import '../screens/messaging/chatPage.dart';
@@ -65,7 +66,19 @@ class ContentRouter {
                   },
                   child: CreateGroup(args),
                 )));
-
+      case '/editroom':
+        final args = settings.arguments;
+        return MaterialPageRoute(
+            builder: (context) => wrapWithUserId(
+                context,
+                BlocProvider(
+                  create: (context) {
+                    return FilePickerCubit(
+                        initialState:
+                            FilePickerDetails(media: Map(), filesAttached: 0));
+                  },
+                  child: CreateRoom(args),
+                )));
       case '/settings':
         return MaterialPageRoute(
             builder: (context) => wrapWithUserId(
