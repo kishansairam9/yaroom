@@ -19,7 +19,6 @@ func fcmTokenUpdateHandler(g *gin.Context) {
 
 	rawUserId, exists := g.Get("userId")
 	if !exists {
-		print("what?")
 		g.AbortWithStatusJSON(400, gin.H{"error": "not authenticated"})
 		return
 	}
@@ -40,7 +39,6 @@ func fcmTokenInvalidateHandler(g *gin.Context) {
 
 	rawUserId, exists := g.Get("userId")
 	if !exists {
-		print("what?")
 		g.AbortWithStatusJSON(400, gin.H{"error": "not authenticated"})
 		return
 	}
@@ -93,6 +91,7 @@ func sendMessageNotification(msg WSMessage) error {
 				Notification: &fcm.Notification{
 					Title: fromUserData.Name,
 					Body:  trimLength(msg.Content, 150),
+					Tag:   fromUserData.Userid,
 				},
 			}
 			res, err := fcmClient.SendWithRetry(notif, 3)
@@ -137,8 +136,9 @@ func sendMessageNotification(msg WSMessage) error {
 					Data:     data,
 					Priority: "high",
 					Notification: &fcm.Notification{
-						Title: user.Name,
+						Title: msg.GroupId,
 						Body:  trimLength(msg.Content, 150),
+						Tag:   msg.GroupId,
 					},
 				}
 				res, err := fcmClient.SendWithRetry(notif, 3)
@@ -157,6 +157,57 @@ func sendMessageNotification(msg WSMessage) error {
 	return nil
 }
 
-func sendFriendRequestNotification() {
-
+func sendFriendRequestNotification(req map[string]interface{}) error {
+	fromUserData, err := getUserMetadata(req["fromUser"].(string))
+	if err != nil {
+		return err
+	}
+	if fromUserData == nil {
+		return errors.New("user doesn't exits")
+	}
+	toUserData, err := getUserMetadata(req["userId"].(string))
+	if err != nil {
+		return err
+	}
+	if toUserData == nil {
+		return errors.New("user doesn't exits")
+	}
+	if len(toUserData.Tokens) == 0 {
+		return nil
+	}
+	m := make(map[string]interface{})
+	m["Userid"] = fromUserData.Userid
+	m["Name"] = fromUserData.Name
+	m["About"] = ""
+	req["fromUser"] = m
+	msg := ""
+	if req["friendRequest"].(string) == SendRequest {
+		msg = msg + "You have receive friend request from " + fromUserData.Name
+	} else if req["friendRequest"].(string) == AcceptRequest {
+		msg = msg + fromUserData.Name + " has accepted your friend request"
+	} else if req["friendRequest"].(string) == RejectRequest {
+		msg = msg + fromUserData.Name + " has rejected your friend request"
+	} else if req["friendRequest"].(string) == RemoveFriend {
+		msg = msg + fromUserData.Name + " has removed you as a friend"
+	}
+	for _, token := range toUserData.Tokens {
+		print("sending to ", token)
+		notif := &fcm.Message{
+			To:       token,
+			Data:     req,
+			Priority: "high",
+			Notification: &fcm.Notification{
+				Body: trimLength(msg, 150),
+			},
+		}
+		res, err := fcmClient.SendWithRetry(notif, 3)
+		if err == fcm.ErrInvalidRegistration {
+			// print("remove token ", token)
+			removeFCMToken(&UserFCMTokenUpdate{Userid: toUserData.Userid, Tokens: []string{token}})
+		} else if err != nil {
+			log.Error().Str("where", "update user metadata").Str("type", "failed to bind struct").Str("fcm response", fmt.Sprint(res)).Msg(err.Error())
+			return err
+		}
+	}
+	return nil
 }

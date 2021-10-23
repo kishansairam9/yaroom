@@ -123,6 +123,12 @@ func main() {
 		// Exit Group
 		secured.POST("/exitGroup", exitGroupHandler)
 
+		//Edit Room
+		secured.POST("/editRoomDetails", updateRoomHandler)
+
+		//Exit Room
+		secured.POST("/exitRoom", exitRoomHandler)
+
 		// Friend Requests
 		secured.POST("/friendRequest", friendRequestHandler)
 
@@ -165,6 +171,12 @@ func main() {
 
 		// Exit Group
 		testing.POST("/exitGroup", exitGroupHandler)
+
+		//Room Details
+		testing.POST("/editRoomDetails", updateRoomHandler)
+
+		//Exit Room
+		testing.POST("/exitRoom", exitRoomHandler)
 
 		// Friend Requests
 		testing.POST("/friendRequest", friendRequestHandler)
