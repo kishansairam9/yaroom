@@ -211,18 +211,18 @@ Future<void> main() async {
       print("exit type");
       return;
     } else if (data.containsKey("friendRequest")) {
+      var fromUser = jsonDecode(data["fromUser"]);
       await db.addUser(
-          userId: data["fromUser"]["Userid"],
-          name: data["fromUser"]["Name"],
-          about: data["fromUser"]["About"]);
+          userId: fromUser["Userid"],
+          name: fromUser["Name"],
+          about: fromUser["About"]);
       await db.addNewFriendRequest(
-          userId: data["fromUser"]["Userid"],
-          status: int.parse(data["friendRequest"]));
+          userId: fromUser["Userid"], status: int.parse(data["friendRequest"]));
       friendRequestsCubit.update(FriendRequestData(
-          userId: data["fromUser"]["Userid"],
-          name: data["fromUser"]["Name"],
+          userId: fromUser["Userid"],
+          name: fromUser["Name"],
           status: int.parse(data["friendRequest"]),
-          about: data["fromUser"]["About"]));
+          about: fromUser["About"]));
     } else if (data.containsKey("type")) {
       await updateDb(db, data, chatMeta);
     }
