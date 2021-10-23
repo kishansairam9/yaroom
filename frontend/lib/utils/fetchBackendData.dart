@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:path/path.dart';
 import 'package:yaroom/blocs/chatMeta.dart';
 import 'package:yaroom/moor/db.dart';
 import 'dart:convert';
@@ -8,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'types.dart';
 import 'package:yaroom/moor/utils.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import './types.dart';
 
 Future<void> populateUserData(data, context) async {
   var userData = data['UserData'];
@@ -33,14 +33,16 @@ Future<void> populateUserData(data, context) async {
   if (userData['Pendinglist'] != null) {
     for (var user in userData['Pendinglist']) {
       await RepositoryProvider.of<AppDb>(context, listen: false)
-          .addNewFriendRequest(userId: user, status: 1);
+          .addNewFriendRequest(
+              userId: user, status: FriendRequestType.pending.index);
     }
   }
 
   if (userData['Friendslist'] != null) {
     for (var user in userData['Friendslist']) {
       await RepositoryProvider.of<AppDb>(context, listen: false)
-          .addNewFriendRequest(userId: user, status: 2);
+          .addNewFriendRequest(
+              userId: user, status: FriendRequestType.friend.index);
     }
   }
 

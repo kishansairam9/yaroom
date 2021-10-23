@@ -3524,6 +3524,16 @@ abstract class _$AppDb extends GeneratedDatabase {
     );
   }
 
+  Selectable<GroupDM> getGroupById({required String groupId}) {
+    return customSelect('SELECT * FROM GroupDMs WHERE groupId = ?1',
+        variables: [
+          Variable<String>(groupId)
+        ],
+        readsFrom: {
+          groupDMs,
+        }).map(groupDMs.mapFromRow);
+  }
+
   Selectable<GroupDM> getGroupsNameMatching({required String match}) {
     return customSelect(
         'SELECT * FROM GroupDMs WHERE LOWER(name) LIKE \'%\' || ?1 || \'%\'',

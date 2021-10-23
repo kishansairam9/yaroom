@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:bottom_navy_bar/bottom_navy_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:yaroom/blocs/activeStatus.dart';
+import 'package:yaroom/blocs/friendRequestsData.dart';
 import 'package:yaroom/blocs/rooms.dart';
 import 'components/searchDelegate.dart';
 import 'package:yaroom/blocs/fcmToken.dart';
@@ -69,7 +70,24 @@ class HomePageState extends State<HomePage> {
         Navigator.pushNamed(context, '/chat',
             arguments:
                 ChatPageArguments(userId: data[0].userId, name: data[0].name));
+      } else if (content['type'] == 'GroupMessage') {
+        List<GroupDM> data = await RepositoryProvider.of<AppDb>(context)
+            .getGroupById(groupId: content['groupId'])
+            .get();
+        Navigator.pushNamed(context, '/groupchat',
+            arguments: GroupChatPageArguments(groupId: data[0].groupId));
+      } else if (content['type'] == 'RoomsMessage') {
+        List<RoomsListData> data = await RepositoryProvider.of<AppDb>(context)
+            .getRoomDetails(roomId: content['roomId'])
+            .get();
+        Navigator.pushNamed(context, '/room',
+            arguments: RoomArguments(
+                roomId: data[0].roomId,
+                roomName: data[0].name,
+                channelId: content['channelId']));
       }
+    } else if (content.containsKey('friendRequest')) {
+      // TO DO
     }
   }
 
@@ -245,7 +263,28 @@ class HomePageState extends State<HomePage> {
                                     onTap: () => showModalBottomSheet(
                                         context: context,
                                         builder: (BuildContext c) {
-                                          return ViewContact(e);
+                                          return BlocBuilder<FriendRequestCubit,
+                                                  FriendRequestDataMap>(
+                                              bloc: Provider.of<
+                                                      FriendRequestCubit>(
+                                                  context,
+                                                  listen: false),
+                                              builder: (context, state) {
+                                                if (state.data
+                                                    .containsKey(e.userId)) {
+                                                  return ViewContact(
+                                                      state.data[e.userId]!);
+                                                } else {
+                                                  return ViewContact(
+                                                      FriendRequestData(
+                                                          userId: e.userId,
+                                                          name: e.name,
+                                                          about: e.about == null
+                                                              ? ""
+                                                              : e.about!,
+                                                          status: -1));
+                                                }
+                                              });
                                         }),
                                     tileColor: Colors.transparent,
                                     leading: Stack(

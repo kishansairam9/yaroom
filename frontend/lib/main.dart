@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -32,6 +31,7 @@ import 'moor/utils.dart';
 import 'utils/fetchBackendData.dart';
 import 'blocs/groupMetadata.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'blocs/friendRequestsData.dart';
 
 bool removeExistingDB = true;
 
@@ -113,6 +113,8 @@ Future<void> main() async {
   var msgStream = MessageExchangeStream();
   var groupMetadataCubit =
       GroupMetadataCubit(initialState: GroupMetadataMap(Map()));
+  var friendRequestsCubit =
+      FriendRequestCubit(initialState: FriendRequestDataMap(Map()));
   msgStream.stream.listen((encodedData) async {
     print("Got encoded data::::::\n" + encodedData);
     if (encodedData == "" ||
@@ -137,7 +139,10 @@ Future<void> main() async {
             description: data["Description"]);
         if (data["Userslist"] != null) {
           for (var user in data["Userslist"]) {
-            await db.addUser(userId: user["userId"], name: user["name"]);
+            await db.addUser(
+                userId: user["userId"],
+                name: user["name"],
+                about: user["about"]);
             await db.addUserToGroup(
                 groupId: data["Groupid"], userId: user["userId"]);
           }
@@ -166,8 +171,22 @@ Future<void> main() async {
       }
       print("exit type");
       return;
+    } else if (data.containsKey("friendRequest")) {
+      await db.addUser(
+          userId: data["fromUser"]["Userid"],
+          name: data["fromUser"]["Name"],
+          about: data["fromUser"]["About"]);
+      await db.addNewFriendRequest(
+          userId: data["fromUser"]["Userid"],
+          status: int.parse(data["friendRequest"]));
+      friendRequestsCubit.update(FriendRequestData(
+          userId: data["fromUser"]["Userid"],
+          name: data["fromUser"]["Name"],
+          status: int.parse(data["friendRequest"]),
+          about: data["fromUser"]["About"]));
+    } else if (data.containsKey("type")) {
+      await updateDb(db, data, chatMeta);
     }
-    await updateDb(db, data, chatMeta);
   }, onError: (e) {
     print("WS stream returned error $e");
   });
@@ -202,6 +221,7 @@ Future<void> main() async {
       fcmTokenCubit: fcmTokenCubit,
       activeStatus: activeStatus,
       chatMetaCubit: chatMeta,
+      friendRequestCubit: friendRequestsCubit,
       groupMetadataCubit: groupMetadataCubit));
 }
 
@@ -213,6 +233,7 @@ class MyApp extends StatelessWidget {
   late final ActiveStatusMap activeStatus;
   late final ChatMetaCubit chatMetaCubit;
   late final GroupMetadataCubit groupMetadataCubit;
+  late final FriendRequestCubit friendRequestCubit;
   MyApp(
       {required this.db,
       required this.msgExchangeStream,
@@ -220,6 +241,7 @@ class MyApp extends StatelessWidget {
       required this.fcmTokenCubit,
       required this.activeStatus,
       required this.chatMetaCubit,
+      required this.friendRequestCubit,
       required this.groupMetadataCubit});
 
   Future<String> getInitialRoute(BuildContext context) async {
@@ -271,6 +293,20 @@ class MyApp extends StatelessWidget {
           print("added group ${group.groupId} to cubit");
         }
       });
+      var friendRequests =
+          await RepositoryProvider.of<AppDb>(context, listen: false)
+              .getFriendRequests()
+              .get();
+      for (var friendRequest in friendRequests) {
+        var d = FriendRequestData(
+            userId: friendRequest.userId,
+            name: friendRequest.name,
+            about: friendRequest.about == null ? "" : friendRequest.about!,
+            status: friendRequest.status == null ? 0 : friendRequest.status!);
+        Provider.of<FriendRequestCubit>(context, listen: false).update(d);
+        print(
+            "added friend request ${friendRequest.name} with status ${friendRequest.status} to the cubit");
+      }
       // visit route `getLaterMessages`
       await fetchLaterMessages(accessToken, null, context);
       return Future.value('/');
@@ -296,6 +332,7 @@ class MyApp extends StatelessWidget {
                   )),
           BlocProvider<RoomsCubit>(create: (_) => RoomsCubit()),
           BlocProvider<GroupMetadataCubit>(create: (_) => groupMetadataCubit),
+          BlocProvider<FriendRequestCubit>(create: (_) => friendRequestCubit),
           RepositoryProvider<AppDb>.value(value: db),
           Provider<MessageExchangeStream>.value(value: msgExchangeStream),
           BlocProvider<FcmTokenCubit>.value(value: fcmTokenCubit),
