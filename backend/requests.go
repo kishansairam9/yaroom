@@ -160,7 +160,6 @@ func updateGroupHandler(g *gin.Context) {
 		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
 		return
 	}
-	print(obj.Groupid)
 	encObj, err := json.Marshal(*obj)
 	if err != nil {
 		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
@@ -172,7 +171,7 @@ func updateGroupHandler(g *gin.Context) {
 	encAug, _ := json.Marshal(m)
 	ensureStreamsExist([]string{"GROUP:" + data.Groupid})
 	sendUpdateOnStream([]string{"SELF:" + userId}, []byte("SUB-GROUP:"+data.Groupid))
-	time.AfterFunc(time.Duration(2)*time.Second, func() {
+	time.AfterFunc(time.Duration(1)*time.Second, func() {
 		sendUpdateOnStream([]string{"GROUP:" + data.Groupid}, encAug)
 	})
 
@@ -180,6 +179,13 @@ func updateGroupHandler(g *gin.Context) {
 }
 
 func updateRoomHandler(g *gin.Context) {
+
+	rawUserId, exists := g.Get("userId")
+	if !exists {
+		g.AbortWithStatusJSON(400, gin.H{"error": "user not authenticated"})
+		return
+	}
+	userId := rawUserId.(string)
 
 	var req roomDetails
 	if err := g.BindJSON(&req); err != nil {
@@ -210,17 +216,25 @@ func updateRoomHandler(g *gin.Context) {
 		users_list = append(users_list, curr.Userid)
 	}
 
-	// obj, err := getRoomMetadata(req.RoomId)
-	// if err != nil {
-	// 	g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
-	// 	return
-	// }
-	// encObj, err := json.Marshal(obj)
-	// if err != nil {
-	// 	g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
-	// 	return
-	// }
-	// sendUpdateOnStream([]string{"ROOM:" + req.RoomId}, encObj)
+	obj, err := getRoomMetadata(data.Roomid)
+	if err != nil {
+		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	encObj, err := json.Marshal(*obj)
+	if err != nil {
+		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	m := make(map[string]interface{})
+	_ = json.Unmarshal(encObj, &m)
+	m["update"] = "room"
+	encAug, _ := json.Marshal(m)
+	ensureStreamsExist([]string{"ROOM:" + data.Roomid})
+	sendUpdateOnStream([]string{"SELF:" + userId}, []byte("SUB-ROOM:"+data.Roomid))
+	time.AfterFunc(time.Duration(1)*time.Second, func() {
+		sendUpdateOnStream([]string{"ROOM:" + data.Roomid}, encAug)
+	})
 
 	g.JSON(200, roomDetails{RoomId: data.Roomid, Name: data.Name, Description: *data.Description, RoomIcon: *data.Image, RoomMembers: users_list, ChannelsList: data.Channelslist})
 }
@@ -363,7 +377,18 @@ func exitRoomHandler(g *gin.Context) {
 		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
 		return
 	}
-	sendUpdateOnStream([]string{"Room:" + req.RoomId}, encObj)
+	m := make(map[string]interface{})
+	_ = json.Unmarshal(encObj, &m)
+	m["update"] = "room"
+	encAug, _ := json.Marshal(m)
+	sendUpdateOnStream([]string{"ROOM:" + req.RoomId}, encAug)
+	time.AfterFunc(time.Duration(1)*time.Second, func() {
+		delete(m, "update")
+		m["exit"] = "room"
+		m["delUser"] = userId
+		encAug, _ = json.Marshal(m)
+		sendUpdateOnStream([]string{"SELF:" + userId}, encAug)
+	})
 	g.JSON(200, gin.H{"success": true})
 }
 
@@ -403,7 +428,18 @@ func exitGroupHandler(g *gin.Context) {
 		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
 		return
 	}
-	sendUpdateOnStream([]string{"GROUP:" + req.GroupId}, encObj)
+	m := make(map[string]interface{})
+	_ = json.Unmarshal(encObj, &m)
+	m["update"] = "group"
+	encAug, _ := json.Marshal(m)
+	sendUpdateOnStream([]string{"GROUP:" + req.GroupId}, encAug)
+	time.AfterFunc(time.Duration(1)*time.Second, func() {
+		delete(m, "update")
+		m["exit"] = "group"
+		m["delUser"] = userId
+		encAug, _ = json.Marshal(m)
+		sendUpdateOnStream([]string{"SELF:" + userId}, encAug)
+	})
 	g.JSON(200, gin.H{"success": true})
 }
 
@@ -456,6 +492,14 @@ func friendRequestHandler(g *gin.Context) {
 			g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
 			return
 		}
+	}
+	m := make(map[string]interface{})
+	m["userId"] = req.UserId
+	m["friendRequest"] = req.Status
+	m["fromUser"] = userId
+	if err := sendFriendRequestNotification(m); err != nil {
+		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
+		return
 	}
 	g.JSON(200, gin.H{"success": true})
 

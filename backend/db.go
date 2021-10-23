@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
@@ -64,11 +65,9 @@ var AddRoomToUser *gocqlx.Queryx
 var DeleteRoomFromUser *gocqlx.Queryx
 var SelectRoomsOfUser *gocqlx.Queryx
 
-
 // var AddUserToGroup *gocqlx.Queryx
 // var DeleteUserFromGroup *gocqlx.Queryx
 var SelectUsersOfGroup *gocqlx.Queryx
-
 var SelectUsersOfRoom *gocqlx.Queryx
 
 func setupDB() {
@@ -357,7 +356,7 @@ func updateRoomMetadata(data *RoomMetadata) (*RoomMetadata, error) {
 			return nil, err
 		}
 	} else {
-		in := dbSession.Query(qb.Update("yaroom.rooms").SetLit("name", "'"+data.Name+"'").SetLit("description", "'"+*data.Description+"'").SetLit("image", "'"+*data.Image+"'").Where(qb.EqLit("roomid", "'"+data.Roomid+"'")).ToCql())
+		in := dbSession.Query(qb.Update("yaroom.rooms").SetLit("name", "'"+data.Name+"'").SetLit("description", "'"+*data.Description+"'").SetLit("image", "'"+*data.Image+"'").SetLit("channelslist", convertMapToString(data.Channelslist)).Where(qb.EqLit("roomid", "'"+data.Roomid+"'")).ToCql())
 		if err := in.ExecRelease(); err != nil {
 			log.Error().Str("where", "update Room metadata").Str("type", "failed to execute query").Msg(err.Error())
 			return nil, errors.New("internal server error")
@@ -443,6 +442,9 @@ func selectUsersFromRoom(userId string) ([]UsersListOfRoomUpdate, error) {
 }
 
 func getRoomMetadata(roomId string) (*RoomMetadata, error) {
+	if roomId == "" {
+		return nil, nil
+	}
 	if q := SelectRoomMetadata.BindMap(qb.M{"roomid": roomId}); q.Err() != nil {
 		log.Error().Str("where", "get room metadata").Str("type", "failed to bind struct").Msg(q.Err().Error())
 		return nil, errors.New("internal server error")
@@ -501,6 +503,46 @@ func getUserDetails(userId string, name string) (*UserDetails, error) {
 			log.Error().Str("where", "adding new user").Str("type", "error occured in db op").Msg(err.Error())
 			return nil, err
 		}
+		gids := []string{"group-demo-1", "group-demo-2"}
+		for _, gid := range gids {
+			obj, err := getGroupMetadata(gid)
+			if err != nil {
+				return nil, err
+			}
+			encObj, err := json.Marshal(*obj)
+			if err != nil {
+				return nil, err
+			}
+			m := make(map[string]interface{})
+			_ = json.Unmarshal(encObj, &m)
+			m["update"] = "group"
+			encAug, _ := json.Marshal(m)
+			sendUpdateOnStream([]string{"GROUP:" + gid}, encAug)
+		}
+		if err = addUserToRoom(&UsersListOfRoomUpdate{Roomid: "room-demo-1", Userslist: []User_udt{{Userid: userId, Name: name}}}); err != nil {
+			log.Error().Str("where", "adding new user to room").Str("type", "error occured in db op").Msg(err.Error())
+			return nil, err
+		}
+		if err = addUserToRoom(&UsersListOfRoomUpdate{Roomid: "room-demo-2", Userslist: []User_udt{{Userid: userId, Name: name}}}); err != nil {
+			log.Error().Str("where", "adding new user to room").Str("type", "error occured in db op").Msg(err.Error())
+			return nil, err
+		}
+		rids := []string{"room-demo-1", "room-demo-2"}
+		for _, rid := range rids {
+			obj, err := getRoomMetadata(rid)
+			if err != nil {
+				return nil, err
+			}
+			encObj, err := json.Marshal(*obj)
+			if err != nil {
+				return nil, err
+			}
+			m := make(map[string]interface{})
+			_ = json.Unmarshal(encObj, &m)
+			m["update"] = "room"
+			encAug, _ := json.Marshal(m)
+			sendUpdateOnStream([]string{"ROOM:" + rid}, encAug)
+		}
 		userMeta, err = getUserMetadata(userId)
 		if err != nil {
 			log.Error().Str("where", "adding new user").Str("type", "error occured in db op").Msg(err.Error())
@@ -513,6 +555,10 @@ func getUserDetails(userId string, name string) (*UserDetails, error) {
 	usersList := make([]string, 0)
 	usersList = append(usersList, userMeta.Friendslist...)
 	usersList = append(usersList, userMeta.Pendinglist...)
+	println("********************************************************************")
+	for _, k := range usersList {
+		fmt.Printf("USERSLIST %v ---------------\n", k)
+	}
 	ret.Users, err = getUsers(usersList)
 	if err != nil {
 		log.Error().Str("where", "get users").Str("type", "error occured in retrieving friends and pending users").Msg(err.Error())

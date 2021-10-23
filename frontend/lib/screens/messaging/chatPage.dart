@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:yaroom/blocs/friendRequestsData.dart';
 import 'package:yaroom/utils/authorizationService.dart';
 import '../components/searchDelegate.dart';
 import 'package:bubble/bubble.dart';
@@ -237,10 +238,10 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     showModalBottomSheet(
         context: context,
         builder: (BuildContext c) {
-          return ViewContact(User(
-            userId: widget.userId,
-            name: widget.name,
-          ));
+          return ViewContact(FriendRequestData(
+              userId: widget.userId,
+              name: widget.name,
+              status: FriendRequestType.friend.index));
         });
   }
 
@@ -394,10 +395,15 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                   Provider.of<MessageExchangeStream>(context, listen: false)
                       .stream
                       .where((encodedData) {
+                if (encodedData == "" ||
+                    encodedData == "null" ||
+                    encodedData == "true" ||
+                    encodedData == "false") return false;
                 var data = jsonDecode(encodedData);
                 if (data.containsKey('error') ||
                     data.containsKey('active') ||
                     data.containsKey('update') ||
+                    data.containsKey('friendRequest') ||
                     data.containsKey('exit')) {
                   return false;
                 }

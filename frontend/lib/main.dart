@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -31,6 +32,7 @@ import 'moor/utils.dart';
 import 'utils/fetchBackendData.dart';
 import 'blocs/groupMetadata.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'blocs/friendRequestsData.dart';
 
 bool removeExistingDB = true;
 
@@ -84,12 +86,22 @@ Future<void> main() async {
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
+  foregroundNotifSelect = StreamController();
+
   await flutterLocalNotificationsPlugin
       .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>()
       ?.createNotificationChannel(channel);
-  await flutterLocalNotificationsPlugin.initialize(InitializationSettings(
-      android: AndroidInitializationSettings('@mipmap/ic_launcher')));
+  await flutterLocalNotificationsPlugin.initialize(
+      InitializationSettings(
+          android: AndroidInitializationSettings('@mipmap/ic_launcher')),
+      onSelectNotification: (String? payload) async {
+    print("--------------SELECTED NOTIF--------------\n");
+    print("$payload\n");
+    if (payload != null) {
+      foregroundNotifSelect?.sink.add(payload);
+    }
+  });
 
   HydratedBloc.storage = await HydratedStorage.build(
     storageDirectory: kIsWeb
@@ -104,6 +116,8 @@ Future<void> main() async {
       GroupMetadataCubit(initialState: GroupMetadataMap(Map()));
   var roomMetadataCubit =
       RoomMetadataCubit(initialState: RoomMetadataMap(Map()));
+  var friendRequestsCubit =
+      FriendRequestCubit(initialState: FriendRequestDataMap(Map()));
   msgStream.stream.listen((encodedData) async {
     print("Got encoded data::::::\n" + encodedData);
     if (encodedData == "" ||
@@ -126,9 +140,15 @@ Future<void> main() async {
             groupId: data["Groupid"],
             name: data["Name"],
             description: data["Description"]);
-        for (var user in data["Userslist"]) {
-          await db.addUserToGroup(
-              groupId: data["Groupid"], userId: user["userId"]);
+        if (data["Userslist"] != null) {
+          for (var user in data["Userslist"]) {
+            await db.addUser(
+                userId: user["userId"],
+                name: user["name"],
+                about: user["about"]);
+            await db.addUserToGroup(
+                groupId: data["Groupid"], userId: user["userId"]);
+          }
         }
         var groupMembers =
             await db.getGroupMembers(groupID: data["Groupid"]).get();
@@ -173,9 +193,9 @@ Future<void> main() async {
         var get = roomMetadataCubit.state.data[data["Roomid"]];
         print("after update, name: ${get?.name}, desc: ${get?.description}");
       }
-      print("Update type");
+      print("update type");
       return;
-    }else if (data.containsKey("exit")) {
+    } else if (data.containsKey("exit")) {
       if (data['exit'] == 'group') {
         await db.removeUserFromGroup(
             groupId: data["Groupid"], userId: data["delUser"]);
@@ -190,9 +210,22 @@ Future<void> main() async {
       }
       print("exit type");
       return;
+    } else if (data.containsKey("friendRequest")) {
+      await db.addUser(
+          userId: data["fromUser"]["Userid"],
+          name: data["fromUser"]["Name"],
+          about: data["fromUser"]["About"]);
+      await db.addNewFriendRequest(
+          userId: data["fromUser"]["Userid"],
+          status: int.parse(data["friendRequest"]));
+      friendRequestsCubit.update(FriendRequestData(
+          userId: data["fromUser"]["Userid"],
+          name: data["fromUser"]["Name"],
+          status: int.parse(data["friendRequest"]),
+          about: data["fromUser"]["About"]));
+    } else if (data.containsKey("type")) {
+      await updateDb(db, data, chatMeta);
     }
-
-    await updateDb(db, data, chatMeta);
   }, onError: (e) {
     print("WS stream returned error $e");
   });
@@ -209,14 +242,10 @@ Future<void> main() async {
           notification.title,
           notification.body,
           NotificationDetails(
-            android: AndroidNotificationDetails(
-              channel.id,
-              channel.name,
-              channelDescription: channel.description,
-              // icon: android.smallIcon,
-              // other properties...
-            ),
-          ));
+            android: AndroidNotificationDetails(channel.id, channel.name,
+                channelDescription: channel.description, tag: android.tag),
+          ),
+          payload: jsonEncode(message.data));
     }
   });
 
@@ -231,8 +260,9 @@ Future<void> main() async {
       fcmTokenCubit: fcmTokenCubit,
       activeStatus: activeStatus,
       chatMetaCubit: chatMeta,
-      groupMetadataCubit: groupMetadataCubit,
-      roomMetadataCubit: roomMetadataCubit));
+      roomMetadataCubit: roomMetadataCubit,
+      friendRequestCubit: friendRequestsCubit,
+      groupMetadataCubit: groupMetadataCubit));
 }
 
 class MyApp extends StatelessWidget {
@@ -244,7 +274,7 @@ class MyApp extends StatelessWidget {
   late final ChatMetaCubit chatMetaCubit;
   late final GroupMetadataCubit groupMetadataCubit;
   late final RoomMetadataCubit roomMetadataCubit;
-
+  late final FriendRequestCubit friendRequestCubit;
   MyApp(
       {required AppDb this.db,
       required MessageExchangeStream this.msgExchangeStream,
@@ -253,6 +283,7 @@ class MyApp extends StatelessWidget {
       required ActiveStatusMap this.activeStatus,
       required ChatMetaCubit this.chatMetaCubit,
       required GroupMetadataCubit this.groupMetadataCubit,
+      required FriendRequestCubit this.friendRequestCubit,
       required RoomMetadataCubit this.roomMetadataCubit});
 
   Future<String> getInitialRoute(BuildContext context) async {
@@ -281,6 +312,8 @@ class MyApp extends StatelessWidget {
       Provider.of<ChatMetaCubit>(context, listen: false).setUser(userid);
       // Backend hanldes user new case :)
       // visit route `getUserDetails`
+      print(parseIdToken(idToken));
+      print(parseIdToken(idToken)["name"]);
       await fetchUserDetails(
           accessToken, parseIdToken(idToken)["name"], context);
       print(accessToken);
@@ -329,6 +362,20 @@ class MyApp extends StatelessWidget {
           print("added room ${room.roomId} to cubit");
         }
       });
+      var friendRequests =
+          await RepositoryProvider.of<AppDb>(context, listen: false)
+              .getFriendRequests()
+              .get();
+      for (var friendRequest in friendRequests) {
+        var d = FriendRequestData(
+            userId: friendRequest.userId,
+            name: friendRequest.name,
+            about: friendRequest.about == null ? "" : friendRequest.about!,
+            status: friendRequest.status == null ? 0 : friendRequest.status!);
+        Provider.of<FriendRequestCubit>(context, listen: false).update(d);
+        print(
+            "added friend request ${friendRequest.name} with status ${friendRequest.status} to the cubit");
+      }
       // visit route `getLaterMessages`
       await fetchLaterMessages(accessToken, null, context);
       return Future.value('/');
@@ -355,6 +402,7 @@ class MyApp extends StatelessWidget {
           BlocProvider<RoomsCubit>(create: (_) => RoomsCubit()),
           BlocProvider<GroupMetadataCubit>(create: (_) => groupMetadataCubit),
           BlocProvider<RoomMetadataCubit>(create: (_) => roomMetadataCubit),
+          BlocProvider<FriendRequestCubit>(create: (_) => friendRequestCubit),
           RepositoryProvider<AppDb>.value(value: db),
           Provider<MessageExchangeStream>.value(value: msgExchangeStream),
           BlocProvider<FcmTokenCubit>.value(value: fcmTokenCubit),

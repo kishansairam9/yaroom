@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:yaroom/blocs/friendRequestsData.dart';
 import 'package:yaroom/utils/authorizationService.dart';
 import 'package:flutter/material.dart';
 import 'package:bubble/bubble.dart';
@@ -253,15 +254,6 @@ class GroupChatPageState extends State<GroupChatPage>
     );
   }
 
-  // To display profile
-  _showContact(context, var user) {
-    showModalBottomSheet(
-        context: context,
-        builder: (BuildContext c) {
-          return ViewContact(user);
-        });
-  }
-
   final GlobalKey<ScaffoldState> _scaffoldkey = new GlobalKey();
   loadMore(List<GroupChatMessage> msgs) async {
     if (msgs.isNotEmpty && moreload) {
@@ -407,7 +399,8 @@ class GroupChatPageState extends State<GroupChatPage>
                                   // request to backend to remove user from group
                                   await exitGroup(widget.groupId, context);
                                   await Navigator.pushReplacementNamed(
-                                      context, '/');
+                                      context, '/',
+                                      arguments: HomePageArguments(index: 2));
                                 },
                                 child: Text("Yes")),
                             TextButton(
@@ -515,6 +508,7 @@ class GroupChatPageState extends State<GroupChatPage>
                             if (data.containsKey('error') ||
                                 data.containsKey('active') ||
                                 data.containsKey('update') ||
+                                data.containsKey('friendRequest') ||
                                 data.containsKey('exit')) {
                               return false;
                             }
@@ -569,7 +563,32 @@ class GroupChatPageState extends State<GroupChatPage>
                                               onTap: () => showModalBottomSheet(
                                                   context: context,
                                                   builder: (BuildContext c) {
-                                                    return ViewContact(e);
+                                                    return BlocBuilder<
+                                                            FriendRequestCubit,
+                                                            FriendRequestDataMap>(
+                                                        bloc: null,
+                                                        builder:
+                                                            (context, state) {
+                                                          if (state.data
+                                                              .containsKey(
+                                                                  e.userId)) {
+                                                            return ViewContact(
+                                                                state.data[
+                                                                    e.userId]!);
+                                                          } else {
+                                                            return ViewContact(
+                                                                FriendRequestData(
+                                                                    userId: e
+                                                                        .userId,
+                                                                    name:
+                                                                        e.name,
+                                                                    about: e.about ==
+                                                                            null
+                                                                        ? ""
+                                                                        : e.about!,
+                                                                    status: -1));
+                                                          }
+                                                        });
                                                   }),
                                               tileColor: Colors.transparent,
                                               leading: Stack(

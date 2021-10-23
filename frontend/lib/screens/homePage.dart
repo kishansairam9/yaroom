@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -5,6 +6,7 @@ import 'package:bottom_navy_bar/bottom_navy_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:yaroom/blocs/activeStatus.dart';
 import 'package:yaroom/blocs/roomMetadata.dart';
+import 'package:yaroom/blocs/friendRequestsData.dart';
 import 'package:yaroom/blocs/rooms.dart';
 import 'package:yaroom/utils/backendRequests.dart';
 import 'components/searchDelegate.dart';
@@ -31,19 +33,21 @@ class HomePage extends StatefulWidget {
   late final String? channelId;
 
   HomePage(HomePageArguments args) {
-    if (args.index == null) {
-      initIndex = 1;
-      this.roomId = null;
-      this.roomName = null;
-      this.channelId = null;
-      return;
-    }
     if (args.index == 0) {
       this.roomId = args.roomId!;
       this.roomName = args.roomName!;
       this.channelId = args.channelId;
+      this.initIndex = 0;
+      return;
     }
-    this.initIndex = args.index!;
+    if (args.index == null) {
+      initIndex = 1;
+    } else {
+      this.initIndex = args.index!;
+    }
+    this.roomId = null;
+    this.roomName = null;
+    this.channelId = null;
   }
 
   @override
@@ -57,35 +61,55 @@ class HomePageState extends State<HomePage> {
 
   HomePageState({required this.currentIndex});
 
-  Future<void> setupInteractedMessage() async {
-    // Get any messages which caused the application to open from
-    // a terminated state.
-    RemoteMessage? initialMessage =
-        await FirebaseMessaging.instance.getInitialMessage();
-
-    // If the message also contains a data property with a "type" of "chat",
-    // navigate to a chat screen
-    if (initialMessage != null &&
-        initialMessage.data['type'] == 'ChatMessage') {
-      List<User> data = await RepositoryProvider.of<AppDb>(context)
-          .getUserById(userId: initialMessage.data['fromUser'])
-          .get();
-      Navigator.pushNamed(context, '/chat',
-          arguments:
-              ChatPageArguments(userId: data[0].userId, name: data[0].name));
-    }
-
-    // Also handle any interaction when the app is in the background via a
-    // Stream listener
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) async {
-      if (message.data['type'] == 'ChatMessage') {
+  Future<void> notificationInteractionHandler(
+      Map<String, dynamic> content) async {
+    print("Interaction handling for $content");
+    if (content.containsKey('type')) {
+      if (content['type'] == 'ChatMessage') {
         List<User> data = await RepositoryProvider.of<AppDb>(context)
-            .getUserById(userId: message.data['fromUser'])
+            .getUserById(userId: content['fromUser'])
             .get();
         Navigator.pushNamed(context, '/chat',
             arguments:
                 ChatPageArguments(userId: data[0].userId, name: data[0].name));
+      } else if (content['type'] == 'GroupMessage') {
+        List<GroupDM> data = await RepositoryProvider.of<AppDb>(context)
+            .getGroupById(groupId: content['groupId'])
+            .get();
+        Navigator.pushNamed(context, '/groupchat',
+            arguments: GroupChatPageArguments(groupId: data[0].groupId));
+      } else if (content['type'] == 'RoomsMessage') {
+        List<RoomsListData> data = await RepositoryProvider.of<AppDb>(context)
+            .getRoomDetails(roomId: content['roomId'])
+            .get();
+        Navigator.pushNamed(context, '/room',
+            arguments: RoomArguments(
+                roomId: data[0].roomId,
+                roomName: data[0].name,
+                channelId: content['channelId']));
       }
+    } else if (content.containsKey('friendRequest')) {
+      // TO DO
+    }
+  }
+
+  Future<void> foregroundNotifInteractions() async {
+    foregroundNotifSelect?.stream.listen((String content) async {
+      await notificationInteractionHandler(jsonDecode(content));
+    });
+  }
+
+  Future<void> backgroundNotifInteractions() async {
+    // Get any messages which caused the application to open from a terminated state.
+    RemoteMessage? initialMessage =
+        await FirebaseMessaging.instance.getInitialMessage();
+    if (initialMessage != null) {
+      await notificationInteractionHandler(initialMessage.data);
+    }
+
+    // Handle any interaction when the app is in the background
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) async {
+      await notificationInteractionHandler(message.data);
     });
   }
 
@@ -93,7 +117,8 @@ class HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: currentIndex);
-    setupInteractedMessage();
+    backgroundNotifInteractions();
+    foregroundNotifInteractions();
   }
 
   @override
@@ -280,12 +305,6 @@ class HomePageState extends State<HomePage> {
                                   ])
                             ])),
                         ...roomMembersSnapshot.data!.map((User e) =>
-                            // BlocProvider(
-                            //   create: (context) =>
-                            //       ActiveStatusCubit(initialState: false),
-                            //   child: Builder(
-                            //     builder: (context) {
-                            //       return
                             BlocBuilder<ActiveStatusCubit, bool>(
                               bloc: Provider.of<ActiveStatusMap>(context)
                                   .get(e.userId),
@@ -294,7 +313,28 @@ class HomePageState extends State<HomePage> {
                                     onTap: () => showModalBottomSheet(
                                         context: context,
                                         builder: (BuildContext c) {
-                                          return ViewContact(e);
+                                          return BlocBuilder<FriendRequestCubit,
+                                                  FriendRequestDataMap>(
+                                              bloc: Provider.of<
+                                                      FriendRequestCubit>(
+                                                  context,
+                                                  listen: false),
+                                              builder: (context, state) {
+                                                if (state.data
+                                                    .containsKey(e.userId)) {
+                                                  return ViewContact(
+                                                      state.data[e.userId]!);
+                                                } else {
+                                                  return ViewContact(
+                                                      FriendRequestData(
+                                                          userId: e.userId,
+                                                          name: e.name,
+                                                          about: e.about == null
+                                                              ? ""
+                                                              : e.about!,
+                                                          status: -1));
+                                                }
+                                              });
                                         }),
                                     tileColor: Colors.transparent,
                                     leading: Stack(

@@ -123,8 +123,8 @@ func main() {
 		// Exit Group
 		secured.POST("/exitGroup", exitGroupHandler)
 
-		//Room Details
-		secured.GET("/editRoomDetails", updateRoomHandler)
+		//Edit Room
+		secured.POST("/editRoomDetails", updateRoomHandler)
 
 		//Exit Room
 		secured.POST("/exitRoom", exitRoomHandler)
@@ -171,6 +171,12 @@ func main() {
 
 		// Exit Group
 		testing.POST("/exitGroup", exitGroupHandler)
+
+		//Room Details
+		testing.POST("/editRoomDetails", updateRoomHandler)
+
+		//Exit Room
+		testing.POST("/exitRoom", exitRoomHandler)
 
 		// Friend Requests
 		testing.POST("/friendRequest", friendRequestHandler)
@@ -273,7 +279,7 @@ func main() {
 				g.AbortWithStatus(500)
 				return
 			}
-			if err = sendMessageNotification(msg.ToUser, msg); err != nil {
+			if err = sendMessageNotification(msg); err != nil {
 				log.Error().Str("where", "fcm send to user").Str("type", "failed to send push notification").Msg(err.Error())
 				g.AbortWithStatusJSON(500, gin.H{"error": "internal server error"})
 				return
