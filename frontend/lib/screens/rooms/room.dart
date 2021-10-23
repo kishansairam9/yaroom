@@ -450,7 +450,7 @@ class RoomState extends State<Room> {
             });
         print("here");
         print("l" + req.body + "l");
-        if (req.body != "null" || req.body != "") {
+        if (req.body != "null" && req.body != "") {
           if (req.body
               .contains(new RegExp("{\"error\"", caseSensitive: false))) {
             return;

@@ -274,7 +274,7 @@ class GroupChatPageState extends State<GroupChatPage>
             'Content-Type': 'application/json',
             'Authorization': "Bearer $accessToken",
           });
-      if (req.body != "null") {
+      if (req.body != "null" && req.body != "") {
         if (req.body.contains(new RegExp("{\"error\"", caseSensitive: false))) {
           return;
         }

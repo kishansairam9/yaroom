@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-
+import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:bottom_navy_bar/bottom_navy_bar.dart';
 import 'package:provider/provider.dart';
@@ -490,6 +490,7 @@ class HomePageState extends State<HomePage> {
                               Provider.of<MessageExchangeStream>(context,
                                       listen: false)
                                   .close();
+                              HydratedBloc.storage.clear();
                               await Navigator.of(context)
                                   .pushNamedAndRemoveUntil(
                                       '/signin', (_) => false);

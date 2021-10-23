@@ -86,7 +86,7 @@ Future<void> main() async {
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
-  foregroundNotifSelect = StreamController();
+  foregroundNotifSelect = StreamController.broadcast();
 
   await flutterLocalNotificationsPlugin
       .resolvePlatformSpecificImplementation<
@@ -276,15 +276,15 @@ class MyApp extends StatelessWidget {
   late final RoomMetadataCubit roomMetadataCubit;
   late final FriendRequestCubit friendRequestCubit;
   MyApp(
-      {required AppDb this.db,
-      required MessageExchangeStream this.msgExchangeStream,
-      required SecureStorageService this.secureStorageService,
-      required FcmTokenCubit this.fcmTokenCubit,
-      required ActiveStatusMap this.activeStatus,
-      required ChatMetaCubit this.chatMetaCubit,
-      required GroupMetadataCubit this.groupMetadataCubit,
-      required FriendRequestCubit this.friendRequestCubit,
-      required RoomMetadataCubit this.roomMetadataCubit});
+      {required this.db,
+      required this.msgExchangeStream,
+      required this.secureStorageService,
+      required this.fcmTokenCubit,
+      required this.activeStatus,
+      required this.chatMetaCubit,
+      required this.groupMetadataCubit,
+      required this.friendRequestCubit,
+      required this.roomMetadataCubit});
 
   Future<String> getInitialRoute(BuildContext context) async {
     final String? idToken = await secureStorageService.getIdToken();
@@ -345,11 +345,11 @@ class MyApp extends StatelessWidget {
                   .getRoomMembers(roomID: room.roomId)
                   .get();
           var roomChannels = new Map<String, String>();
-          var ChannelList =
+          var channelList =
               await RepositoryProvider.of<AppDb>(context, listen: false)
                   .getChannelsOfRoom(roomID: room.roomId)
                   .get();
-          for (var channel in ChannelList) {
+          for (var channel in channelList) {
             roomChannels[channel.channelId] = channel.channelName;
           }
           var d = RoomMetadata(
