@@ -183,12 +183,14 @@ class _FriendsViewState extends State<FriendsView> {
                                                 : FriendRequestType
                                                     .pending.index,
                                             userId: f.userId);
+                                    result.status = (direction ==
+                                            DismissDirection.endToStart)
+                                        ? FriendRequestType.friend.index
+                                        : FriendRequestType.reject.index;
                                     await Provider.of<DMsList>(context,
                                             listen: false)
                                         .updateChats(context);
-                                    // setState(() {
-                                    //   friendRequestsList.removeAt(index);
-                                    // });
+                                    friendRequestsList.removeAt(index);
                                     Provider.of<FriendRequestCubit>(context,
                                             listen: false)
                                         .update(result);

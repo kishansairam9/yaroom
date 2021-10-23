@@ -125,12 +125,7 @@ class _ViewContactState extends State<ViewContact> {
                                 Provider.of<FriendRequestCubit>(context,
                                         listen: false)
                                     .update(this.widget.contactData);
-                                print("Friend Request Cubit updated");
-                                print(this.widget.contactData);
-                                // setState(() {
-                                //   status =
-                                //       FriendRequestType.removeFriend.index;
-                                // });
+                                Navigator.pop(context);
                               },
                               title: Text("Remove Friend",
                                   style: TextStyle(color: Colors.red)),
@@ -153,9 +148,6 @@ class _ViewContactState extends State<ViewContact> {
                                     color: Colors.green,
                                   ),
                                   onTap: () async {
-                                    // setState(() {
-                                    //   status = 5;
-                                    // });
                                     await friendRequest(
                                         this.widget.contactData.userId,
                                         FriendRequestType.pending.index,
@@ -193,6 +185,7 @@ class _ViewContactState extends State<ViewContact> {
                                               listen: false)
                                           .update(this.widget.contactData);
                                     }
+                                    Navigator.pop(context);
                                   },
                                   title: Text("Add Friend",
                                       style: TextStyle(color: Colors.green)),
