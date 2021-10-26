@@ -14,4 +14,3 @@
 - [ ] Ensure optimal Cassandra Queries
   - [ ] Remove allow filtering operations from CQL and use ElasticSearch in Elassandra
   - [ ] Analyse bottleneck queries & frequent queries and look for alternatives
-- [ ] Implement unread message handling in backend. Currently frontend on inital login considers all msgs as unread, after opening chat it resets and it handles new messages in frontend itself managing state on disk

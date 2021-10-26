@@ -108,6 +108,10 @@ func sendMessageNotification(msg WSMessage) error {
 		if err != nil {
 			return err
 		}
+		groupData, err := getGroupMetadata(msg.GroupId)
+		if err != nil {
+			return err
+		}
 		if fromUserData == nil {
 			return errors.New("user doesn't exits")
 		}
@@ -136,9 +140,9 @@ func sendMessageNotification(msg WSMessage) error {
 					Data:     data,
 					Priority: "high",
 					Notification: &fcm.Notification{
-						Title: msg.GroupId,
+						Title: groupData.Name,
 						Body:  trimLength(msg.Content, 150),
-						Tag:   msg.GroupId,
+						Tag:   groupData.Groupid,
 					},
 				}
 				res, err := fcmClient.SendWithRetry(notif, 3)

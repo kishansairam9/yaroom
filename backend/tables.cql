@@ -117,3 +117,9 @@ CREATE INDEX chat_messages_to_index ON yaroom.chat_messages (touser);
 -- CREATE INDEX room_messages_room_index ON yaroom.room_messages (roomid);
 CREATE INDEX room_messages_channel_index ON yaroom.room_messages (channelid);
 
+CREATE TABLE yaroom.last_read (
+    userid text,
+    exchange_id text,
+    lastread text,
+    PRIMARY KEY (userid, exchange_id)
+);

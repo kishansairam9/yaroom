@@ -84,6 +84,16 @@ type roomDetails struct {
 	ChannelsList map[string]string `json:"channelsList"`
 }
 
+type lastReadDetails struct {
+	UserId     string `json:"userId" binding:"required"`
+	ExchangeId string `json:"exchangeId" binding:"required"`
+	LastRead   string `json:"lastRead" binding:"required"`
+}
+
+type getLastReadDetailsRequest struct {
+	ExchangeId string `form:"exchangeId" binding:"required"`
+}
+
 type exitGroupRequest struct {
 	GroupId string   `json:"groupId" binding:"required"`
 	User    []string `json:"user"`
@@ -503,4 +513,39 @@ func friendRequestHandler(g *gin.Context) {
 	}
 	g.JSON(200, gin.H{"success": true})
 
+}
+
+func updateLastReadHandler(g *gin.Context) {
+	var req lastReadDetails
+	if err := g.BindJSON(&req); err != nil {
+		log.Info().Str("where", "bind json").Str("type", "failed to parse body to json").Msg(err.Error())
+		return
+	}
+	err := updateLastReadMetadata(&LastReadMetadata{Userid: req.UserId, Exchange_id: req.ExchangeId, Lastread: req.LastRead})
+	if err != nil {
+		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	g.JSON(200, gin.H{"success": true})
+}
+
+func getLastReadHandler(g *gin.Context) {
+	rawUserId, exists := g.Get("userId")
+	if !exists {
+		g.AbortWithStatusJSON(400, gin.H{"error": "user not authenticated"})
+		return
+	}
+	userId := rawUserId.(string)
+
+	var req getLastReadDetailsRequest
+	if err := g.BindQuery(&req); err != nil {
+		log.Info().Str("where", "bind query").Str("type", "failed to parse body to query").Msg(err.Error())
+		return
+	}
+	data, err := getLastReadMetadata(userId, req.ExchangeId)
+	if err != nil {
+		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	g.JSON(200, data)
 }

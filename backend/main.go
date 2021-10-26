@@ -137,6 +137,10 @@ func main() {
 		secured.GET("/getOlderMessages", getOlderMessageHandler)
 		secured.GET("/search", searchQueryHandler)
 
+		// Last read messages
+		secured.POST("/lastRead", updateLastReadHandler)
+		secured.GET("/lastRead", getLastReadHandler)
+
 		// FCM Token
 		secured.POST("/fcmTokenUpdate", fcmTokenUpdateHandler)
 		secured.POST("/fcmTokenInvalidate", fcmTokenInvalidateHandler)
@@ -180,6 +184,10 @@ func main() {
 
 		// Friend Requests
 		testing.POST("/friendRequest", friendRequestHandler)
+
+		// Last read messages
+		testing.POST("/lastRead", updateLastReadHandler)
+		testing.GET("/lastRead", getLastReadHandler)
 
 		// Get messages
 		testing.GET("/getLaterMessages", getLaterMessageHandler)
