@@ -35,6 +35,10 @@ class FriendRequestCubit extends Cubit<FriendRequestDataMap> {
   FriendRequestCubit({required FriendRequestDataMap initialState})
       : super(initialState);
 
+  void reset() {
+    emit(FriendRequestDataMap(Map()));
+  }
+
   void update(FriendRequestData data) {
     emit(FriendRequestDataMap(state.update(data)));
   }

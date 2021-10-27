@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class ActiveStatusMap {
   late Map<String, ActiveStatusCubit>? statusMap;
   ActiveStatusMap({required this.statusMap});
+
   update(String user, bool status) {
     statusMap![user]!.setStatus(status: status);
   }

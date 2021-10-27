@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:bottom_navy_bar/bottom_navy_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:yaroom/blocs/activeStatus.dart';
+import 'package:yaroom/blocs/groupMetadata.dart';
 import 'package:yaroom/blocs/roomMetadata.dart';
 import 'package:yaroom/blocs/friendRequestsData.dart';
 import 'package:yaroom/blocs/rooms.dart';
@@ -380,6 +381,19 @@ class HomePageState extends State<HomePage> {
                                         listen: false)
                                     .logout(context);
                                 // Clear DB
+                                Provider.of<ActiveStatusMap>(context,
+                                        listen: false)
+                                    .statusMap
+                                    ?.clear();
+                                Provider.of<FriendRequestCubit>(context,
+                                        listen: false)
+                                    .reset();
+                                Provider.of<GroupMetadataCubit>(context,
+                                        listen: false)
+                                    .reset();
+                                Provider.of<RoomMetadataCubit>(context,
+                                        listen: false)
+                                    .reset();
                                 await Provider.of<AppDb>(context, listen: false)
                                     .deleteAll();
                                 await Provider.of<AppDb>(context, listen: false)

@@ -77,9 +77,11 @@ class ProfileTileState extends State<ProfileTile> {
       List<ChatMessage> uChat = await Provider.of<AppDb>(context, listen: false)
           .getUserChat(otherUser: widget.userId)
           .get();
-      String lastMsg = uChat.last.msgId;
-      Provider.of<ChatMetaCubit>(context, listen: false)
-          .read(getExchangeId(), lastMsg, context);
+      if (uChat.length > 0) {
+        String lastMsg = uChat.last.msgId;
+        Provider.of<ChatMetaCubit>(context, listen: false)
+            .read(getExchangeId(), lastMsg, context);
+      }
     });
     Navigator.of(context).pushNamed('/chat',
         arguments: ChatPageArguments(userId: widget.userId, name: widget.name));

@@ -84,9 +84,11 @@ class GroupProfileTileState extends State<GroupProfileTile> {
           await Provider.of<AppDb>(context, listen: false)
               .getGroupChat(groupId: widget.groupId)
               .get();
-      String lastMsg = uChat.last.msgId;
-      Provider.of<ChatMetaCubit>(context, listen: false)
-          .read(widget.groupId, lastMsg, context);
+      if (uChat.length > 0) {
+        String lastMsg = uChat.last.msgId;
+        Provider.of<ChatMetaCubit>(context, listen: false)
+            .read(widget.groupId, lastMsg, context);
+      }
     });
     Navigator.of(context).pushNamed('/groupchat',
         arguments: GroupChatPageArguments(groupId: widget.groupId));

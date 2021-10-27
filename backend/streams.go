@@ -29,43 +29,47 @@ func ensureStreamsExist(streams []string) error {
 
 func monitorStreams(userId string, streams []string, inputChan <-chan interface{}, quit <-chan bool) {
 	// Not a fatal errors here, so don't need to close conn to user for this
-	lastSentActivity := false
+	currentActivity := false
 	for {
 		select {
 		case data := <-inputChan:
-			unwrap, isActivity := data.(ActiveStatus)
-			// TODO: BUG FIX BUFFERING INCORRECT when logged in for first time
-			if !isActivity || lastSentActivity != unwrap.Active {
+			unwrap, ok := data.(ActiveStatus)
+			// if ok, then active status
+			if !ok {
 				enc, _ := json.Marshal(data)
 				// TODO Remove debug print
 				fmt.Println("received from " + userId + "::::\n" + string(enc))
 				err := userSendOnStream(userId, streams, enc)
 				if err != nil {
 					log.Warn().Str("where", "send data on stream").Str("type", "failed to send data").Msg(err.Error())
-				} else if isActivity && err == nil {
-					lastSentActivity = unwrap.Active
 				}
+			} else {
+				currentActivity = unwrap.Active
 			}
-		case <-time.After(5 * time.Second):
-			if lastSentActivity {
-				fmt.Println("DEBUG PRINT SENDING inactive after 5 sec timeout")
-				data := ActiveStatus{Userid: userId, Active: false}
+		case <-time.After(3 * time.Second):
+			if currentActivity {
+				data := ActiveStatus{Userid: userId, Active: currentActivity}
 				enc, _ := json.Marshal(data)
 				err := userSendOnStream(userId, streams, enc)
 				if err != nil {
 					log.Warn().Str("where", "send data on stream").Str("type", "failed to send data").Msg(err.Error())
-				} else {
-					lastSentActivity = false
 				}
+			}
+		case <-time.After(10 * time.Second):
+			fmt.Println("DEBUG PRINT SENDING inactive after 10 sec timeout")
+			currentActivity = false
+			data := ActiveStatus{Userid: userId, Active: false}
+			enc, _ := json.Marshal(data)
+			err := userSendOnStream(userId, streams, enc)
+			if err != nil {
+				log.Warn().Str("where", "send data on stream").Str("type", "failed to send data").Msg(err.Error())
 			}
 		case <-quit:
-			if lastSentActivity {
-				data := ActiveStatus{Userid: userId, Active: false}
-				enc, _ := json.Marshal(data)
-				err := userSendOnStream(userId, streams, enc)
-				if err != nil {
-					log.Warn().Str("where", "send data on stream").Str("type", "failed to send data").Msg(err.Error())
-				}
+			data := ActiveStatus{Userid: userId, Active: false}
+			enc, _ := json.Marshal(data)
+			err := userSendOnStream(userId, streams, enc)
+			if err != nil {
+				log.Warn().Str("where", "send data on stream").Str("type", "failed to send data").Msg(err.Error())
 			}
 			return
 		}
@@ -109,19 +113,21 @@ func userSubscribeTo(userId string, streams []string, outputChan chan<- []byte, 
 			log.Warn().Str("where", "send active status").Str("type", "failed to add messsage to stream "+st).Msg(err.Error())
 		}
 	}
-	// activeStatusBuffer := make(map[string][]byte)
-	// ctr := 0
-	// bufEdgeHandle := 40
+	lastSentActive := make(map[string][]byte)
+	activeStatusBuffer := make(map[string][]byte)
+	ctr := 0
+	bufEdgeHandle := 40
 	for {
-		// ctr = (ctr + 1) % (bufEdgeHandle + 1)
+		ctr = (ctr + 1) % (bufEdgeHandle + 1)
 		select {
-		// case <-time.After(2 * time.Second):
-		// for _, v := range activeStatusBuffer {
-		// if v != nil {
-		// outputChan <- v
-		// }
-		// }
-		// activeStatusBuffer = make(map[string][]byte)
+		case <-time.After(2 * time.Second):
+			for k, v := range activeStatusBuffer {
+				if v != nil && string(lastSentActive[k]) != string(v) {
+					outputChan <- v
+					lastSentActive[k] = v
+				}
+			}
+			activeStatusBuffer = make(map[string][]byte)
 		case msg := <-dataCh:
 			fmt.Println("got msg ", string(msg.Data))
 			subTest := strings.Split(string(msg.Data), "-")
@@ -145,26 +151,28 @@ func userSubscribeTo(userId string, streams []string, outputChan chan<- []byte, 
 				fmt.Println("Sub done continue")
 				continue
 			}
-			// var store ActiveStatus
-			// notActiveStatus := json.Unmarshal(msg.Data, &store)
-			// if notActiveStatus == nil {
-			// if store.Userid != userId {
-			// activeStatusBuffer[store.Userid] = msg.Data
-			// }
-			// msg.AckSync()
-			// continue
-			// }
-			outputChan <- msg.Data
-			msg.AckSync()
+			var store ActiveStatus
+			err := json.Unmarshal(msg.Data, &store)
+			// if error is nil then active status
+			if err == nil {
+				if store.Userid != userId {
+					activeStatusBuffer[store.Userid] = msg.Data
+				}
+				msg.AckSync()
+			} else {
+				outputChan <- msg.Data
+				msg.AckSync()
+			}
 			// Handle edge case of not going into after timeout for buffer flush
-			// if ctr == bufEdgeHandle {
-			// for _, v := range activeStatusBuffer {
-			// if v != nil {
-			// outputChan <- v
-			// }
-			// }
-			// activeStatusBuffer = make(map[string][]byte)
-			// }
+			if ctr == bufEdgeHandle {
+				for k, v := range activeStatusBuffer {
+					if v != nil && string(lastSentActive[k]) != string(v) {
+						outputChan <- v
+						lastSentActive[k] = v
+					}
+				}
+				activeStatusBuffer = make(map[string][]byte)
+			}
 		case <-quit:
 			return
 		}

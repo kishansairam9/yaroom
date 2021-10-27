@@ -7,7 +7,7 @@ class RoomMetadata {
   late String name;
   late String description;
   late List<User> roomMembers;
-  late Map<String,String> roomChannels;
+  late Map<String, String> roomChannels;
 
   RoomMetadata(
       {required this.roomId,
@@ -26,6 +26,7 @@ class RoomMetadataMap {
     statusMap[change.roomId] = change;
     return statusMap;
   }
+
   Map<String, RoomMetadata> delete(String roomId) {
     Map<String, RoomMetadata> statusMap = data;
     statusMap.remove(roomId);
@@ -37,9 +38,14 @@ class RoomMetadataCubit extends Cubit<RoomMetadataMap> {
   RoomMetadataCubit({required RoomMetadataMap initialState})
       : super(initialState);
 
+  void reset() {
+    emit(RoomMetadataMap(Map()));
+  }
+
   void update(RoomMetadata data) {
     emit(RoomMetadataMap(state.update(data)));
   }
+
   void delete(String roomId) {
     emit(RoomMetadataMap(state.delete(roomId)));
   }
