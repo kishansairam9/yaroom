@@ -386,12 +386,12 @@ func exitRoomHandler(g *gin.Context) {
 	m := make(map[string]interface{})
 	_ = json.Unmarshal(encObj, &m)
 	m["update"] = "room"
+	m["delUser"] = userId
 	encAug, _ := json.Marshal(m)
 	sendUpdateOnStream([]string{"ROOM:" + req.RoomId}, encAug)
 	time.AfterFunc(time.Duration(1)*time.Second, func() {
 		delete(m, "update")
 		m["exit"] = "room"
-		m["delUser"] = userId
 		encAug, _ = json.Marshal(m)
 		sendUpdateOnStream([]string{"SELF:" + userId}, encAug)
 	})
@@ -437,12 +437,12 @@ func exitGroupHandler(g *gin.Context) {
 	m := make(map[string]interface{})
 	_ = json.Unmarshal(encObj, &m)
 	m["update"] = "group"
+	m["delUser"] = userId
 	encAug, _ := json.Marshal(m)
 	sendUpdateOnStream([]string{"GROUP:" + req.GroupId}, encAug)
 	time.AfterFunc(time.Duration(1)*time.Second, func() {
 		delete(m, "update")
 		m["exit"] = "group"
-		m["delUser"] = userId
 		encAug, _ = json.Marshal(m)
 		sendUpdateOnStream([]string{"SELF:" + userId}, encAug)
 	})

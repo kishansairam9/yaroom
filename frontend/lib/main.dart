@@ -151,6 +151,10 @@ Future<void> main() async {
                 groupId: data["Groupid"], userId: user["userId"]);
           }
         }
+        if (data.containsKey('delUser')) {
+          await db.removeUserFromGroup(
+              userId: data['delUser'], groupId: data["Groupid"]);
+        }
         var groupMembers =
             await db.getGroupMembers(groupID: data["Groupid"]).get();
         var d = GroupMetadata(
@@ -168,20 +172,27 @@ Future<void> main() async {
             roomId: data["Roomid"],
             name: data["Name"],
             description: data["Description"]);
-        for (var user in data["Userslist"]) {
-          await db.addUserToRoom(
-              roomsId: data["Roomid"], userId: user["userId"]);
+        if (data["Userslist"] != null) {
+          for (var user in data["Userslist"]) {
+            await db.addUserToRoom(
+                roomsId: data["Roomid"], userId: user["userId"]);
+          }
+        }
+        if (data.containsKey('delUser')) {
+          await db.removeUserFromRoom(
+              userId: data['delUser'], roomId: data["Roomid"]);
         }
         var roomChannels = new Map<String, String>();
-        for (var channel in data["Channelslist"].keys) {
-          await db.addChannelsToRoom(
-              roomId: data["Roomid"],
-              channelId: channel,
-              channelName: data["Channelslist"][channel]);
-          roomChannels[channel] = data["Channelslist"][channel];
+        if (data["Channelslist"] != null) {
+          for (var channel in data["Channelslist"].keys) {
+            await db.addChannelsToRoom(
+                roomId: data["Roomid"],
+                channelId: channel,
+                channelName: data["Channelslist"][channel]);
+            roomChannels[channel] = data["Channelslist"][channel];
+          }
         }
         var roomMembers = await db.getRoomMembers(roomID: data["Roomid"]).get();
-
         var d = RoomMetadata(
             roomId: data["Roomid"],
             name: data["Name"],

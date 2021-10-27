@@ -357,7 +357,7 @@ func getLaterMessages(userId, lastMsgId string) ([]DBMessage, error) {
 		}
 	}
 	for i := range roomchat {
-		roomchat[i].Type = "RoomsMessage"
+		roomchat[i].Type = "RoomMessage"
 	}
 
 	all := make([]DBMessage, 0)

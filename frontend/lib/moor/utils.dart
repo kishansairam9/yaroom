@@ -75,7 +75,7 @@ Future<void> updateDb(
       print("Database insert failed with error $e");
       return 0;
     });
-  } else if (data['type'] == 'RoomsMessage') {
+  } else if (data['type'] == 'RoomMessage') {
     await db
         .insertRoomsChannelMessage(
       msgId: data['msgId'],

@@ -34,6 +34,7 @@ func monitorStreams(userId string, streams []string, inputChan <-chan interface{
 		select {
 		case data := <-inputChan:
 			unwrap, isActivity := data.(ActiveStatus)
+			// TODO: BUG FIX BUFFERING INCORRECT when logged in for first time
 			if !isActivity || lastSentActivity != unwrap.Active {
 				enc, _ := json.Marshal(data)
 				// TODO Remove debug print
@@ -108,19 +109,19 @@ func userSubscribeTo(userId string, streams []string, outputChan chan<- []byte, 
 			log.Warn().Str("where", "send active status").Str("type", "failed to add messsage to stream "+st).Msg(err.Error())
 		}
 	}
-	activeStatusBuffer := make(map[string][]byte)
-	ctr := 0
-	bufEdgeHandle := 40
+	// activeStatusBuffer := make(map[string][]byte)
+	// ctr := 0
+	// bufEdgeHandle := 40
 	for {
-		ctr = (ctr + 1) % (bufEdgeHandle + 1)
+		// ctr = (ctr + 1) % (bufEdgeHandle + 1)
 		select {
-		case <-time.After(2 * time.Second):
-			for _, v := range activeStatusBuffer {
-				if v != nil {
-					outputChan <- v
-				}
-			}
-			activeStatusBuffer = make(map[string][]byte)
+		// case <-time.After(2 * time.Second):
+		// for _, v := range activeStatusBuffer {
+		// if v != nil {
+		// outputChan <- v
+		// }
+		// }
+		// activeStatusBuffer = make(map[string][]byte)
 		case msg := <-dataCh:
 			fmt.Println("got msg ", string(msg.Data))
 			subTest := strings.Split(string(msg.Data), "-")
@@ -141,28 +142,29 @@ func userSubscribeTo(userId string, streams []string, outputChan chan<- []byte, 
 					streams = append(streams, st)
 				}
 				msg.AckSync()
+				fmt.Println("Sub done continue")
 				continue
 			}
-			var store ActiveStatus
-			notActiveStatus := json.Unmarshal(msg.Data, &store)
-			if notActiveStatus == nil {
-				if store.Userid != userId {
-					activeStatusBuffer[store.Userid] = msg.Data
-				}
-				msg.AckSync()
-				continue
-			}
+			// var store ActiveStatus
+			// notActiveStatus := json.Unmarshal(msg.Data, &store)
+			// if notActiveStatus == nil {
+			// if store.Userid != userId {
+			// activeStatusBuffer[store.Userid] = msg.Data
+			// }
+			// msg.AckSync()
+			// continue
+			// }
 			outputChan <- msg.Data
 			msg.AckSync()
 			// Handle edge case of not going into after timeout for buffer flush
-			if ctr == bufEdgeHandle {
-				for _, v := range activeStatusBuffer {
-					if v != nil {
-						outputChan <- v
-					}
-				}
-				activeStatusBuffer = make(map[string][]byte)
-			}
+			// if ctr == bufEdgeHandle {
+			// for _, v := range activeStatusBuffer {
+			// if v != nil {
+			// outputChan <- v
+			// }
+			// }
+			// activeStatusBuffer = make(map[string][]byte)
+			// }
 		case <-quit:
 			return
 		}

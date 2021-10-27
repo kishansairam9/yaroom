@@ -79,7 +79,7 @@ class HomePageState extends State<HomePage> {
             .get();
         Navigator.pushNamed(context, '/groupchat',
             arguments: GroupChatPageArguments(groupId: data[0].groupId));
-      } else if (content['type'] == 'RoomsMessage') {
+      } else if (content['type'] == 'RoomMessage') {
         List<RoomsListData> data = await RepositoryProvider.of<AppDb>(context)
             .getRoomDetails(roomId: content['roomId'])
             .get();
