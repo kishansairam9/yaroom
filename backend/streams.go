@@ -31,6 +31,7 @@ func monitorStreams(userId string, streams []string, inputChan <-chan interface{
 	// Not a fatal errors here, so don't need to close conn to user for this
 	currentActivity := false
 	lastActiveSent := time.Now()
+	lastSent := false
 	for {
 		select {
 		case data := <-inputChan:
@@ -47,16 +48,17 @@ func monitorStreams(userId string, streams []string, inputChan <-chan interface{
 			} else {
 				currentActivity = unwrap.Active
 			}
-			if time.Since(lastActiveSent).Seconds() > 3 {
+			if lastSent != currentActivity || time.Since(lastActiveSent).Seconds() > 3 {
 				data := ActiveStatus{Userid: userId, Active: currentActivity}
 				enc, _ := json.Marshal(data)
 				err := userSendOnStream(userId, streams, enc)
 				if err != nil {
 					log.Warn().Str("where", "send data on stream").Str("type", "failed to send data").Msg(err.Error())
 				}
+				lastSent = currentActivity
 				lastActiveSent = time.Now()
 			}
-		case <-time.After(10 * time.Second):
+		case <-time.After(15 * time.Second):
 			fmt.Println("DEBUG PRINT SENDING inactive after 10 sec timeout")
 			currentActivity = false
 			data := ActiveStatus{Userid: userId, Active: currentActivity}
@@ -65,6 +67,7 @@ func monitorStreams(userId string, streams []string, inputChan <-chan interface{
 			if err != nil {
 				log.Warn().Str("where", "send data on stream").Str("type", "failed to send data").Msg(err.Error())
 			}
+			lastSent = currentActivity
 			lastActiveSent = time.Now()
 		case <-quit:
 			data := ActiveStatus{Userid: userId, Active: false}

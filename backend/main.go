@@ -294,7 +294,6 @@ func main() {
 			g.JSON(200, msg)
 		})
 	}
-
 	// Server Graceful exit
 	{
 		srv := &http.Server{

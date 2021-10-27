@@ -351,7 +351,17 @@ func getLaterMessages(userId, lastMsgId string) ([]DBMessage, error) {
 
 	var roomchat []DBMessage
 	if len(rooms) > 0 {
-		q = dbSession.Query(qb.Select("yaroom.room_messages").Columns("*").Where(qb.GtLit("msgid", lastMsgId)).Where(qb.InLit("exchange_id", "("+strings.Join(rooms, ",")+")")).AllowFiltering().ToCql())
+		roomChannels := make([]string, 0)
+		for _, room := range userMeta.Roomslist {
+			rdata, err := selectChannelsOfRoom(room)
+			if err != nil {
+				fmt.Printf("err %v\n", err.Error())
+			}
+			for channel, _ := range rdata[0].Channelslist {
+				roomChannels = append(roomChannels, "'"+room+"@"+channel+"'")
+			}
+		}
+		q = dbSession.Query(qb.Select("yaroom.room_messages").Columns("*").Where(qb.GtLit("msgid", lastMsgId)).Where(qb.InLit("exchange_id", "("+strings.Join(roomChannels, ",")+")")).AllowFiltering().ToCql())
 		if err := q.SelectRelease(&roomchat); err != nil {
 			return nil, err
 		}

@@ -71,6 +71,9 @@ var AddRoomToUser *gocqlx.Queryx
 var DeleteRoomFromUser *gocqlx.Queryx
 var SelectRoomsOfUser *gocqlx.Queryx
 
+var SelectChannelsOfRoom *gocqlx.Queryx
+var DeleteChannelsOfRoom *gocqlx.Queryx
+
 // var AddUserToGroup *gocqlx.Queryx
 // var DeleteUserFromGroup *gocqlx.Queryx
 var SelectUsersOfGroup *gocqlx.Queryx
@@ -112,6 +115,9 @@ func setupDB() {
 	SelectUsersOfGroup = GroupMetadataTable.SelectBuilder("userslist").Query(dbSession)
 
 	SelectUsersOfRoom = RoomMetadataTable.SelectBuilder("userslist").Query(dbSession)
+
+	SelectChannelsOfRoom = RoomMetadataTable.SelectBuilder("channelslist").Query(dbSession)
+	DeleteChannelsOfRoom = RoomMetadataTable.UpdateBuilder().Remove("channelslist").Query(dbSession)
 
 	ChatMessageTable = table.New(ChatMessageMetadata)
 	InsertChatMessage = ChatMessageTable.InsertQuery(dbSession)
@@ -209,6 +215,11 @@ type UsersListOfGroupUpdate struct {
 type UsersListOfRoomUpdate struct {
 	Roomid    string
 	Userslist []User_udt
+}
+
+type ChannelsListofRoom struct {
+	Roomid       string
+	Channelslist map[string]string
 }
 
 type LastReadMetadata struct {
@@ -420,6 +431,28 @@ func selectRoomsOfUser(userId string) ([]RoomsListOfUserUpdate, error) {
 		return nil, errors.New("internal server error")
 	}
 	return rows, nil
+}
+
+func selectChannelsOfRoom(roomId string) ([]ChannelsListofRoom, error) {
+	if q := SelectChannelsOfRoom.BindMap(qb.M{"roomid": roomId}); q.Err() != nil {
+		log.Error().Str("where", "get channels of room").Str("type", "failed to bind struct").Msg(q.Err().Error())
+		return nil, errors.New("internal server error")
+	}
+	rows := make([]ChannelsListofRoom, 1)
+	if err := SelectChannelsOfRoom.Select(&rows); err != nil {
+		log.Error().Str("where", "get channels of room").Str("type", "failed to execute query").Msg(err.Error())
+		return nil, errors.New("internal server error")
+	}
+	return rows, nil
+}
+
+func deleteChannelsOfRoom(roomid string, channelId string) error {
+	in := dbSession.Query(qb.Update("yaroom.rooms").RemoveLit("channelslist", "{'"+channelId+"'}").Where(qb.EqLit("roomid", "'"+roomid+"'")).ToCql())
+	if err := in.ExecRelease(); err != nil {
+		log.Error().Str("where", "delete channels from room").Str("type", "failed to execute query").Msg(err.Error())
+		return err
+	}
+	return nil
 }
 
 func addUserToRoom(room *UsersListOfRoomUpdate) error {
