@@ -309,6 +309,10 @@ class MyApp extends StatelessWidget {
               .getUserId();
       Provider.of<ActiveStatusMap>(context, listen: false).add(userid);
       Provider.of<ActiveStatusMap>(context, listen: false).update(userid, true);
+      // Backend hanldes user new case :)
+      // visit route `getUserDetails`
+      await fetchUserDetails(
+          accessToken, parseIdToken(idToken)["name"], context);
       // This must be before fetch is called
       Map<String, String> lastMsgRead = Map();
       try {
@@ -328,12 +332,6 @@ class MyApp extends StatelessWidget {
       }
       Provider.of<ChatMetaCubit>(context, listen: false)
           .setUser(userid, lastMsgRead);
-      // Backend hanldes user new case :)
-      // visit route `getUserDetails`
-      print(parseIdToken(idToken));
-      print(parseIdToken(idToken)["name"]);
-      await fetchUserDetails(
-          accessToken, parseIdToken(idToken)["name"], context);
       print(accessToken);
       await Future.delayed(Duration(seconds: 2), () async {
         var groups = await RepositoryProvider.of<AppDb>(context, listen: false)

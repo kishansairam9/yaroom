@@ -83,6 +83,9 @@ class LandingPage extends StatelessWidget {
       final String name =
           await Provider.of<AuthorizationService>(context, listen: false)
               .getName();
+      // Backend hanldes user new case :)
+      // visit route `getUserDetails`
+      await fetchUserDetails(accessToken!, name, context);
       // This must be before fetch is calleed
       Map<String, String> lastMsgRead = Map();
       try {
@@ -108,9 +111,6 @@ class LandingPage extends StatelessWidget {
           .forEach((k, v) {
         print("***************** $k last read $v");
       });
-      // Backend hanldes user new case :)
-      // visit route `getUserDetails`
-      await fetchUserDetails(accessToken!, name, context);
       await Future.delayed(Duration(seconds: 2), () async {
         var groups = await RepositoryProvider.of<AppDb>(context, listen: false)
             .getGroupsMetadata()

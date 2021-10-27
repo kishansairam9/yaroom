@@ -477,6 +477,7 @@ func getUserDetails(userId string, name string) (*UserDetails, error) {
 		log.Error().Str("where", "get user details").Str("type", "error occured in retrieving user metadata").Msg(err.Error())
 		return nil, err
 	}
+	fmt.Printf("Got meta %v\n", userMeta)
 	if userMeta == nil {
 		// New user, add user to demo rooms and groups
 		in := dbSession.Query(qb.Insert("yaroom.users").LitColumn("userid", paddedUserId).LitColumn("name", paddedName).LitColumn("image", "''").LitColumn("username", paddedName).LitColumn("groupslist", "{'group-demo-1', 'group-demo-2'}").LitColumn("roomslist", "{'room-demo-1', 'room-demo-2'}").ToCql())
@@ -571,9 +572,13 @@ func getUserDetails(userId string, name string) (*UserDetails, error) {
 	for _, k := range usersList {
 		fmt.Printf("USERSLIST %v ---------------\n", k)
 	}
-	ret.Users, err = getUsers(usersList)
-	if err != nil {
-		log.Error().Str("where", "get users").Str("type", "error occured in retrieving friends and pending users").Msg(err.Error())
+	if len(usersList) != 0 {
+		ret.Users, err = getUsers(usersList)
+		if err != nil {
+			log.Error().Str("where", "get users").Str("type", "error occured in retrieving friends and pending users").Msg(err.Error())
+		}
+	} else {
+		ret.Users = make([]User, 0)
 	}
 	for _, group := range userMeta.Groupslist {
 		val, err := getGroupMetadata(group)
@@ -799,7 +804,7 @@ func getLastReadMetadata(userId string) ([]LastReadMetadata, error) {
 	in := dbSession.Query(qb.Select("yaroom.last_read").Columns("*").Where(qb.EqLit("userid", "'"+userId+"'")).AllowFiltering().ToCql())
 	var rows []LastReadMetadata
 	if err := in.SelectRelease(&rows); err != nil {
-		log.Error().Str("where", "getting user data").Str("type", "failed to execute query").Msg(err.Error())
+		log.Error().Str("where", "getting last read").Str("type", "failed to execute query").Msg(err.Error())
 		return nil, err
 	}
 	if rows == nil {
