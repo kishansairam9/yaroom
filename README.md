@@ -24,13 +24,14 @@
 
 ### Backend
 - Backend is written in Go Lang
-- Message data store is backed by Cassandra
+- Cassandra is choosen as Database
   - It is choosen over alternative NoSQL DBs - MongoDB and Couchbase
-  - Cassandra has higher write throughput and performance when compared to Couchbase
-  - Since, for this project schema is considered to be static, Couchbase's document ability is not utilised, hence Cassandra reigns for our usecase
-  - Along with above advantages, cassandra has inbuit caching, intrinsic distributed support over MongoDB
-- Minio Object Store is used for Media Storage and Elastic Search for Full Text Search Capability
-- Active Status change subscriptions are supported by NATS Jetstream Stream
+  - MongoDB doesn't have support for inbuilt caching and intrinsic distributed support which others have
+  - For this project, schema is assumed to be static, hence document ability of MongoDB & Couchbase is not utilised
+  - Given Cassandra's higher write throughput it was utilised in this work
+- Elastic Search is used for text search functionality (via [Elassandra](https://github.com/strapdata/elassandra) integration)
+- Minio Object Store is utilised to store media files
+- Streams in backend are supported by NATS Jetstream, and are used to send stream updates and active status via Websocket
 
 ### External Services
 - User login and registration is integrated with Auth0
