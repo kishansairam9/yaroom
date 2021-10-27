@@ -1,7 +1,27 @@
 ## Backend
 
 ### Directory Structure
-> TODO ADD
+
+```
+.
+├── assets ===> Assets delivered on backend
+│   └── no-profile.png
+├── create_elasticindexes.sh ===> Creates Elastic indices needed for search
+├── db.go ===> Database queries for metadata
+├── docker-compose.yml ===> Docker Setup
+├── fcm_notifications.go ===> FCM Notifications methods & request handlers
+├── go.mod
+├── go.sum
+├── jwt.go ===> Auth0 Authentication
+├── main.go ===> Entry point for server
+├── media.go ===> Media methods & request handlers
+├── messages.go ===> Database queries for message data
+├── README.md
+├── requests.go ===> API end points for frontend requests & testing
+├── streams.go ===> NATS Jetstream based updates & routines
+├── tables.cql ===> CQL file for Database setup
+└── websocket.go ===> Websocket connection handler & go routines
+```
 
 ### Docker compose
 - Create required directories for binding

@@ -1,7 +1,67 @@
 # Frontend
 
 ### Directory Structure
-> TODO ADD
+
+```
+lib
+├── blocs ===> Blocs / Cubits for State Management
+│   ├── activeStatus.dart
+│   ├── chatMeta.dart
+│   ├── chats.dart
+│   ├── cleanDate.dart
+│   ├── fcmToken.dart
+│   ├── friendRequestsData.dart
+│   ├── groupChats.dart
+│   ├── groupMetadata.dart
+│   ├── roomMetadata.dart
+│   └── rooms.dart
+├── main.dart ===> Entry Point into App
+├── moor ===> Frontend Database
+│   ├── db.dart
+│   ├── db.g.dart
+│   ├── platforms
+│   │   ├── native.dart
+│   │   ├── shared.dart
+│   │   ├── unsupported.dart
+│   │   └── web.dart
+│   ├── tables.moor
+│   └── utils.dart
+├── screens
+│   ├── components ===> Reusable UI components
+│   │   ├── contactView.dart
+│   │   ├── friendsView.dart
+│   │   ├── msgBox.dart
+│   │   ├── roomsList.dart
+│   │   └── searchDelegate.dart
+│   ├── edit ===> Create/Add or Edit Details
+│   │   ├── friend.dart
+│   │   ├── group.dart
+│   │   └── room.dart
+│   ├── homePage.dart ===> Home View
+│   ├── login.dart
+│   ├── messaging ===> Message Views
+│   │   ├── chatPage.dart
+│   │   ├── chatsView.dart
+│   │   ├── groupPage.dart
+│   │   └── groupsView.dart
+│   ├── rooms ===> Rooms UI components
+│   │   ├── channels.dart
+│   │   └── room.dart
+│   └── settingsPage.dart
+└── utils ===> Helpers
+    ├── activeStatus.dart
+    ├── authorizationService.dart
+    ├── backendRequests.dart
+    ├── connectivity.dart
+    ├── fcmToken.dart
+    ├── fetchBackendData.dart
+    ├── guidePages.dart
+    ├── messageExchange.dart
+    ├── notifiers.dart
+    ├── router.dart
+    ├── secureStorageService.dart
+    └── types.dart
+```
 
 ### Commands
 - Run flutter app using CMD line `flutter run` or from Debug mode in VSCode
