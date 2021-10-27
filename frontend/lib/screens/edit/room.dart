@@ -119,13 +119,6 @@ class _CreateRoomState extends State<CreateRoom> {
                                             .roomChannels
                                       }),
                                       context);
-                                  for (var user in checklist) {
-                                    await RepositoryProvider.of<AppDb>(context,
-                                            listen: false)
-                                        .addUserToRoom(
-                                            roomsId: this.widget.data["roomId"],
-                                            userId: user.id);
-                                  }
                                   Navigator.pop(context);
                                 },
                                 child: Text(

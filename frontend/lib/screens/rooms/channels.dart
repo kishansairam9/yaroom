@@ -1,6 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:yaroom/blocs/roomMetadata.dart';
 import 'package:yaroom/blocs/rooms.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:yaroom/utils/backendRequests.dart';
 import '../../utils/types.dart';
 import 'dart:math';
 
@@ -22,53 +26,31 @@ class ChannelsView extends StatefulWidget {
 
 class ChannelsViewState extends State<ChannelsView> {
   Widget build(BuildContext context) {
-    return StreamBuilder(
-        stream: RepositoryProvider.of<AppDb>(context)
-            .getChannelsOfRoom(roomID: widget.roomId)
-            .watch(),
-        builder:
-            (BuildContext context, AsyncSnapshot<List<RoomsChannel>> snapshot) {
-          if (snapshot.hasData) {
-            return StreamBuilder(
-                stream: RepositoryProvider.of<AppDb>(context)
-                    .getRoomDetails(roomId: widget.roomId)
-                    .watch(),
-                builder: (BuildContext context,
-                    AsyncSnapshot<List<RoomsListData>> Roomsnapshot) {
-                  if (Roomsnapshot.hasData) {
-                    return ListView.builder(
-                        itemCount: snapshot.data!.length,
-                        itemBuilder: (context, index) {
-                          RoomsChannel e = snapshot.data![index];
-                          ChannelsTile tile = ChannelsTile(
-                              roomId: widget.roomId,
-                              channelId: e.channelId,
-                              name: e.channelName);
-                          if (index == 0) {
-                            return Column(
-                              children: [
-                                Text(Roomsnapshot.data![0].name),
-                                tile
-                              ],
-                            );
-                          }
-                          return tile;
-                        });
-                  } else if (Roomsnapshot.hasError) {
-                    print(Roomsnapshot.error);
-                    return SnackBar(
-                        content:
-                            Text('Error has occured while reading from DB'));
-                  }
-                  return Container();
-                });
-          } else if (snapshot.hasError) {
-            print(snapshot.error);
-            return SnackBar(
-                content: Text('Error has occured while reading from DB'));
-          }
-          return Container();
-        });
+    return BlocBuilder<RoomMetadataCubit, RoomMetadataMap>(
+        builder: (BuildContext context, state) {
+      if (state.data.containsKey(widget.roomId)) {
+        List<RoomsChannel> roomchannellist = [];
+        state.data[widget.roomId]!.roomChannels.forEach((k, v) =>
+            roomchannellist.add(RoomsChannel(
+                roomId: widget.roomId, channelId: k, channelName: v)));
+        return ListView.builder(
+            itemCount: roomchannellist.length,
+            itemBuilder: (context, index) {
+              RoomsChannel e = roomchannellist[index];
+              ChannelsTile tile = ChannelsTile(
+                  roomId: widget.roomId,
+                  channelId: e.channelId,
+                  name: e.channelName);
+              if (index == 0) {
+                return Column(
+                  children: [Text(state.data[widget.roomId]!.name), tile],
+                );
+              }
+              return tile;
+            });
+      }
+      return Container();
+    });
   }
 }
 
@@ -100,58 +82,90 @@ class ChannelsTileState extends State<ChannelsTile> {
     // _unread = true;
   }
 
-  Widget editChannel(String channelid) {
+  Widget editChannel(BuildContext context, String channelid) {
     var ChannelController = TextEditingController();
-    return AlertDialog(
-      scrollable: true,
-      title: Text('Edit Channel'),
-      content: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Form(
-          child: Column(
-            children: <Widget>[
-              TextFormField(
-                controller: ChannelController,
-                decoration: InputDecoration(
-                  labelText: 'Name',
-                  icon: Icon(Icons.edit),
-                ),
+    return BlocBuilder<RoomMetadataCubit, RoomMetadataMap>(
+      builder: (context, state) {
+        return AlertDialog(
+          scrollable: true,
+          title: Text('Edit Channel'),
+          content: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Form(
+              child: Column(
+                children: <Widget>[
+                  TextFormField(
+                    controller: ChannelController,
+                    decoration: InputDecoration(
+                      labelText: 'Name',
+                      icon: Icon(Icons.edit),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
-      actions: [
-        ElevatedButton(
-            child: Text("Submit"),
-            onPressed: () async {
-              if (ChannelController.text != '') {
-                var channels = await RepositoryProvider.of<AppDb>(context)
-                    .getChannelsOfRoom(roomID: widget.roomId)
-                    .get();
-                var newChannels = [];
-                for (int i = 0; i < channels.length; i++) {
-                  newChannels.add(channels[i]);
-                  if (channels[i].channelId == channelid) {
-                    newChannels[i].channelName = ChannelController.text;
+          actions: [
+            ElevatedButton(
+                child: Text("Submit"),
+                onPressed: () async {
+                  if (ChannelController.text != '') {
+                    var newRoomChannels =
+                        state.data[widget.roomId]!.roomChannels;
+                    newRoomChannels[channelid] = ChannelController.text;
+
+                    var res = await editRoom(
+                        jsonEncode(<String, dynamic>{
+                          "roomId": widget.roomId,
+                          "name": state.data[widget.roomId]!.name,
+                          "description": state.data[widget.roomId]!.description,
+                          "roomMembers": state.data[widget.roomId]!.roomMembers
+                              .map((e) => e.userId)
+                              .toList(),
+                          "channelsList": newRoomChannels
+                        }),
+                        context);
+                    if (res == null) {
+                      ScaffoldMessenger.of(context).clearSnackBars();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('Channel Create Failed, try again!')),
+                      );
+                      return;
+                    }
+                    Navigator.pop(context);
                   }
-                }
-              }
-            }),
-        ElevatedButton(
-            child: Text("Delete Channel"),
-            onPressed: () async {
-              var channels = await RepositoryProvider.of<AppDb>(context)
-                  .getChannelsOfRoom(roomID: widget.roomId)
-                  .get();
-              var newChannels = [];
-              for (int i = 0; i < channels.length; i++) {
-                if (channels[i].channelId != channelid) {
-                  newChannels.add(channels[i]);
-                }
-              }
-            })
-      ],
+                }),
+            ElevatedButton(
+                child: Text("Delete Channel"),
+                onPressed: () async {
+                  var newRoomChannels =
+                        state.data[widget.roomId]!.roomChannels;
+                    newRoomChannels.remove(channelid);
+                    var res = await editRoom(
+                        jsonEncode(<String, dynamic>{
+                          "roomId": widget.roomId,
+                          "name": state.data[widget.roomId]!.name,
+                          "description": state.data[widget.roomId]!.description,
+                          "roomMembers": state.data[widget.roomId]!.roomMembers
+                              .map((e) => e.userId)
+                              .toList(),
+                          "channelsList": newRoomChannels
+                        }),
+                        context);
+                    if (res == null) {
+                      ScaffoldMessenger.of(context).clearSnackBars();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('Channel Create Failed, try again!')),
+                      );
+                      return;
+                    }
+                    Navigator.pop(context);
+                })
+          ],
+        );
+      },
     );
   }
 
@@ -167,8 +181,8 @@ class ChannelsTileState extends State<ChannelsTile> {
       onLongPress: () {
         showDialog(
             context: context,
-            builder: (BuildContext context) {
-              return editChannel(widget.channelId);
+            builder: (BuildContext newcontext) {
+              return editChannel(newcontext, widget.channelId);
             });
       },
       title: !_unread
@@ -177,16 +191,6 @@ class ChannelsTileState extends State<ChannelsTile> {
               "# " + widget.name,
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
-      // trailing: _unread
-      //     ? Container(
-      //         width: 15.0,
-      //         height: 15.0,
-      //         decoration: BoxDecoration(
-      //           color: Colors.orange,
-      //           shape: BoxShape.circle,
-      //         ),
-      //       )
-      //     : Container(),
     );
   }
 }
