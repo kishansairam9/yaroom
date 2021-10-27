@@ -473,15 +473,18 @@ class MaterialAppWrapper extends StatefulWidget {
   }
 
   @override
-  _MaterialAppWrapperState createState() => _MaterialAppWrapperState();
+  _MaterialAppWrapperState createState() =>
+      _MaterialAppWrapperState(activityNotify: this.activityNotify);
 }
 
 class _MaterialAppWrapperState extends State<MaterialAppWrapper>
     with WidgetsBindingObserver {
+  late final ActiveStatusNotifier activityNotify;
+  _MaterialAppWrapperState({required this.activityNotify});
+
   @override
   void initState() {
     // Handle refresh token update
-
     super.initState();
     WidgetsBinding.instance?.addObserver(this);
   }
@@ -496,10 +499,13 @@ class _MaterialAppWrapperState extends State<MaterialAppWrapper>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       print("Started sending active status!!!");
-      widget.activityNotify.start();
-    } else {
+      activityNotify.start();
+    } else if (state == AppLifecycleState.detached) {
       print("Stopped sending active status!!!");
-      widget.activityNotify.stop();
+      activityNotify.stop();
+    } else if (state == AppLifecycleState.paused) {
+      print("Stopped sending active status!!!");
+      activityNotify.stop();
     }
   }
 

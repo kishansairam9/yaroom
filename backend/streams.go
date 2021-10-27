@@ -115,16 +115,18 @@ func userSubscribeTo(userId string, streams []string, outputChan chan<- []byte, 
 			log.Warn().Str("where", "send active status").Str("type", "failed to add messsage to stream "+st).Msg(err.Error())
 		}
 	}
+	lastSentActive := make(map[string][]byte)
 	activeStatusBuffer := make(map[string][]byte)
 	ctr := 0
-	bufEdgeHandle := 50
+	bufEdgeHandle := 40
 	for {
 		ctr = (ctr + 1) % (bufEdgeHandle + 1)
 		select {
-		case <-time.After(5 * time.Second):
-			for _, v := range activeStatusBuffer {
-				if v != nil {
+		case <-time.After(2 * time.Second):
+			for k, v := range activeStatusBuffer {
+				if v != nil && string(lastSentActive[k]) != string(v) {
 					outputChan <- v
+					lastSentActive[k] = v
 				}
 			}
 			activeStatusBuffer = make(map[string][]byte)
@@ -140,7 +142,7 @@ func userSubscribeTo(userId string, streams []string, outputChan chan<- []byte, 
 					}
 				}
 				if !found {
-					fmt.Println("Subscribed to " + st)
+					fmt.Println(userId + " Subscribed to " + st)
 					_, err := jsContext.ChanSubscribe(st, dataCh, nats.DeliverNew(), nats.AckExplicit())
 					if err != nil {
 						log.Warn().Str("where", "send active status").Str("type", "failed to add messsage to stream "+st).Msg(err.Error())
@@ -148,7 +150,7 @@ func userSubscribeTo(userId string, streams []string, outputChan chan<- []byte, 
 					streams = append(streams, st)
 				}
 				msg.AckSync()
-				fmt.Println("Sub done continue")
+				fmt.Println(userId + "Sub done continue")
 				continue
 			}
 			var store ActiveStatus
@@ -165,9 +167,10 @@ func userSubscribeTo(userId string, streams []string, outputChan chan<- []byte, 
 			}
 			// Handle edge case of not going into after timeout for buffer flush
 			if ctr == bufEdgeHandle {
-				for _, v := range activeStatusBuffer {
-					if v != nil {
+				for k, v := range activeStatusBuffer {
+					if v != nil && string(lastSentActive[k]) != string(v) {
 						outputChan <- v
+						lastSentActive[k] = v
 					}
 				}
 				activeStatusBuffer = make(map[string][]byte)

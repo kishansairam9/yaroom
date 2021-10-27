@@ -24,10 +24,14 @@ class ActiveStatusNotifier {
   }
 
   void stop() {
-    running = false;
+    if (running) {
+      running = false;
+    }
   }
 
   void start() {
-    running = true;
+    if (!running) {
+      running = true;
+    }
   }
 }

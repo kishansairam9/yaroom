@@ -126,12 +126,12 @@ func updateUserHandler(g *gin.Context) {
 }
 
 func updateGroupHandler(g *gin.Context) {
-	rawUserId, exists := g.Get("userId")
+	_, exists := g.Get("userId")
 	if !exists {
 		g.AbortWithStatusJSON(400, gin.H{"error": "user not authenticated"})
 		return
 	}
-	userId := rawUserId.(string)
+	// userId := rawUserId.(string)
 
 	var req groupDetails
 	if err := g.BindJSON(&req); err != nil {
@@ -157,8 +157,11 @@ func updateGroupHandler(g *gin.Context) {
 	}
 
 	var users_list = []string{}
+	ensureStreamsExist([]string{"GROUP:" + data.Groupid})
 	for _, curr := range data.Userslist {
 		users_list = append(users_list, curr.Userid)
+		ensureStreamsExist([]string{"SELF:" + curr.Userid})
+		sendUpdateOnStream([]string{"SELF:" + curr.Userid}, []byte("SUB-GROUP:"+data.Groupid))
 	}
 
 	obj, err := getGroupMetadata(data.Groupid)
@@ -175,8 +178,6 @@ func updateGroupHandler(g *gin.Context) {
 	_ = json.Unmarshal(encObj, &m)
 	m["update"] = "group"
 	encAug, _ := json.Marshal(m)
-	ensureStreamsExist([]string{"GROUP:" + data.Groupid})
-	sendUpdateOnStream([]string{"SELF:" + userId}, []byte("SUB-GROUP:"+data.Groupid))
 	time.AfterFunc(time.Duration(1)*time.Second, func() {
 		sendUpdateOnStream([]string{"GROUP:" + data.Groupid}, encAug)
 	})
@@ -186,12 +187,12 @@ func updateGroupHandler(g *gin.Context) {
 
 func updateRoomHandler(g *gin.Context) {
 
-	rawUserId, exists := g.Get("userId")
+	_, exists := g.Get("userId")
 	if !exists {
 		g.AbortWithStatusJSON(400, gin.H{"error": "user not authenticated"})
 		return
 	}
-	userId := rawUserId.(string)
+	// userId := rawUserId.(string)
 
 	var req roomDetails
 	if err := g.BindJSON(&req); err != nil {
@@ -218,8 +219,11 @@ func updateRoomHandler(g *gin.Context) {
 	}
 
 	var users_list = []string{}
+	ensureStreamsExist([]string{"ROOM:" + data.Roomid})
 	for _, curr := range data.Userslist {
 		users_list = append(users_list, curr.Userid)
+		ensureStreamsExist([]string{"SELF:" + curr.Userid})
+		sendUpdateOnStream([]string{"SELF:" + curr.Userid}, []byte("SUB-ROOM:"+data.Roomid))
 	}
 
 	obj, err := getRoomMetadata(data.Roomid)
@@ -236,12 +240,9 @@ func updateRoomHandler(g *gin.Context) {
 	_ = json.Unmarshal(encObj, &m)
 	m["update"] = "room"
 	encAug, _ := json.Marshal(m)
-	ensureStreamsExist([]string{"ROOM:" + data.Roomid})
-	sendUpdateOnStream([]string{"SELF:" + userId}, []byte("SUB-ROOM:"+data.Roomid))
 	time.AfterFunc(time.Duration(1)*time.Second, func() {
 		sendUpdateOnStream([]string{"ROOM:" + data.Roomid}, encAug)
 	})
-
 	g.JSON(200, roomDetails{RoomId: data.Roomid, Name: data.Name, Description: *data.Description, RoomIcon: *data.Image, RoomMembers: users_list, ChannelsList: data.Channelslist})
 }
 
