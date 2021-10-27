@@ -155,6 +155,57 @@ func sendMessageNotification(msg WSMessage) error {
 				}
 			}
 		}
+	case "RoomMessage":
+		fromUserData, err := getUserMetadata(msg.FromUser)
+		if err != nil {
+			return err
+		}
+		roomData, err := getRoomMetadata(msg.RoomId)
+		if err != nil {
+			return err
+		}
+		if fromUserData == nil {
+			return errors.New("user doesn't exits")
+		}
+		usersOfRoom, err := selectUsersFromRoom(msg.RoomId)
+		if err != nil {
+			return err
+		}
+		for _, user := range usersOfRoom[0].Userslist {
+			if user.Userid == msg.FromUser {
+				continue
+			}
+			toUserData, err := getUserMetadata(user.Userid)
+			if err != nil {
+				continue
+			}
+			if toUserData == nil {
+				continue
+			}
+			if len(toUserData.Tokens) == 0 {
+				continue
+			}
+			for _, token := range toUserData.Tokens {
+				// print("sending to ", token)
+				notif := &fcm.Message{
+					To:       token,
+					Data:     data,
+					Priority: "high",
+					Notification: &fcm.Notification{
+						Title: roomData.Name + " # " + roomData.Channelslist[msg.ChannelId],
+						Body:  trimLength(msg.Content, 150),
+						Tag:   msg.ChannelId,
+					},
+				}
+				res, err := fcmClient.SendWithRetry(notif, 3)
+				if err == fcm.ErrInvalidRegistration {
+					removeFCMToken(&UserFCMTokenUpdate{Userid: toUserData.Userid, Tokens: []string{token}})
+				} else if err != nil {
+					log.Error().Str("where", "update user metadata").Str("type", "failed to bind struct").Str("fcm response", fmt.Sprint(res)).Msg(err.Error())
+					continue
+				}
+			}
+		}
 	default:
 		return errors.New("unknown message type")
 	}

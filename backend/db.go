@@ -440,13 +440,13 @@ func deleteUserFromRoom(user *UsersListOfRoomUpdate) error {
 	return nil
 }
 
-func selectUsersFromRoom(userId string) ([]UsersListOfRoomUpdate, error) {
-	if q := SelectUsersOfRoom.BindMap(qb.M{"userid": userId}); q.Err() != nil {
+func selectUsersFromRoom(roomId string) ([]UsersListOfRoomUpdate, error) {
+	if q := SelectUsersOfRoom.BindMap(qb.M{"roomid": roomId}); q.Err() != nil {
 		log.Error().Str("where", "get users of room").Str("type", "failed to bind struct").Msg(q.Err().Error())
 		return nil, errors.New("internal server error")
 	}
 	rows := make([]UsersListOfRoomUpdate, 1)
-	if err := SelectUsersOfGroup.Select(&rows); err != nil {
+	if err := SelectUsersOfRoom.Select(&rows); err != nil {
 		log.Error().Str("where", "get users of room").Str("type", "failed to execute query").Msg(err.Error())
 		return nil, errors.New("internal server error")
 	}
