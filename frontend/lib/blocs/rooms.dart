@@ -24,7 +24,7 @@ class RoomsState {
 }
 
 class RoomsCubit extends HydratedCubit<RoomsState> {
-  RoomsCubit() : super(RoomsState(lastOpened: {"a": "b"}));
+  RoomsCubit() : super(RoomsState(lastOpened: Map()));
 
   @override
   RoomsState? fromJson(Map<String, dynamic> json) {
@@ -61,6 +61,10 @@ class RoomsCubit extends HydratedCubit<RoomsState> {
     state.lastOpened[roomId] = channelId;
     emit(
         RoomsState(lastActive: state.lastActive, lastOpened: state.lastOpened));
+  }
+
+  void reset() {
+    emit(RoomsState(lastOpened: Map()));
   }
 }
 

@@ -2,9 +2,11 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:bubble/bubble.dart';
 import 'package:flutter/material.dart';
+import 'package:yaroom/blocs/roomMetadata.dart';
 import 'package:yaroom/utils/authorizationService.dart';
 import 'package:provider/provider.dart';
 import 'package:yaroom/blocs/rooms.dart';
+import 'package:yaroom/utils/notifiers.dart';
 import '../components/msgBox.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../utils/messageExchange.dart';
@@ -534,110 +536,109 @@ class RoomState extends State<Room> {
 
   @override
   Widget build(BuildContext context) {
-    return widget.channelId == null
-        ? getSelectChannelPage()
-        : FutureBuilder(
-            future: RepositoryProvider.of<AppDb>(context)
-                .getRoomMembers(roomID: widget.roomId)
-                .get(),
-            builder: (BuildContext _,
-                AsyncSnapshot<List<User>> roomMembersSnapshot) {
-              if (roomMembersSnapshot.hasData) {
-                return FutureBuilder(
-                    future: RepositoryProvider.of<AppDb>(context)
-                        .getRoomChannelChat(
-                            roomId: widget.roomId, channelId: widget.channelId!)
-                        .get(),
-                    builder: (BuildContext context,
-                        AsyncSnapshot<List<RoomsMessage>> roomChatsnapshot) {
-                      if (roomChatsnapshot.hasData) {
-                        return MultiProvider(
-                            providers: [
-                              Provider<List<User>>(
-                                  create: (_) => roomMembersSnapshot.data!),
-                              BlocProvider(
-                                  lazy: false,
-                                  create: (context) {
-                                    var cubit = RoomChatCubit(
-                                        roomId: widget.roomId,
-                                        initialState: roomChatsnapshot.data!);
-                                    webSocketSubscription =
-                                        Provider.of<MessageExchangeStream>(
-                                                context,
-                                                listen: false)
-                                            .stream
-                                            .where((encodedData) {
-                                      if (encodedData == "" ||
-                                          encodedData == "null" ||
-                                          encodedData == "true" ||
-                                          encodedData == "false") return false;
-                                      var data = jsonDecode(encodedData);
-                                      if (data.containsKey('error') ||
-                                          data.containsKey('active') ||
-                                          data.containsKey('update') ||
-                                          data.containsKey('friendRequest') ||
-                                          data.containsKey('exit')) {
-                                        return false;
-                                      }
-                                      return data['type'] == 'RoomMessage' &&
-                                          data['roomId'] == widget.roomId;
-                                    }).listen((encodedData) {
-                                      var data = jsonDecode(encodedData);
-                                      cubit.addMessage(
-                                          msgId: data['msgId'],
-                                          fromUser: data['fromUser'],
-                                          roomId: data['roomId'],
-                                          channelId: data['channelId'],
-                                          time: DateTime.parse(data['time'])
-                                              .toLocal(),
-                                          content: data['content'] == ''
-                                              ? null
-                                              : data['content'],
-                                          media: data['media'] == ''
-                                              ? null
-                                              : data['media'],
-                                          replyTo: data['replyTo'] == ''
-                                              ? null
-                                              : data['replyTo']);
-                                    }, onError: (error) {
-                                      print(error);
-                                      return SnackBar(
-                                          content: Text(
-                                              'Error has occured while receiving from websocket'));
-                                    });
-                                    return cubit;
-                                  })
-                            ],
-                            child: Builder(builder: (context) {
-                              return Column(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  mainAxisSize: MainAxisSize.max,
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: <Widget>[
-                                    BlocBuilder<RoomChatCubit,
-                                        List<RoomsMessage>>(
-                                      builder: (BuildContext context,
-                                              List<RoomsMessage> chatstate) =>
-                                          _buildMessagesView(
-                                              chatstate, widget.channelId!),
-                                    ),
-                                    MsgBox(
-                                      sendMessage: _sendMessage,
-                                      channelId: widget.channelId!,
-                                    )
-                                  ]);
-                            }));
-                      }
+    return Consumer<RoomList>(
+      builder: (_, RoomList roomList, __) {
+        return widget.channelId == null
+            ? getSelectChannelPage()
+            : BlocBuilder<RoomMetadataCubit, RoomMetadataMap>(
+                builder: (BuildContext _, state) {
+                if (state.data.containsKey(widget.roomId)) {
+                  return FutureBuilder(
+                      future: RepositoryProvider.of<AppDb>(context)
+                          .getRoomChannelChat(
+                              roomId: widget.roomId,
+                              channelId: widget.channelId!)
+                          .get(),
+                      builder: (BuildContext context,
+                          AsyncSnapshot<List<RoomsMessage>> roomChatsnapshot) {
+                        if (roomChatsnapshot.hasData) {
+                          return MultiProvider(
+                              providers: [
+                                Provider<List<User>>(
+                                    create: (_) =>
+                                        state.data[widget.roomId]!.roomMembers),
+                                BlocProvider(
+                                    lazy: false,
+                                    create: (context) {
+                                      var cubit = RoomChatCubit(
+                                          roomId: widget.roomId,
+                                          initialState: roomChatsnapshot.data!);
+                                      webSocketSubscription =
+                                          Provider.of<MessageExchangeStream>(
+                                                  context,
+                                                  listen: false)
+                                              .stream
+                                              .where((encodedData) {
+                                        if (encodedData == "" ||
+                                            encodedData == "null" ||
+                                            encodedData == "true" ||
+                                            encodedData == "false")
+                                          return false;
+                                        var data = jsonDecode(encodedData);
+                                        if (data.containsKey('error') ||
+                                            data.containsKey('active') ||
+                                            data.containsKey('update') ||
+                                            data.containsKey('friendRequest') ||
+                                            data.containsKey('exit')) {
+                                          return false;
+                                        }
+                                        return data['type'] == 'RoomMessage' &&
+                                            data['roomId'] == widget.roomId;
+                                      }).listen((encodedData) {
+                                        var data = jsonDecode(encodedData);
+                                        cubit.addMessage(
+                                            msgId: data['msgId'],
+                                            fromUser: data['fromUser'],
+                                            roomId: data['roomId'],
+                                            channelId: data['channelId'],
+                                            time: DateTime.parse(data['time'])
+                                                .toLocal(),
+                                            content: data['content'] == ''
+                                                ? null
+                                                : data['content'],
+                                            media: data['media'] == ''
+                                                ? null
+                                                : data['media'],
+                                            replyTo: data['replyTo'] == ''
+                                                ? null
+                                                : data['replyTo']);
+                                      }, onError: (error) {
+                                        print(error);
+                                        return SnackBar(
+                                            content: Text(
+                                                'Error has occured while receiving from websocket'));
+                                      });
+                                      return cubit;
+                                    })
+                              ],
+                              child: Builder(builder: (context) {
+                                return Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    mainAxisSize: MainAxisSize.max,
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: <Widget>[
+                                      BlocBuilder<RoomChatCubit,
+                                          List<RoomsMessage>>(
+                                        builder: (BuildContext context,
+                                                List<RoomsMessage> chatstate) =>
+                                            _buildMessagesView(
+                                                chatstate, widget.channelId!),
+                                      ),
+                                      MsgBox(
+                                        sendMessage: _sendMessage,
+                                        channelId: widget.channelId!,
+                                      )
+                                    ]);
+                              }));
+                        }
 
-                      return CircularProgressIndicator();
-                    });
-              } else if (roomMembersSnapshot.hasError) {
-                print(roomMembersSnapshot.error);
-                return SnackBar(
-                    content:
-                        Text('Error has occured while reading from local DB'));
-              }
-              return CircularProgressIndicator();
-            });
+                        return CircularProgressIndicator();
+                      });
+                }
+                return CircularProgressIndicator();
+              });
+      },
+    );
   }
 }
