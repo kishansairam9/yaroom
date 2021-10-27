@@ -34,6 +34,7 @@ Future<void> updateDb(
         .whenComplete(() {
       chatMeta.update(
           exchangeId,
+          data['msgId'],
           !data.containsKey('content') || data['content'] == ''
               ? 'Media'
               : data['content']
@@ -64,6 +65,7 @@ Future<void> updateDb(
         .whenComplete(() {
       chatMeta.update(
           data['groupId'],
+          data['msgId'],
           !data.containsKey('content') || data['content'] == ''
               ? 'Media'
               : data['content']
@@ -94,6 +96,7 @@ Future<void> updateDb(
         .whenComplete(() {
       chatMeta.update(
           data['roomId'] + ":" + data['channelId'],
+          data['msgId'],
           !data.containsKey('content') || data['content'] == ''
               ? 'Media'
               : data['content']

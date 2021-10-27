@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:http/http.dart' as http;
 import 'package:yaroom/blocs/roomMetadata.dart';
 import './utils/connectivity.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
@@ -287,8 +288,8 @@ class MyApp extends StatelessWidget {
       required this.roomMetadataCubit});
 
   Future<String> getInitialRoute(BuildContext context) async {
+    await Future.delayed(Duration(milliseconds: 500));
     final String? idToken = await secureStorageService.getIdToken();
-
     if (idToken != null && idToken.isNotEmpty) {
       // Start web socket
       String? accessToken =
@@ -309,7 +310,24 @@ class MyApp extends StatelessWidget {
       Provider.of<ActiveStatusMap>(context, listen: false).add(userid);
       Provider.of<ActiveStatusMap>(context, listen: false).update(userid, true);
       // This must be before fetch is called
-      Provider.of<ChatMetaCubit>(context, listen: false).setUser(userid);
+      Map<String, String> lastMsgRead = Map();
+      try {
+        var response = await http.get(
+            Uri.parse('http://localhost:8884/v1/lastRead'),
+            headers: <String, String>{
+              'Content-Type': 'application/json',
+              'Authorization': "Bearer $accessToken",
+            });
+        print("Last read response ${response.statusCode} ${response.body}");
+        List<dynamic> result = jsonDecode(response.body);
+        result.forEach((mp) {
+          lastMsgRead[mp['exchangeId']!] = mp['lastRead']!;
+        });
+      } catch (e) {
+        print("Exception occured while getting last read - $e");
+      }
+      Provider.of<ChatMetaCubit>(context, listen: false)
+          .setUser(userid, lastMsgRead);
       // Backend hanldes user new case :)
       // visit route `getUserDetails`
       print(parseIdToken(idToken));

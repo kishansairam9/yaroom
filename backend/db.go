@@ -51,9 +51,6 @@ var RoomMetadataTable *table.Table
 var UpdateRoomMetadata *gocqlx.Queryx
 var SelectRoomMetadata *gocqlx.Queryx
 
-var LastReadMetadataTable *table.Table
-var SelectLastReadMetadata *gocqlx.Queryx
-
 var AddUserFCMToken *gocqlx.Queryx
 var DeleteUserFCMToken *gocqlx.Queryx
 var SelectUserFCMToken *gocqlx.Queryx
@@ -90,9 +87,6 @@ func setupDB() {
 
 	RoomMetadataTable = table.New(RoomTableMetadata)
 	SelectRoomMetadata = RoomMetadataTable.SelectQuery(dbSession)
-
-	LastReadMetadataTable = table.New(LastReadTableMetadata)
-	SelectLastReadMetadata = LastReadMetadataTable.SelectQuery(dbSession)
 
 	AddUserFCMToken = UserMetadataTable.UpdateBuilder().Add("tokens").Query(dbSession)
 	DeleteUserFCMToken = UserMetadataTable.UpdateBuilder().Remove("tokens").Query(dbSession)
@@ -218,9 +212,9 @@ type UsersListOfRoomUpdate struct {
 }
 
 type LastReadMetadata struct {
-	Userid      string
-	Exchange_id string
-	Lastread    string
+	Userid      string `json:"userId"`
+	Exchange_id string `json:"exchangeId"`
+	Lastread    string `json:"lastRead"`
 }
 
 type User struct {
@@ -801,17 +795,17 @@ func getFriends(userid string) ([]string, error) {
 	return usersList, err
 }
 
-func getLastReadMetadata(userId string, exchange_id string) (*LastReadMetadata, error) {
-	if q := SelectLastReadMetadata.BindMap(qb.M{"userid": userId, "exchange_id": exchange_id}); q.Err() != nil {
-		log.Error().Str("where", "get last read metadata").Str("type", "failed to bind struct").Msg(q.Err().Error())
-		return nil, errors.New("internal server error")
+func getLastReadMetadata(userId string) ([]LastReadMetadata, error) {
+	in := dbSession.Query(qb.Select("yaroom.last_read").Columns("*").Where(qb.EqLit("userid", "'"+userId+"'")).AllowFiltering().ToCql())
+	var rows []LastReadMetadata
+	if err := in.SelectRelease(&rows); err != nil {
+		log.Error().Str("where", "getting user data").Str("type", "failed to execute query").Msg(err.Error())
+		return nil, err
 	}
-	rows := make([]*LastReadMetadata, 1)
-	if err := SelectLastReadMetadata.Select(&rows); err != nil {
-		log.Error().Str("where", "get last read metadata").Str("type", "failed to execute query").Msg(err.Error())
-		return nil, errors.New("internal server error")
+	if rows == nil {
+		rows = make([]LastReadMetadata, 0)
 	}
-	return rows[0], nil
+	return rows, nil
 }
 
 func updateLastReadMetadata(lastRead *LastReadMetadata) error {

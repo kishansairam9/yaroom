@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:yaroom/blocs/activeStatus.dart';
 import 'package:yaroom/blocs/chatMeta.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:yaroom/blocs/roomMetadata.dart';
 import '../blocs/fcmToken.dart';
 import '../utils/messageExchange.dart';
@@ -82,7 +84,30 @@ class LandingPage extends StatelessWidget {
           await Provider.of<AuthorizationService>(context, listen: false)
               .getName();
       // This must be before fetch is calleed
-      Provider.of<ChatMetaCubit>(context, listen: false).setUser(userid);
+      Map<String, String> lastMsgRead = Map();
+      try {
+        var response = await http.get(
+            Uri.parse('http://localhost:8884/v1/lastRead'),
+            headers: <String, String>{
+              'Content-Type': 'application/json',
+              'Authorization': "Bearer $accessToken",
+            });
+        print("Last read response ${response.statusCode} ${response.body}");
+        List<dynamic> result = jsonDecode(response.body);
+        result.forEach((mp) {
+          lastMsgRead[mp['exchangeId']!] = mp['lastRead']!;
+        });
+      } catch (e) {
+        print("Exception occured while getting last read - $e");
+      }
+      Provider.of<ChatMetaCubit>(context, listen: false)
+          .setUser(userid, lastMsgRead);
+      Provider.of<ChatMetaCubit>(context, listen: false)
+          .state
+          .lastMsgRead
+          .forEach((k, v) {
+        print("***************** $k last read $v");
+      });
       // Backend hanldes user new case :)
       // visit route `getUserDetails`
       await fetchUserDetails(accessToken!, name, context);

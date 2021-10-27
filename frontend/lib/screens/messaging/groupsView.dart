@@ -78,6 +78,16 @@ class GroupProfileTileState extends State<GroupProfileTile> {
     if (widget._preShowChat != null) {
       Function.apply(widget._preShowChat!, widget._preParams);
     }
+    Future.delayed(Duration(milliseconds: 500), () async {
+      // TODO Add new MOOR query to get only last msg!!
+      List<GroupChatMessage> uChat =
+          await Provider.of<AppDb>(context, listen: false)
+              .getGroupChat(groupId: widget.groupId)
+              .get();
+      String lastMsg = uChat.last.msgId;
+      Provider.of<ChatMetaCubit>(context, listen: false)
+          .read(widget.groupId, lastMsg, context);
+    });
     Navigator.of(context).pushNamed('/groupchat',
         arguments: GroupChatPageArguments(groupId: widget.groupId));
   }

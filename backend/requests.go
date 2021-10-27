@@ -90,10 +90,6 @@ type lastReadDetails struct {
 	LastRead   string `json:"lastRead" binding:"required"`
 }
 
-type getLastReadDetailsRequest struct {
-	ExchangeId string `form:"exchangeId" binding:"required"`
-}
-
 type exitGroupRequest struct {
 	GroupId string   `json:"groupId" binding:"required"`
 	User    []string `json:"user"`
@@ -536,13 +532,7 @@ func getLastReadHandler(g *gin.Context) {
 		return
 	}
 	userId := rawUserId.(string)
-
-	var req getLastReadDetailsRequest
-	if err := g.BindQuery(&req); err != nil {
-		log.Info().Str("where", "bind query").Str("type", "failed to parse body to query").Msg(err.Error())
-		return
-	}
-	data, err := getLastReadMetadata(userId, req.ExchangeId)
+	data, err := getLastReadMetadata(userId)
 	if err != nil {
 		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
 		return

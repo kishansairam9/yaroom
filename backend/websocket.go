@@ -14,18 +14,20 @@ var wsUpgrader = websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024}
 
 // All message types are handled by one raw struct (non relavant fields are ignored), we switch based on type of message as required
 type WSMessage struct {
-	Type      string       `json:"type"`
-	MsgId     string       `json:"msgId,omitempty"`
-	GroupId   string       `json:"groupId,omitempty"`
-	FromUser  string       `json:"fromUser"`
-	ToUser    string       `json:"toUser,omitempty"`
-	Time      time.Time    `json:"time,omitempty"`
-	Content   string       `json:"content,omitempty"`
-	MediaData *WSMediaFile `json:"mediaData,omitempty"`
-	Media     string       `json:"media,omitempty"`
-	ReplyTo   string       `json:"replyTo,omitempty"`
-	RoomId    string       `json:"roomId,omitempty"`
-	ChannelId string       `json:"channelId,omitempty"`
+	Type       string       `json:"type"`
+	MsgId      string       `json:"msgId,omitempty"`
+	GroupId    string       `json:"groupId,omitempty"`
+	FromUser   string       `json:"fromUser"`
+	ToUser     string       `json:"toUser,omitempty"`
+	Time       time.Time    `json:"time,omitempty"`
+	Content    string       `json:"content,omitempty"`
+	MediaData  *WSMediaFile `json:"mediaData,omitempty"`
+	Media      string       `json:"media,omitempty"`
+	ReplyTo    string       `json:"replyTo,omitempty"`
+	RoomId     string       `json:"roomId,omitempty"`
+	ChannelId  string       `json:"channelId,omitempty"`
+	ExchangeId string       `json:"exchangeId,omitempty"`
+	LastRead   string       `json:"lastRead,omitempty"`
 }
 
 type WSMediaFile struct {
@@ -127,10 +129,15 @@ func wsHandler(g *gin.Context) {
 
 			if msg.Type == "Active" {
 				activityChannel <- ActiveStatus{Userid: userId, Active: true}
+			} else if msg.Type == "LastRead" {
+				err = updateLastReadMetadata(&LastReadMetadata{Userid: userId, Exchange_id: msg.ExchangeId, Lastread: msg.LastRead})
+				if err != nil {
+					msgChannel <- WSError{Error: "Failed to store msg as read!"}
+				}
 			} else {
 				// Validate fromUser with userId in JWT to prevent invalid msgs
 				if msg.FromUser != userId {
-					msgChannel <- WSError{Error: "Invalid fromUser! Identifications spoofing"}
+					msgChannel <- WSError{Error: "Invalid fromUser! Identification spoofing"}
 					continue
 				}
 				msgChannel <- msg

@@ -1,80 +1,112 @@
 import 'package:hydrated_bloc/hydrated_bloc.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../utils/messageExchange.dart';
+import 'dart:convert';
+import '../../utils/types.dart';
 
 class ChatMetaState {
   late String userId;
-  late Map<String, ChatMeta>? data;
-  ChatMetaState({required this.data, required this.userId});
+  late Map<String, ChatMeta> data;
+  late Map<String, String> lastMsgRead;
+  ChatMetaState(
+      {required this.data, required this.userId, required this.lastMsgRead});
 
-  Map<String, ChatMeta> update(
-      String exchangeId, String lastPreview, String sender) {
-    Map<String, ChatMeta> statusMap = data!;
+  dynamic update(
+      String exchangeId, String msgId, String lastPreview, String sender) {
+    Map<String, ChatMeta> statusMap = data;
+    Map<String, String> msgMap = lastMsgRead;
     if (!statusMap.containsKey(exchangeId)) {
       statusMap[exchangeId] = ChatMeta();
     }
-    statusMap[exchangeId]!.addLatest(lastPreview, sender != userId);
-    return statusMap;
+    if (sender == userId &&
+        (!msgMap.containsKey(exchangeId) ||
+            msgMap[exchangeId]!.compareTo(msgId) < 0)) {
+      msgMap[exchangeId] = msgId;
+    }
+    var cmp = !msgMap.containsKey(exchangeId) ? "" : msgMap[exchangeId]!;
+    print(
+        "Incoming msgId $msgId, stored last read ${msgMap[exchangeId]}compare with $cmp = ${msgId.compareTo(cmp)}");
+    bool unread = msgId.compareTo(cmp) > 0;
+    statusMap[exchangeId]!
+        .addLatest(lastPreview, sender != userId, isUnread: unread);
+    return [statusMap, msgMap];
   }
 
-  Map<String, ChatMeta> read(String exchangeId) {
-    Map<String, ChatMeta> statusMap = data!;
+  dynamic read(String exchangeId, String lastMsgId, BuildContext context) {
+    Map<String, ChatMeta> statusMap = data;
+    Map<String, String> msgMap = lastMsgRead;
     if (!statusMap.containsKey(exchangeId)) {
       statusMap[exchangeId] = ChatMeta();
     }
+    msgMap[exchangeId] = lastMsgId;
     statusMap[exchangeId]!.read();
-    return statusMap;
+    Provider.of<MessageExchangeStream>(context, listen: false)
+        .sendWSMessage(jsonEncode({
+      'type': 'LastRead',
+      'userId': Provider.of<UserId>(context, listen: false),
+      'fromUser': Provider.of<UserId>(context, listen: false),
+      'exchangeId': exchangeId,
+      'lastRead': lastMsgId
+    }));
+    return [statusMap, msgMap];
   }
 
   String getLastMsgPreview(String exchangeId) {
-    if (!data!.containsKey(exchangeId)) {
+    if (!data.containsKey(exchangeId)) {
       return "";
     }
-    return data![exchangeId]!.previewLastMsg;
+    return data[exchangeId]!.previewLastMsg;
   }
 
   int getUnread(String exchangeId) {
-    if (!data!.containsKey(exchangeId)) {
+    if (!data.containsKey(exchangeId)) {
       return 0;
     }
-    return data![exchangeId]!.unread;
+    return data[exchangeId]!.unread;
   }
 }
 
 class ChatMetaCubit extends HydratedCubit<ChatMetaState> {
-  ChatMetaCubit() : super(ChatMetaState(data: Map(), userId: ''));
+  ChatMetaCubit()
+      : super(ChatMetaState(
+            data: Map(), lastMsgRead: Map<String, String>(), userId: ''));
 
   @override
   ChatMetaState? fromJson(Map<String, dynamic> json) {
-    String uid = "";
-    Map<String, ChatMeta> clean = json.map((k, v) {
-      if (k == 'userId') {
-        uid = v['userId'];
-        return MapEntry(k, ChatMeta());
-      }
-      return MapEntry(k, ChatMeta().fromJson(v));
-    });
-    return ChatMetaState(data: clean, userId: uid);
+    String uid = json['userId'];
+    Map<String, ChatMeta> dataMap = Map();
+    json['data'].forEach((k, v) => dataMap[k] = ChatMeta().fromJson(v));
+    Map<String, String> lastMsgRead = Map();
+    json['lastMsg'].forEach((k, v) => lastMsgRead[k] = v);
+    return ChatMetaState(data: dataMap, lastMsgRead: lastMsgRead, userId: uid);
   }
 
   @override
   Map<String, dynamic>? toJson(ChatMetaState state) {
-    var dataMap = state.data!.map((k, v) => MapEntry(k, v.toJson()));
-    dataMap['userId'] = {'userId': state.userId};
-    return dataMap;
+    var dataMap = state.data.map((k, v) => MapEntry(k, v.toJson()));
+    Map<String, dynamic> stateMap = {};
+    stateMap['data'] = dataMap;
+    stateMap['lastMsg'] = state.lastMsgRead;
+    stateMap['userId'] = state.userId;
+    return stateMap;
   }
 
-  update(String exchangeId, String lastPreview, String sender) {
+  update(String exchangeId, String msgId, String preview, String sender) {
+    dynamic newState = state.update(exchangeId, msgId, preview, sender);
     emit(ChatMetaState(
-        data: state.update(exchangeId, lastPreview, sender),
-        userId: state.userId));
+        data: newState[0], lastMsgRead: newState[1], userId: state.userId));
   }
 
-  read(String exchangeId) {
-    emit(ChatMetaState(data: state.read(exchangeId), userId: state.userId));
+  read(String exchangeId, String lastMsgId, BuildContext context) {
+    dynamic newState = state.read(exchangeId, lastMsgId, context);
+    emit(ChatMetaState(
+        data: newState[0], lastMsgRead: newState[1], userId: state.userId));
   }
 
-  setUser(String uid) {
+  setUser(String uid, Map<String, String> lastMsgRead) {
     print("Set userId in ChatMetaState as $uid");
-    emit(ChatMetaState(data: Map(), userId: uid));
+    emit(ChatMetaState(data: Map(), lastMsgRead: lastMsgRead, userId: uid));
   }
 }
 
@@ -83,13 +115,15 @@ class ChatMeta {
   late int unread;
   ChatMeta({this.previewLastMsg = "", this.unread = 0});
 
-  void addLatest(String msg, bool isNotSender) {
+  void addLatest(String msg, bool isNotSender, {bool isUnread = false}) {
     previewLastMsg = msg;
-    if (isNotSender)
+    if (isUnread)
       unread += 1;
     else {
-      previewLastMsg = "You: " + previewLastMsg;
       unread = 0;
+    }
+    if (!isNotSender) {
+      previewLastMsg = "You: " + previewLastMsg;
     }
   }
 
@@ -97,7 +131,7 @@ class ChatMeta {
     unread = 0;
   }
 
-  ChatMeta fromJson(Map<String, dynamic> json) {
+  ChatMeta fromJson(Map<dynamic, dynamic> json) {
     return ChatMeta(
         previewLastMsg: json["previewLastMsg"], unread: json["unread"]);
   }

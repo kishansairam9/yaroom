@@ -1,4 +1,7 @@
-## Dev notes
+## Backend
+
+### Directory Structure
+> TODO ADD
 
 ### Docker compose
 - Create required directories for binding
@@ -20,3 +23,8 @@
 - To run server on port x use --port flag
   - Current frontend uses websocket on port 8884
   - `gin -i --port 8884` from backend directory
+
+### Improvements / to work on late
+- [ ] Ensure optimal Cassandra Queries
+  - [ ] Remove allow filtering operations from CQL and use ElasticSearch in Elassandra
+  - [ ] Analyse bottleneck queries & frequent queries and look for alternatives

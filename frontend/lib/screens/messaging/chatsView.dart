@@ -72,7 +72,15 @@ class ProfileTileState extends State<ProfileTile> {
     if (widget._preShowChat != null) {
       Function.apply(widget._preShowChat!, widget._preParams);
     }
-    Provider.of<ChatMetaCubit>(context, listen: false).read(getExchangeId());
+    Future.delayed(Duration(milliseconds: 500), () async {
+      // TODO Add new MOOR query to get only last msg!!
+      List<ChatMessage> uChat = await Provider.of<AppDb>(context, listen: false)
+          .getUserChat(otherUser: widget.userId)
+          .get();
+      String lastMsg = uChat.last.msgId;
+      Provider.of<ChatMetaCubit>(context, listen: false)
+          .read(getExchangeId(), lastMsg, context);
+    });
     Navigator.of(context).pushNamed('/chat',
         arguments: ChatPageArguments(userId: widget.userId, name: widget.name));
   }

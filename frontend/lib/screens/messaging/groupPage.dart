@@ -516,6 +516,11 @@ class GroupChatPageState extends State<GroupChatPage>
                                 data['groupId'] == widget.groupId;
                           }).listen((encodedData) {
                             var data = jsonDecode(encodedData);
+                            Future.delayed(Duration(milliseconds: 500), () {
+                              Provider.of<ChatMetaCubit>(context, listen: false)
+                                  .read(
+                                      data['groupId'], data['msgId'], context);
+                            });
                             cubit.addMessage(
                               msgId: data['msgId'],
                               groupId: data['groupId'],
@@ -539,166 +544,152 @@ class GroupChatPageState extends State<GroupChatPage>
                         })
                       ],
                       child: Builder(builder: (context) {
-                        return WillPopScope(
-                          onWillPop: () async {
-                            Provider.of<ChatMetaCubit>(context, listen: false)
-                                .read(widget.groupId);
-                            return true;
-                          },
-                          child: Scaffold(
-                              key: _scaffoldkey,
-                              endDrawer: Drawer(
-                                  child: ListView(
-                                padding: EdgeInsets.zero,
-                                children: [
-                                  _getDrawerHeader(
-                                      groupMembers.map((User e) => e.userId)),
-                                  ...groupMembers.map((User e) =>
-                                      BlocBuilder<ActiveStatusCubit, bool>(
-                                        bloc: Provider.of<ActiveStatusMap>(
-                                                context)
-                                            .get(e.userId),
-                                        builder: (context, state) {
-                                          return ListTile(
-                                              onTap: () => showModalBottomSheet(
-                                                  context: context,
-                                                  builder: (BuildContext c) {
-                                                    return BlocBuilder<
-                                                            FriendRequestCubit,
-                                                            FriendRequestDataMap>(
-                                                        bloc: null,
-                                                        builder:
-                                                            (context, state) {
-                                                          if (state.data
-                                                              .containsKey(
-                                                                  e.userId)) {
-                                                            return ViewContact(
-                                                                state.data[
-                                                                    e.userId]!);
-                                                          } else {
-                                                            return ViewContact(
-                                                                FriendRequestData(
-                                                                    userId: e
-                                                                        .userId,
-                                                                    name:
-                                                                        e.name,
-                                                                    about: e.about ==
-                                                                            null
-                                                                        ? ""
-                                                                        : e.about!,
-                                                                    status: -1));
-                                                          }
-                                                        });
-                                                  }),
-                                              tileColor: Colors.transparent,
-                                              leading: Stack(
-                                                children: [
-                                                  CircleAvatar(
-                                                    backgroundColor:
-                                                        Colors.grey[350],
-                                                    foregroundImage:
-                                                        iconImageWrapper(
-                                                            e.userId),
-                                                  ),
-                                                  Positioned(
-                                                      bottom: 0,
-                                                      right: 0,
-                                                      child: Container(
-                                                          width: 15,
-                                                          height: 15,
-                                                          decoration:
-                                                              new BoxDecoration(
-                                                            color: state
-                                                                ? Colors.green
-                                                                : Colors.grey,
-                                                            shape:
-                                                                BoxShape.circle,
-                                                          )))
-                                                ],
-                                              ),
-                                              title: Text(
-                                                e.name,
-                                              ));
-                                        },
-                                      ))
-                                ],
-                              )),
-                              appBar: AppBar(
-                                leading: Builder(
-                                    builder: (context) => IconButton(
-                                        onPressed: () {
-                                          Provider.of<ChatMetaCubit>(context,
-                                                  listen: false)
-                                              .read(widget.groupId);
-                                          Navigator.of(context).pop();
-                                        },
-                                        icon: Icon(Icons.arrow_back))),
-                                titleSpacing: 0,
-                                title: Builder(
-                                    builder: (context) => ListTile(
-                                        onTap: () => Scaffold.of(context)
-                                            .openEndDrawer(),
-                                        contentPadding: EdgeInsets.only(
-                                            left: 0.0, right: 0.0),
-                                        tileColor: Colors.transparent,
-                                        leading: CircleAvatar(
-                                          backgroundColor: Colors.grey[350],
-                                          foregroundImage:
-                                              iconImageWrapper(widget.groupId),
-                                        ),
-                                        title: BlocBuilder<GroupMetadataCubit,
-                                                GroupMetadataMap>(
-                                            bloc:
-                                                Provider.of<GroupMetadataCubit>(
-                                                    context,
-                                                    listen: false),
-                                            builder: (context, state) {
-                                              return Text(
-                                                state
-                                                    .data[widget.groupId]!.name,
-                                                style: TextStyle(
-                                                    color: Colors.white),
-                                              );
-                                            }))),
-                                actions: <Widget>[
-                                  IconButton(
-                                    onPressed: () => {
-                                      showSearch(
-                                          context: context,
-                                          delegate: ExchangeSearchDelegate(
-                                              exchangeId: widget.groupId,
-                                              msgType: "GroupMessage",
-                                              limit: 100))
-                                    },
-                                    icon: Icon(Icons.search),
-                                    tooltip: 'Search',
-                                  ),
-                                  IconButton(
-                                    onPressed: () => {
-                                      _scaffoldkey.currentState!.openEndDrawer()
-                                    },
-                                    icon: Icon(Icons.more_vert),
-                                    tooltip: 'More',
+                        return Scaffold(
+                            key: _scaffoldkey,
+                            endDrawer: Drawer(
+                                child: ListView(
+                              padding: EdgeInsets.zero,
+                              children: [
+                                _getDrawerHeader(
+                                    groupMembers.map((User e) => e.userId)),
+                                ...groupMembers.map((User e) =>
+                                    BlocBuilder<ActiveStatusCubit, bool>(
+                                      bloc:
+                                          Provider.of<ActiveStatusMap>(context)
+                                              .get(e.userId),
+                                      builder: (context, state) {
+                                        return ListTile(
+                                            onTap: () => showModalBottomSheet(
+                                                context: context,
+                                                builder: (BuildContext c) {
+                                                  return BlocBuilder<
+                                                          FriendRequestCubit,
+                                                          FriendRequestDataMap>(
+                                                      bloc: null,
+                                                      builder:
+                                                          (context, state) {
+                                                        if (state.data
+                                                            .containsKey(
+                                                                e.userId)) {
+                                                          return ViewContact(
+                                                              state.data[
+                                                                  e.userId]!);
+                                                        } else {
+                                                          return ViewContact(
+                                                              FriendRequestData(
+                                                                  userId:
+                                                                      e.userId,
+                                                                  name: e.name,
+                                                                  about: e.about ==
+                                                                          null
+                                                                      ? ""
+                                                                      : e.about!,
+                                                                  status: -1));
+                                                        }
+                                                      });
+                                                }),
+                                            tileColor: Colors.transparent,
+                                            leading: Stack(
+                                              children: [
+                                                CircleAvatar(
+                                                  backgroundColor:
+                                                      Colors.grey[350],
+                                                  foregroundImage:
+                                                      iconImageWrapper(
+                                                          e.userId),
+                                                ),
+                                                Positioned(
+                                                    bottom: 0,
+                                                    right: 0,
+                                                    child: Container(
+                                                        width: 15,
+                                                        height: 15,
+                                                        decoration:
+                                                            new BoxDecoration(
+                                                          color: state
+                                                              ? Colors.green
+                                                              : Colors.grey,
+                                                          shape:
+                                                              BoxShape.circle,
+                                                        )))
+                                              ],
+                                            ),
+                                            title: Text(
+                                              e.name,
+                                            ));
+                                      },
+                                    ))
+                              ],
+                            )),
+                            appBar: AppBar(
+                              leading: Builder(
+                                  builder: (context) => IconButton(
+                                      onPressed: () {
+                                        Navigator.of(context).pop();
+                                      },
+                                      icon: Icon(Icons.arrow_back))),
+                              titleSpacing: 0,
+                              title: Builder(
+                                  builder: (context) => ListTile(
+                                      onTap: () =>
+                                          Scaffold.of(context).openEndDrawer(),
+                                      contentPadding: EdgeInsets.only(
+                                          left: 0.0, right: 0.0),
+                                      tileColor: Colors.transparent,
+                                      leading: CircleAvatar(
+                                        backgroundColor: Colors.grey[350],
+                                        foregroundImage:
+                                            iconImageWrapper(widget.groupId),
+                                      ),
+                                      title: BlocBuilder<GroupMetadataCubit,
+                                              GroupMetadataMap>(
+                                          bloc: Provider.of<GroupMetadataCubit>(
+                                              context,
+                                              listen: false),
+                                          builder: (context, state) {
+                                            return Text(
+                                              state.data[widget.groupId]!.name,
+                                              style: TextStyle(
+                                                  color: Colors.white),
+                                            );
+                                          }))),
+                              actions: <Widget>[
+                                IconButton(
+                                  onPressed: () => {
+                                    showSearch(
+                                        context: context,
+                                        delegate: ExchangeSearchDelegate(
+                                            exchangeId: widget.groupId,
+                                            msgType: "GroupMessage",
+                                            limit: 100))
+                                  },
+                                  icon: Icon(Icons.search),
+                                  tooltip: 'Search',
+                                ),
+                                IconButton(
+                                  onPressed: () => {
+                                    _scaffoldkey.currentState!.openEndDrawer()
+                                  },
+                                  icon: Icon(Icons.more_vert),
+                                  tooltip: 'More',
+                                )
+                              ],
+                            ),
+                            body: Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.max,
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: <Widget>[
+                                  BlocBuilder<GroupChatCubit,
+                                          List<GroupChatMessage>>(
+                                      builder: (BuildContext context,
+                                              List<GroupChatMessage> state) =>
+                                          _buildMessagesView(state)),
+                                  MsgBox(
+                                    sendMessage: _sendMessage,
+                                    callIfEmojiClosedAndBackPress: onBackPress,
                                   )
-                                ],
-                              ),
-                              body: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  mainAxisSize: MainAxisSize.max,
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: <Widget>[
-                                    BlocBuilder<GroupChatCubit,
-                                            List<GroupChatMessage>>(
-                                        builder: (BuildContext context,
-                                                List<GroupChatMessage> state) =>
-                                            _buildMessagesView(state)),
-                                    MsgBox(
-                                      sendMessage: _sendMessage,
-                                      callIfEmojiClosedAndBackPress:
-                                          onBackPress,
-                                    )
-                                  ])),
-                        );
+                                ]));
                       }),
                     );
                   } else if (groupChatSnapshot.hasError) {

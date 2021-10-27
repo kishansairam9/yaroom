@@ -138,7 +138,6 @@ func main() {
 		secured.GET("/search", searchQueryHandler)
 
 		// Last read messages
-		secured.POST("/lastRead", updateLastReadHandler)
 		secured.GET("/lastRead", getLastReadHandler)
 
 		// FCM Token
