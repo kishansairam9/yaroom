@@ -495,8 +495,10 @@ class _MaterialAppWrapperState extends State<MaterialAppWrapper>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      print("Started sending active status!!!");
       widget.activityNotify.start();
     } else {
+      print("Stopped sending active status!!!");
       widget.activityNotify.stop();
     }
   }

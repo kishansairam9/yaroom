@@ -2,24 +2,31 @@ import 'package:bloc/bloc.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ActiveStatusMap {
-  late Map<String, ActiveStatusCubit>? statusMap;
+  late Map<String, ActiveStatusCubit> statusMap;
   ActiveStatusMap({required this.statusMap});
 
-  update(String user, bool status) {
-    statusMap![user]!.setStatus(status: status);
+  void reset() {
+    statusMap.clear();
   }
 
-  add(String user) {
-    if (!statusMap!.containsKey(user)) {
-      statusMap![user] = ActiveStatusCubit(initialState: false);
+  void update(String user, bool status) {
+    if (!statusMap.containsKey(user)) {
+      statusMap[user] = ActiveStatusCubit(initialState: false);
+    }
+    statusMap[user]!.setStatus(status: status);
+  }
+
+  void add(String user) {
+    if (!statusMap.containsKey(user)) {
+      statusMap[user] = ActiveStatusCubit(initialState: false);
     }
   }
 
   ActiveStatusCubit get(String user) {
-    if (!statusMap!.containsKey(user)) {
-      statusMap![user] = ActiveStatusCubit(initialState: false);
+    if (!statusMap.containsKey(user)) {
+      statusMap[user] = ActiveStatusCubit(initialState: false);
     }
-    return statusMap![user]!;
+    return statusMap[user]!;
   }
 }
 

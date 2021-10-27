@@ -30,6 +30,7 @@ func ensureStreamsExist(streams []string) error {
 func monitorStreams(userId string, streams []string, inputChan <-chan interface{}, quit <-chan bool) {
 	// Not a fatal errors here, so don't need to close conn to user for this
 	currentActivity := false
+	lastActiveSent := time.Now()
 	for {
 		select {
 		case data := <-inputChan:
@@ -46,24 +47,25 @@ func monitorStreams(userId string, streams []string, inputChan <-chan interface{
 			} else {
 				currentActivity = unwrap.Active
 			}
-		case <-time.After(3 * time.Second):
-			if currentActivity {
+			if time.Since(lastActiveSent).Seconds() > 3 {
 				data := ActiveStatus{Userid: userId, Active: currentActivity}
 				enc, _ := json.Marshal(data)
 				err := userSendOnStream(userId, streams, enc)
 				if err != nil {
 					log.Warn().Str("where", "send data on stream").Str("type", "failed to send data").Msg(err.Error())
 				}
+				lastActiveSent = time.Now()
 			}
 		case <-time.After(10 * time.Second):
 			fmt.Println("DEBUG PRINT SENDING inactive after 10 sec timeout")
 			currentActivity = false
-			data := ActiveStatus{Userid: userId, Active: false}
+			data := ActiveStatus{Userid: userId, Active: currentActivity}
 			enc, _ := json.Marshal(data)
 			err := userSendOnStream(userId, streams, enc)
 			if err != nil {
 				log.Warn().Str("where", "send data on stream").Str("type", "failed to send data").Msg(err.Error())
 			}
+			lastActiveSent = time.Now()
 		case <-quit:
 			data := ActiveStatus{Userid: userId, Active: false}
 			enc, _ := json.Marshal(data)
@@ -113,23 +115,21 @@ func userSubscribeTo(userId string, streams []string, outputChan chan<- []byte, 
 			log.Warn().Str("where", "send active status").Str("type", "failed to add messsage to stream "+st).Msg(err.Error())
 		}
 	}
-	lastSentActive := make(map[string][]byte)
 	activeStatusBuffer := make(map[string][]byte)
 	ctr := 0
-	bufEdgeHandle := 40
+	bufEdgeHandle := 50
 	for {
 		ctr = (ctr + 1) % (bufEdgeHandle + 1)
 		select {
-		case <-time.After(2 * time.Second):
-			for k, v := range activeStatusBuffer {
-				if v != nil && string(lastSentActive[k]) != string(v) {
+		case <-time.After(5 * time.Second):
+			for _, v := range activeStatusBuffer {
+				if v != nil {
 					outputChan <- v
-					lastSentActive[k] = v
 				}
 			}
 			activeStatusBuffer = make(map[string][]byte)
 		case msg := <-dataCh:
-			fmt.Println("got msg ", string(msg.Data))
+			// fmt.Println("got msg ", string(msg.Data))
 			subTest := strings.Split(string(msg.Data), "-")
 			if subTest[0] == "SUB" {
 				st := subTest[1]
@@ -165,10 +165,9 @@ func userSubscribeTo(userId string, streams []string, outputChan chan<- []byte, 
 			}
 			// Handle edge case of not going into after timeout for buffer flush
 			if ctr == bufEdgeHandle {
-				for k, v := range activeStatusBuffer {
-					if v != nil && string(lastSentActive[k]) != string(v) {
+				for _, v := range activeStatusBuffer {
+					if v != nil {
 						outputChan <- v
-						lastSentActive[k] = v
 					}
 				}
 				activeStatusBuffer = make(map[string][]byte)

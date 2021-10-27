@@ -383,8 +383,7 @@ class HomePageState extends State<HomePage> {
                                 // Clear DB
                                 Provider.of<ActiveStatusMap>(context,
                                         listen: false)
-                                    .statusMap
-                                    ?.clear();
+                                    .reset();
                                 Provider.of<FriendRequestCubit>(context,
                                         listen: false)
                                     .reset();
