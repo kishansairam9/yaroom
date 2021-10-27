@@ -89,7 +89,8 @@ class HomePageState extends State<HomePage> {
                 channelId: content['channelId']));
       }
     } else if (content.containsKey('friendRequest')) {
-      // TO DO
+      await Navigator.pushReplacementNamed(context, '/',
+          arguments: HomePageArguments(index: 3));
     }
   }
 
