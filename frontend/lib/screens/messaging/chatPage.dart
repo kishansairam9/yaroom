@@ -10,7 +10,6 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:yaroom/screens/components/msgBox.dart';
-import 'package:yaroom/utils/authorizationService.dart';
 import '../components/contactView.dart';
 import 'package:provider/provider.dart';
 import '../../utils/messageExchange.dart';
@@ -235,13 +234,16 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
 
   // To display profile
   _showContact(context) {
+    String uid = Provider.of<UserId>(context, listen: false);
     showModalBottomSheet(
         context: context,
         builder: (BuildContext c) {
-          return ViewContact(FriendRequestData(
-              userId: widget.userId,
-              name: widget.name,
-              status: FriendRequestType.friend.index));
+          return ViewContact(
+              FriendRequestData(
+                  userId: widget.userId,
+                  name: widget.name,
+                  status: FriendRequestType.friend.index),
+              uid);
         });
   }
 

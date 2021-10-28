@@ -152,10 +152,10 @@ func updateGroupHandler(g *gin.Context) {
 			return
 		}
 		for _, curr := range users {
-			users_udt = append(users_udt, User_udt{Name: curr.Name, Image: curr.Image, Userid: curr.Userid})
+			users_udt = append(users_udt, User_udt{Name: curr.Name, Userid: curr.Userid})
 		}
 	}
-	data, err := updateGroupMetadata(&GroupMetadata{Groupid: req.GroupId, Name: req.Name, Image: &req.GroupIcon, Description: &req.Description, Userslist: users_udt})
+	data, err := updateGroupMetadata(&GroupMetadata{Groupid: req.GroupId, Name: req.Name, Description: &req.Description, Userslist: users_udt})
 	if err != nil {
 		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
 		return
@@ -187,7 +187,7 @@ func updateGroupHandler(g *gin.Context) {
 		sendUpdateOnStream([]string{"GROUP:" + data.Groupid}, encAug)
 	})
 
-	g.JSON(200, groupDetails{GroupId: data.Groupid, Name: data.Name, Description: *data.Description, GroupIcon: *data.Image, GroupMembers: users_list})
+	g.JSON(200, groupDetails{GroupId: data.Groupid, Name: data.Name, Description: *data.Description, GroupMembers: users_list})
 }
 
 func updateRoomHandler(g *gin.Context) {
@@ -213,11 +213,11 @@ func updateRoomHandler(g *gin.Context) {
 			return
 		}
 		for _, curr := range users {
-			users_udt = append(users_udt, User_udt{Name: curr.Name, Image: curr.Image, Userid: curr.Userid})
+			users_udt = append(users_udt, User_udt{Name: curr.Name, Userid: curr.Userid})
 		}
 	}
 	fmt.Println(req.ChannelsList)
-	data, err := updateRoomMetadata(&RoomMetadata{Roomid: req.RoomId, Name: req.Name, Image: &req.RoomIcon, Description: &req.Description, Userslist: users_udt, Channelslist: req.ChannelsList})
+	data, err := updateRoomMetadata(&RoomMetadata{Roomid: req.RoomId, Name: req.Name, Description: &req.Description, Userslist: users_udt, Channelslist: req.ChannelsList})
 	if err != nil {
 		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
 		return
@@ -248,7 +248,7 @@ func updateRoomHandler(g *gin.Context) {
 	time.AfterFunc(time.Duration(1)*time.Second, func() {
 		sendUpdateOnStream([]string{"ROOM:" + data.Roomid}, encAug)
 	})
-	g.JSON(200, roomDetails{RoomId: data.Roomid, Name: data.Name, Description: *data.Description, RoomIcon: *data.Image, RoomMembers: users_list, ChannelsList: data.Channelslist})
+	g.JSON(200, roomDetails{RoomId: data.Roomid, Name: data.Name, Description: *data.Description, RoomMembers: users_list, ChannelsList: data.Channelslist})
 }
 
 func deleteChannelHandler(g *gin.Context) {
@@ -395,7 +395,7 @@ func exitRoomHandler(g *gin.Context) {
 	user, e := getUsers([]string{userId})
 	var user_udt = []User_udt{}
 	for _, curr := range user {
-		user_udt = append(user_udt, User_udt{Name: curr.Name, Image: curr.Image, Userid: curr.Userid})
+		user_udt = append(user_udt, User_udt{Name: curr.Name, Userid: curr.Userid})
 	}
 	if e != nil {
 		g.AbortWithStatusJSON(500, gin.H{"error": e.Error()})
@@ -446,7 +446,7 @@ func exitGroupHandler(g *gin.Context) {
 	user, e := getUsers([]string{userId})
 	var user_udt = []User_udt{}
 	for _, curr := range user {
-		user_udt = append(user_udt, User_udt{Name: curr.Name, Image: curr.Image, Userid: curr.Userid})
+		user_udt = append(user_udt, User_udt{Name: curr.Name, Userid: curr.Userid})
 	}
 	if e != nil {
 		g.AbortWithStatusJSON(500, gin.H{"error": e.Error()})

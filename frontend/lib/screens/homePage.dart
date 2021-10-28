@@ -282,26 +282,35 @@ class HomePageState extends State<HomePage> {
                   bloc: Provider.of<ActiveStatusMap>(context).get(e.userId),
                   builder: (context, state) {
                     return ListTile(
-                        onTap: () => showModalBottomSheet(
-                            context: context,
-                            builder: (BuildContext c) {
-                              return BlocBuilder<FriendRequestCubit,
-                                      FriendRequestDataMap>(
-                                  bloc: Provider.of<FriendRequestCubit>(context,
-                                      listen: false),
-                                  builder: (context, state) {
-                                    if (state.data.containsKey(e.userId)) {
-                                      return ViewContact(state.data[e.userId]!);
-                                    } else {
-                                      return ViewContact(FriendRequestData(
-                                          userId: e.userId,
-                                          name: e.name,
-                                          about:
-                                              e.about == null ? "" : e.about!,
-                                          status: -1));
-                                    }
-                                  });
-                            }),
+                        onTap: () {
+                          String uid =
+                              Provider.of<UserId>(context, listen: false);
+                          showModalBottomSheet(
+                              context: context,
+                              builder: (BuildContext c) {
+                                return BlocBuilder<FriendRequestCubit,
+                                        FriendRequestDataMap>(
+                                    bloc: Provider.of<FriendRequestCubit>(
+                                        context,
+                                        listen: false),
+                                    builder: (context, state) {
+                                      if (state.data.containsKey(e.userId)) {
+                                        return ViewContact(
+                                            state.data[e.userId]!, uid);
+                                      } else {
+                                        return ViewContact(
+                                            FriendRequestData(
+                                                userId: e.userId,
+                                                name: e.name,
+                                                about: e.about == null
+                                                    ? ""
+                                                    : e.about!,
+                                                status: -1),
+                                            uid);
+                                      }
+                                    });
+                              });
+                        },
                         tileColor: Colors.transparent,
                         leading: Stack(
                           children: [
@@ -573,7 +582,8 @@ class HomePageState extends State<HomePage> {
                 endDrawer: currentIndex == 0
                     ? (roomflag == false
                         ? (SelectRoomPage())
-                        : _getEndDrawer(context, roomId, metastate.data[roomId]!.name))
+                        : _getEndDrawer(
+                            context, roomId, metastate.data[roomId]!.name))
                     : null,
                 body: SizedBox.expand(
                   child: PageView(

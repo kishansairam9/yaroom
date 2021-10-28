@@ -37,7 +37,7 @@ class ExchangeSearchDelegate extends SearchDelegate {
         child: Text("Enter query"),
       );
     }
-    // print("Queried ${query.toLowerCase()}");
+
     final String? accessToken =
         await Provider.of<AuthorizationService>(context, listen: false)
             .getValidAccessToken();

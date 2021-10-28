@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:yaroom/blocs/roomMetadata.dart';
 import 'package:yaroom/blocs/rooms.dart';

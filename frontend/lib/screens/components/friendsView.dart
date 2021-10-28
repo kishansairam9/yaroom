@@ -8,8 +8,6 @@ import '../../utils/notifiers.dart';
 import 'contactView.dart';
 import '../edit/friend.dart';
 import '../../blocs/activeStatus.dart';
-import '../../utils/messageExchange.dart';
-import 'dart:convert';
 
 class FriendsView extends StatefulWidget {
   const FriendsView({Key? key}) : super(key: key);
@@ -19,10 +17,11 @@ class FriendsView extends StatefulWidget {
 
 class _FriendsViewState extends State<FriendsView> {
   _showContact(context, FriendRequestData f) {
+    String uid = Provider.of<UserId>(context, listen: false);
     showModalBottomSheet(
         context: context,
         builder: (BuildContext c) {
-          return ViewContact(f);
+          return ViewContact(f, uid);
         });
   }
 
@@ -64,6 +63,7 @@ class _FriendsViewState extends State<FriendsView> {
                 children: [
                   ListView(
                       children: friendRequestsList.map((FriendRequestData e) {
+                    String uid = Provider.of<UserId>(context, listen: false);
                     if (e.status != FriendRequestType.friend.index) {
                       return const SizedBox(
                         height: 0,
@@ -77,7 +77,7 @@ class _FriendsViewState extends State<FriendsView> {
                             onTap: () => showModalBottomSheet(
                                 context: context,
                                 builder: (BuildContext c) {
-                                  return ViewContact(e);
+                                  return ViewContact(e, uid);
                                 }),
                             tileColor: Colors.transparent,
                             leading: Stack(
@@ -224,12 +224,6 @@ class _FriendsViewState extends State<FriendsView> {
               ),
             ),
           );
-          // } else if (snapshot.hasError) {
-          //   print(snapshot.error);
-          //   return SnackBar(
-          //       content: Text('Error has occured while reading from DB'));
-          // }
-          // return Container();
         });
   }
 }

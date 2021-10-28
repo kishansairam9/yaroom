@@ -274,57 +274,66 @@ class _CreateGroupState extends State<CreateGroup> {
                   ? SnackBar(
                       content: Text('Error occured while uploading retry!'))
                   : Container(),
-              StreamBuilder(
-                  stream: updateImage.stream,
-                  builder: (context, snapshot) {
-                    if (snapshot.hasData) {
-                      return Image(
-                          height: 300,
-                          width: 300,
-                          image: iconImageWrapper(this.widget.data["groupId"]));
-                    }
-                    return CircularProgressIndicator();
-                  }),
-              Container(
-                child: ElevatedButton(
-                  child: Text("Update Icon"),
-                  onPressed: () async {
-                    await _openFileExplorer();
-                    String encData = jsonEncode(
-                        BlocProvider.of<FilePickerCubit>(context, listen: false)
-                            .state
-                            .media);
-                    final String? accessToken =
-                        await Provider.of<AuthorizationService>(context,
-                                listen: false)
-                            .getValidAccessToken();
-                    try {
-                      var response = await http.post(
-                          Uri.parse('http://localhost:8884/v1/updateIcon'),
-                          body: encData,
-                          headers: <String, String>{
-                            'Content-Type': 'application/json',
-                            'Authorization': "Bearer $accessToken",
-                          });
-                      print(
-                          "Update icon response ${response.statusCode} ${response.body}");
-                      setState(() {
-                        errOnUpload = false;
-                      });
-                      BlocProvider.of<FilePickerCubit>(context, listen: false)
-                          .updateFilePicker(media: Map(), filesAttached: 0);
-                      updateImage.sink.add(true);
-                      Provider.of<GroupsList>(context, listen: false)
-                          .triggerRerender();
-                    } catch (e) {
-                      print("Exception occured in update icon $e");
-                      setState(() {
-                        errOnUpload = true;
-                      });
-                    }
-                  },
-                ),
-              ),
+              this.widget.data['groupId'] != ""
+                  ? StreamBuilder(
+                      stream: updateImage.stream,
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData) {
+                          return Image(
+                              height: 300,
+                              width: 300,
+                              image: iconImageWrapper(
+                                  this.widget.data["groupId"]));
+                        }
+                        return CircularProgressIndicator();
+                      })
+                  : SizedBox(height: 0),
+              this.widget.data['groupId'] != ""
+                  ? Container(
+                      child: ElevatedButton(
+                        child: Text("Update Icon"),
+                        onPressed: () async {
+                          await _openFileExplorer();
+                          String encData = jsonEncode(
+                              BlocProvider.of<FilePickerCubit>(context,
+                                      listen: false)
+                                  .state
+                                  .media);
+                          final String? accessToken =
+                              await Provider.of<AuthorizationService>(context,
+                                      listen: false)
+                                  .getValidAccessToken();
+                          try {
+                            var response = await http.post(
+                                Uri.parse(
+                                    'http://localhost:8884/v1/updateIcon'),
+                                body: encData,
+                                headers: <String, String>{
+                                  'Content-Type': 'application/json',
+                                  'Authorization': "Bearer $accessToken",
+                                });
+                            print(
+                                "Update icon response ${response.statusCode} ${response.body}");
+                            setState(() {
+                              errOnUpload = false;
+                            });
+                            BlocProvider.of<FilePickerCubit>(context,
+                                    listen: false)
+                                .updateFilePicker(
+                                    media: Map(), filesAttached: 0);
+                            updateImage.sink.add(true);
+                            Provider.of<GroupsList>(context, listen: false)
+                                .triggerRerender();
+                          } catch (e) {
+                            print("Exception occured in update icon $e");
+                            setState(() {
+                              errOnUpload = true;
+                            });
+                          }
+                        },
+                      ),
+                    )
+                  : SizedBox(height: 0),
               BlocBuilder<GroupMetadataCubit, GroupMetadataMap>(
                 builder: (context, state) {
                   return _createForm(

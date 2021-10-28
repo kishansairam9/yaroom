@@ -314,11 +314,7 @@ class GroupChatPageState extends State<GroupChatPage>
               if (scrollInfo.metrics.pixels ==
                   scrollInfo.metrics.maxScrollExtent) {
                 loadMore(msgs);
-                // newmsgs.addAll(msgs);
                 msgs.insertAll(0, newmsgs);
-                // setState(() {
-                //   newmsgs:[];
-                // });
                 return true;
               }
               return false;
@@ -544,6 +540,8 @@ class GroupChatPageState extends State<GroupChatPage>
                         })
                       ],
                       child: Builder(builder: (context) {
+                        String uid =
+                            Provider.of<UserId>(context, listen: false);
                         return Scaffold(
                             key: _scaffoldkey,
                             endDrawer: Drawer(
@@ -573,7 +571,8 @@ class GroupChatPageState extends State<GroupChatPage>
                                                                 e.userId)) {
                                                           return ViewContact(
                                                               state.data[
-                                                                  e.userId]!);
+                                                                  e.userId]!,
+                                                              uid);
                                                         } else {
                                                           return ViewContact(
                                                               FriendRequestData(
@@ -584,7 +583,8 @@ class GroupChatPageState extends State<GroupChatPage>
                                                                           null
                                                                       ? ""
                                                                       : e.about!,
-                                                                  status: -1));
+                                                                  status: -1),
+                                                              uid);
                                                         }
                                                       });
                                                 }),

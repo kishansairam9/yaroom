@@ -17,19 +17,19 @@ import (
 
 var UsersTableMetadata = table.Metadata{
 	Name:    "yaroom.users",
-	Columns: []string{"userid", "name", "image", "username", "tokens", "groupslist", "roomslist", "friendslist"},
+	Columns: []string{"userid", "name", "username", "tokens", "groupslist", "roomslist", "friendslist"},
 	PartKey: []string{"userid"},
 }
 
 var GroupTableMetadata = table.Metadata{
 	Name:    "yaroom.groups",
-	Columns: []string{"groupid", "name", "image", "description", "userslist"},
+	Columns: []string{"groupid", "name", "description", "userslist"},
 	PartKey: []string{"groupid"},
 }
 
 var RoomTableMetadata = table.Metadata{
 	Name:    "yaroom.rooms",
-	Columns: []string{"rooomid", "name", "image", "description", "userslist", "channelslist"},
+	Columns: []string{"rooomid", "name", "description", "userslist", "channelslist"},
 	PartKey: []string{"roomid"},
 }
 
@@ -129,9 +129,8 @@ func setupDB() {
 
 type User_udt struct {
 	gocqlx.UDT
-	Userid string  `json:"userId" db:"userid"`
-	Name   string  `json:"name" db:"name"`
-	Image  *string `json:"profileImg" db:"image"`
+	Userid string `json:"userId" db:"userid"`
+	Name   string `json:"name" db:"name"`
 }
 
 // MarshalUDT implements UDTMarshaler.
@@ -229,9 +228,8 @@ type LastReadMetadata struct {
 }
 
 type User struct {
-	Userid string  `json:"userId" db:"userid"`
-	Name   string  `json:"name" db:"name"`
-	Image  *string `json:"profileImg" db:"image"`
+	Userid string `json:"userId" db:"userid"`
+	Name   string `json:"name" db:"name"`
 }
 
 func updateUserMetadata(data *UserMetadata) error {
@@ -279,12 +277,7 @@ func convertSetToString(data []User_udt) string {
 	var s string
 	s += "{"
 	for _, val := range data {
-		// fmt.Println(key, val)
-		if val.Image != nil {
-			s += fmt.Sprintf("{userid:'%s', name:'%s', image:'%s'},", val.Userid, val.Name, *val.Image)
-		} else {
-			s += fmt.Sprintf("{userid:'%s', name:'%s', image:''},", val.Userid, val.Name)
-		}
+		s += fmt.Sprintf("{userid:'%s', name:'%s'},", val.Userid, val.Name)
 	}
 	s = s[:len(s)-1]
 	s += "}"
@@ -314,7 +307,7 @@ func updateGroupMetadata(data *GroupMetadata) (*GroupMetadata, error) {
 		return nil, err
 	}
 	if groupMeta == nil {
-		in := dbSession.Query(qb.Insert("yaroom.groups").LitColumn("groupid", paddedGroupId).LitColumn("name", "'"+data.Name+"'").LitColumn("image", "'"+*data.Image+"'").LitColumn("description", "'"+*data.Description+"'").LitColumn("userslist", convertSetToString(data.Userslist)).ToCql())
+		in := dbSession.Query(qb.Insert("yaroom.groups").LitColumn("groupid", paddedGroupId).LitColumn("name", "'"+data.Name+"'").LitColumn("description", "'"+*data.Description+"'").LitColumn("userslist", convertSetToString(data.Userslist)).ToCql())
 		if err := in.ExecRelease(); err != nil {
 			return nil, err
 		}
@@ -327,7 +320,7 @@ func updateGroupMetadata(data *GroupMetadata) (*GroupMetadata, error) {
 			return nil, err
 		}
 	} else {
-		in := dbSession.Query(qb.Update("yaroom.groups").SetLit("name", "'"+data.Name+"'").SetLit("description", "'"+*data.Description+"'").SetLit("image", "'"+*data.Image+"'").Where(qb.EqLit("groupid", "'"+data.Groupid+"'")).ToCql())
+		in := dbSession.Query(qb.Update("yaroom.groups").SetLit("name", "'"+data.Name+"'").SetLit("description", "'"+*data.Description+"'").Where(qb.EqLit("groupid", "'"+data.Groupid+"'")).ToCql())
 		if err := in.ExecRelease(); err != nil {
 			log.Error().Str("where", "update Group metadata").Str("type", "failed to execute query").Msg(err.Error())
 			return nil, errors.New("internal server error")
@@ -366,7 +359,7 @@ func updateRoomMetadata(data *RoomMetadata) (*RoomMetadata, error) {
 	data.Channelslist = temp
 
 	if roomMeta == nil {
-		in := dbSession.Query(qb.Insert("yaroom.rooms").LitColumn("roomid", paddedRoomId).LitColumn("name", "'"+data.Name+"'").LitColumn("image", "'"+*data.Image+"'").LitColumn("description", "'"+*data.Description+"'").LitColumn("userslist", convertSetToString(data.Userslist)).LitColumn("channelslist", convertMapToString(data.Channelslist)).ToCql())
+		in := dbSession.Query(qb.Insert("yaroom.rooms").LitColumn("roomid", paddedRoomId).LitColumn("name", "'"+data.Name+"'").LitColumn("description", "'"+*data.Description+"'").LitColumn("userslist", convertSetToString(data.Userslist)).LitColumn("channelslist", convertMapToString(data.Channelslist)).ToCql())
 		if err := in.ExecRelease(); err != nil {
 			return nil, err
 		}
@@ -379,7 +372,7 @@ func updateRoomMetadata(data *RoomMetadata) (*RoomMetadata, error) {
 			return nil, err
 		}
 	} else {
-		in := dbSession.Query(qb.Update("yaroom.rooms").SetLit("name", "'"+data.Name+"'").SetLit("description", "'"+*data.Description+"'").SetLit("image", "'"+*data.Image+"'").SetLit("channelslist", convertMapToString(data.Channelslist)).Where(qb.EqLit("roomid", "'"+data.Roomid+"'")).ToCql())
+		in := dbSession.Query(qb.Update("yaroom.rooms").SetLit("name", "'"+data.Name+"'").SetLit("description", "'"+*data.Description+"'").SetLit("channelslist", convertMapToString(data.Channelslist)).Where(qb.EqLit("roomid", "'"+data.Roomid+"'")).ToCql())
 		if err := in.ExecRelease(); err != nil {
 			log.Error().Str("where", "update Room metadata").Str("type", "failed to execute query").Msg(err.Error())
 			return nil, errors.New("internal server error")
@@ -513,7 +506,7 @@ func getUserDetails(userId string, name string) (*UserDetails, error) {
 	fmt.Printf("Got meta %v\n", userMeta)
 	if userMeta == nil {
 		// New user, add user to demo rooms and groups
-		in := dbSession.Query(qb.Insert("yaroom.users").LitColumn("userid", paddedUserId).LitColumn("name", paddedName).LitColumn("image", "''").LitColumn("username", paddedName).LitColumn("groupslist", "{'group-demo-1', 'group-demo-2'}").LitColumn("roomslist", "{'room-demo-1', 'room-demo-2'}").ToCql())
+		in := dbSession.Query(qb.Insert("yaroom.users").LitColumn("userid", paddedUserId).LitColumn("name", paddedName).LitColumn("username", paddedName).LitColumn("groupslist", "{'group-demo-1', 'group-demo-2'}").LitColumn("roomslist", "{'room-demo-1', 'room-demo-2'}").ToCql())
 		if err := in.ExecRelease(); err != nil {
 			return nil, err
 		}
@@ -811,7 +804,7 @@ func getUsers(userList []string) ([]User, error) {
 	final := "("
 	final += "'" + strings.Join(userList, "', '") + "'"
 	final += ")"
-	in := dbSession.Query(qb.Select("yaroom.users").Columns("userid", "name", "image").Where(qb.InLit("userid", final)).AllowFiltering().ToCql())
+	in := dbSession.Query(qb.Select("yaroom.users").Columns("userid", "name").Where(qb.InLit("userid", final)).AllowFiltering().ToCql())
 	rows := make([]User, 1)
 	if err := in.SelectRelease(&rows); err != nil {
 		log.Error().Str("where", "getting user data").Str("type", "failed to execute query").Msg(err.Error())

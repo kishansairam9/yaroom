@@ -7,7 +7,8 @@ import 'package:provider/provider.dart';
 
 class ViewContact extends StatefulWidget {
   final FriendRequestData contactData;
-  ViewContact(this.contactData);
+  final String currentUser;
+  ViewContact(this.contactData, this.currentUser);
 
   @override
   _ViewContactState createState() => _ViewContactState();
@@ -41,66 +42,38 @@ class _ViewContactState extends State<ViewContact> {
                           style: TextStyle(
                               fontWeight: FontWeight.bold, fontSize: 20))
                     ]),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    Column(
-                      children: [
-                        IconButton(
-                          onPressed: () => {},
-                          icon: Icon(Icons.call),
-                          tooltip: "Call",
-                        ),
-                        Text("Call")
-                      ],
-                    ),
-                    Column(
-                      children: [
-                        IconButton(
-                          onPressed: () => {},
-                          icon: Icon(Icons.video_call_sharp),
-                          tooltip: "Video Call",
-                        ),
-                        Text("Video")
-                      ],
-                    ),
-                    Column(
-                      children: [
-                        IconButton(
-                            onPressed: () => Navigator.of(context).pushNamed(
-                                '/chat',
-                                arguments: ChatPageArguments(
-                                    userId: this.widget.contactData.userId,
-                                    name: state
-                                        .data[this.widget.contactData.userId]!
-                                        .name)),
-                            icon: Icon(Icons.message_rounded)),
-                        Text("Message")
-                      ],
-                    ),
-                  ],
-                ),
+                this.widget.contactData.userId != this.widget.currentUser
+                    ? Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          Column(
+                            children: [
+                              IconButton(
+                                  onPressed: () => Navigator.of(context)
+                                      .pushNamed('/chat',
+                                          arguments: ChatPageArguments(
+                                              userId: this
+                                                  .widget
+                                                  .contactData
+                                                  .userId,
+                                              name: state
+                                                  .data[this
+                                                      .widget
+                                                      .contactData
+                                                      .userId]!
+                                                  .name)),
+                                  icon: Icon(Icons.message_rounded)),
+                              Text("Message")
+                            ],
+                          ),
+                        ],
+                      )
+                    : SizedBox(
+                        height: 0,
+                      ),
                 Card(
                     margin: EdgeInsets.all(20),
                     child: Column(children: [
-                      ListTile(
-                        leading: Icon(
-                          Icons.volume_mute,
-                        ),
-                        title: Text(
-                          "Mute",
-                        ),
-                      ),
-                      ListTile(
-                        leading: Icon(
-                          Icons.block,
-                          color: Colors.red,
-                        ),
-                        title: Text(
-                          "Block",
-                          style: TextStyle(color: Colors.red),
-                        ),
-                      ),
                       (state.data[this.widget.contactData.userId]!.status ==
                               FriendRequestType.friend.index)
                           ? ListTile(

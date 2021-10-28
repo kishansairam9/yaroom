@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:provider/provider.dart';
 import 'package:yaroom/utils/types.dart';
 
 class MsgBox extends StatefulWidget {
@@ -67,13 +66,9 @@ class MsgBoxState extends State<MsgBox> {
     if (_paths != null) {
       media['name'] = _paths.files.first.name;
       media['bytes'] = _paths.files.first.bytes;
-
-      // Provider.of<FilePickerDetails>(context, listen: false)
-      //     .updateState(media, 1);
       BlocProvider.of<FilePickerCubit>(context, listen: false)
           .updateFilePicker(media: media, filesAttached: 1);
     }
-    // Provider.of<FilePickerDetails>(context, listen: false).filesAttached = 1;
   }
 
   Widget build(BuildContext context) {
@@ -81,14 +76,6 @@ class MsgBoxState extends State<MsgBox> {
       onWillPop: onBackPress,
       child: Column(
         children: [
-          // Provider.of<FilePickerDetails>(context, listen: false)
-          //             .getFilesAttached() !=
-          //         0
-          //     ? Text(Provider.of<FilePickerDetails>(context, listen: false)
-          //             .getFilesAttached()
-          //             .toString() +
-          //         " file attached")
-          //     : Container(),
           BlocBuilder<FilePickerCubit, FilePickerDetails>(
               builder: (context, state) {
             if (state.filesAttached != 0) {
