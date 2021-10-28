@@ -385,6 +385,14 @@ class HomePageState extends State<HomePage> {
                         preferredSize: Size.fromHeight(kToolbarHeight)))
                     : AppBar(
                         automaticallyImplyLeading: false,
+                        leading: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: CircleAvatar(
+                            backgroundColor: Colors.grey[350],
+                            foregroundImage: AssetImage("assets/yaroom.png"),
+                          ),
+                        ),
+                        title: Text("Yaroom"),
                         actions: [
                           Builder(
                             builder: (context) => IconButton(
@@ -451,20 +459,11 @@ class HomePageState extends State<HomePage> {
                                   children: [
                                     Expanded(child: RoomListView()),
                                     Column(children: [
-                                      CircleAvatar(
-                                          backgroundColor: Colors.grey[350],
-                                          foregroundImage:
-                                              AssetImage("assets/yaroom.png"),
-                                          radius: 27.0,
-                                          child: IconButton(
-                                              onPressed: () =>
-                                                  Navigator.of(context)
-                                                      .pushNamed(
-                                                          "/editroom",
-                                                          arguments: {
-                                                        "roomId": ""
-                                                      }),
-                                              icon: Icon(Icons.add))),
+                                      IconButton(
+                                          onPressed: () => Navigator.of(context)
+                                              .pushNamed("/editroom",
+                                                  arguments: {"roomId": ""}),
+                                          icon: Icon(Icons.add, size: 35.0)),
                                       SizedBox(
                                         height: 6,
                                       )
@@ -487,8 +486,7 @@ class HomePageState extends State<HomePage> {
                                   //   child:
                                   ListTile(
                                     minVerticalPadding: 5,
-                                    leading: Text("+"),
-                                    title: Text("Add Channel"),
+                                    title: Center(child: Text("Add Channel")),
                                     onTap: () {
                                       BuildContext dialogContext;
                                       showDialog(
