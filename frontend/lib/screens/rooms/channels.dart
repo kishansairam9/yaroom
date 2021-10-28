@@ -42,7 +42,16 @@ class ChannelsViewState extends State<ChannelsView> {
                   name: e.channelName);
               if (index == 0) {
                 return Column(
-                  children: [Text(state.data[widget.roomId]!.name), tile],
+                  children: [
+                    ListTile(
+                      tileColor: Colors.transparent,
+                      title: Text(state.data[widget.roomId]!.name,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 20)),
+                    ),
+                    Divider(thickness: 1.5,),
+                    tile
+                  ],
                 );
               }
               return tile;

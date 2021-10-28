@@ -203,6 +203,10 @@ class HomePageState extends State<HomePage> {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                   ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.grey[350],
+                      foregroundImage: iconImageWrapper(roomId),
+                    ),
                     tileColor: Colors.transparent,
                     title: Text(state.data[roomId]!.name,
                         overflow: TextOverflow.ellipsis,
@@ -221,9 +225,9 @@ class HomePageState extends State<HomePage> {
                                         "name": roomname
                                       })
                                     },
-                                tooltip: "Edit Room",
-                                icon: Icon(Icons.edit)),
-                            Text("Edit")
+                                tooltip: "Settings",
+                                icon: Icon(Icons.settings)),
+                            Text("Settings")
                           ],
                         ),
                         Column(
@@ -368,7 +372,15 @@ class HomePageState extends State<HomePage> {
                 appBar: currentIndex == 0
                     ? (PreferredSize(
                         child: roomId == null
-                            ? AppBar()
+                            ? AppBar(actions: [
+                                Builder(
+                                  builder: (context) => IconButton(
+                                    icon: Icon(Icons.person),
+                                    onPressed: () =>
+                                        Scaffold.of(context).openEndDrawer(),
+                                  ),
+                                ),
+                              ])
                             : _getRoomAppBar(context, roomId, channelId),
                         preferredSize: Size.fromHeight(kToolbarHeight)))
                     : AppBar(
@@ -581,7 +593,7 @@ class HomePageState extends State<HomePage> {
                     : null,
                 endDrawer: currentIndex == 0
                     ? (roomflag == false
-                        ? (SelectRoomPage())
+                        ? Container(child: (SelectRoomPage()))
                         : _getEndDrawer(
                             context, roomId, metastate.data[roomId]!.name))
                     : null,

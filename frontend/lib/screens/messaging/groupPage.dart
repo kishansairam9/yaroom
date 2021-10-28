@@ -378,56 +378,6 @@ class GroupChatPageState extends State<GroupChatPage>
           foregroundImage: iconImageWrapper(widget.groupId),
         ),
         tileColor: Colors.transparent,
-        trailing: Consumer<GroupsList>(builder: (_, GroupsList groupsList, __) {
-          return PopupMenuButton<int>(
-            onSelected: (selection) async {
-              if (selection == 1) {
-                showDialog(
-                    context: context,
-                    builder: (_) {
-                      return AlertDialog(
-                          title: Text("Exit Group"),
-                          content: Text(
-                              "Are you sure you want to exit the group? The related chat will no longer be displayed to you."),
-                          actions: [
-                            TextButton(
-                                onPressed: () async {
-                                  // request to backend to remove user from group
-                                  await exitGroup(widget.groupId, context);
-                                  await Navigator.pushReplacementNamed(
-                                      context, '/',
-                                      arguments: HomePageArguments(index: 2));
-                                },
-                                child: Text("Yes")),
-                            TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: Text("No"))
-                          ]);
-                    });
-              } else if (selection == 2) {
-                Navigator.pushReplacementNamed(context, '/editgroup',
-                    arguments: {"groupId": widget.groupId});
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 1,
-                child: ListTile(
-                    title:
-                        Text("Exit Group", style: TextStyle(color: Colors.red)),
-                    leading: Icon(
-                      Icons.exit_to_app,
-                      color: Colors.red,
-                    )),
-              ),
-              PopupMenuItem(
-                value: 2,
-                child: ListTile(
-                    title: Text("Settings"), leading: Icon(Icons.settings)),
-              ),
-            ],
-          );
-        }),
         title: BlocBuilder<GroupMetadataCubit, GroupMetadataMap>(
           builder: (context, state) {
             return Text(
@@ -444,26 +394,63 @@ class GroupChatPageState extends State<GroupChatPage>
           Column(
             children: [
               IconButton(
-                  onPressed: () => {}, tooltip: "Call", icon: Icon(Icons.call)),
-              Text("Call")
+                  onPressed: () => {
+                        Navigator.pushReplacementNamed(context, '/editgroup',
+                            arguments: {"groupId": widget.groupId})
+                      },
+                  tooltip: "Settings",
+                  icon: Icon(Icons.settings)),
+              Text("Settings")
             ],
           ),
           Column(
             children: [
               IconButton(
-                  onPressed: () => {},
-                  tooltip: "Video Call",
-                  icon: Icon(Icons.video_call_sharp)),
-              Text("Video")
+                  onPressed: () => {
+                        showSearch(
+                            context: context,
+                            delegate: ExchangeSearchDelegate(
+                                exchangeId: widget.groupId,
+                                msgType: "GroupMessage",
+                                limit: 100))
+                      },
+                  tooltip: "Search",
+                  icon: Icon(Icons.search)),
+              Text("Search")
             ],
           ),
           Column(
             children: [
               IconButton(
-                  onPressed: () => {},
-                  tooltip: "Pinned Messages",
-                  icon: Icon(Icons.push_pin)),
-              Text("Pins")
+                  onPressed: () => {
+                        showDialog(
+                            context: context,
+                            builder: (_) {
+                              return AlertDialog(
+                                  title: Text("Exit Group"),
+                                  content: Text(
+                                      "Are you sure you want to exit the group? The related chat will no longer be displayed to you."),
+                                  actions: [
+                                    TextButton(
+                                        onPressed: () async {
+                                          // request to backend to remove user from group
+                                          await exitGroup(
+                                              widget.groupId, context);
+                                          await Navigator.pushReplacementNamed(
+                                              context, '/',
+                                              arguments:
+                                                  HomePageArguments(index: 2));
+                                        },
+                                        child: Text("Yes")),
+                                    TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: Text("No"))
+                                  ]);
+                            })
+                      },
+                  tooltip: "Exit",
+                  icon: Icon(Icons.exit_to_app)),
+              Text("Exit")
             ],
           ),
         ],

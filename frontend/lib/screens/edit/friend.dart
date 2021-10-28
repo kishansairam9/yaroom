@@ -42,6 +42,7 @@ class AddFriendState extends State<AddFriend> {
               decoration: const InputDecoration(
                 icon: Icon(Icons.person_add),
                 labelText: 'Enter Username',
+                
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {

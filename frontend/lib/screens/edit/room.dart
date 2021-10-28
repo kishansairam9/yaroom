@@ -248,7 +248,8 @@ class _CreateRoomState extends State<CreateRoom> {
           leading: Builder(
               builder: (context) => IconButton(
                   onPressed: () async {
-                    if (this.widget.data["roomId"] == "" || this.widget.data["roomId"]==null)
+                    if (this.widget.data["roomId"] == "" ||
+                        this.widget.data["roomId"] == null)
                       Navigator.pop(context);
                     else {
                       print("redirect to room");
@@ -266,8 +267,13 @@ class _CreateRoomState extends State<CreateRoom> {
               ? "Create Room"
               : "Room Settings"),
           actions: [
-            IconButton(
-                onPressed: () => _addMembers(), icon: Icon(Icons.person_add))
+            this.widget.data["roomId"] != ""
+                ? IconButton(
+                    onPressed: () => _addMembers(),
+                    icon: Icon(Icons.person_add))
+                : SizedBox(
+                    width: 0,
+                  )
           ],
         ),
         body: SingleChildScrollView(
@@ -282,60 +288,71 @@ class _CreateRoomState extends State<CreateRoom> {
                   ? SnackBar(
                       content: Text('Error occured while uploading retry!'))
                   : Container(),
-              StreamBuilder(
-                  stream: updateImage.stream,
-                  builder: (context, snapshot) {
-                    if (snapshot.hasData) {
-                      return Image(
-                          height: 300,
-                          width: 300,
-                          image: iconImageWrapper(this.widget.data["roomId"]));
-                    }
-                    return CircularProgressIndicator();
-                  }),
-              Container(
-                child: ElevatedButton(
-                  child: Text("Update Icon"),
-                  onPressed: () async {
-                    await _openFileExplorer();
-                    String encData = jsonEncode(
-                        BlocProvider.of<FilePickerCubit>(context, listen: false)
-                            .state
-                            .media);
-                    final String? accessToken =
-                        await Provider.of<AuthorizationService>(context,
-                                listen: false)
-                            .getValidAccessToken();
-                    try {
-                      print("*************************************");
-                      print(encData);
-                      print("*************************************");
-                      var response = await http.post(
-                          Uri.parse('http://localhost:8884/v1/updateIcon'),
-                          body: encData,
-                          headers: <String, String>{
-                            'Content-Type': 'application/json',
-                            'Authorization': "Bearer $accessToken",
-                          });
-                      print(
-                          "Update icon response ${response.statusCode} ${response.body}");
-                      setState(() {
-                        errOnUpload = false;
-                      });
-                      BlocProvider.of<FilePickerCubit>(context, listen: false)
-                          .updateFilePicker(media: Map(), filesAttached: 0);
-                      updateImage.sink.add(true);
-                      Provider.of<RoomList>(context, listen: false)
-                          .triggerRerender();
-                    } catch (e) {
-                      print("Exception occured in update icon $e");
-                      setState(() {
-                        errOnUpload = true;
-                      });
-                    }
-                  },
-                ),
-              ),
+              this.widget.data["roomId"] != ""
+                  ? StreamBuilder(
+                      stream: updateImage.stream,
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData) {
+                          return Image(
+                              height: 300,
+                              width: 300,
+                              image:
+                                  iconImageWrapper(this.widget.data["roomId"]));
+                        }
+                        return CircularProgressIndicator();
+                      })
+                  : SizedBox(height: 0),
+              this.widget.data["roomId"] != ""
+                  ? Container(
+                      child: ElevatedButton(
+                        child: Text("Update Icon"),
+                        onPressed: () async {
+                          await _openFileExplorer();
+                          String encData = jsonEncode(
+                              BlocProvider.of<FilePickerCubit>(context,
+                                      listen: false)
+                                  .state
+                                  .media);
+                          final String? accessToken =
+                              await Provider.of<AuthorizationService>(context,
+                                      listen: false)
+                                  .getValidAccessToken();
+                          try {
+                            print("*************************************");
+                            print(encData);
+                            print("*************************************");
+                            var response = await http.post(
+                                Uri.parse(
+                                    'http://localhost:8884/v1/updateIcon'),
+                                body: encData,
+                                headers: <String, String>{
+                                  'Content-Type': 'application/json',
+                                  'Authorization': "Bearer $accessToken",
+                                });
+                            print(
+                                "Update icon response ${response.statusCode} ${response.body}");
+                            setState(() {
+                              errOnUpload = false;
+                            });
+                            BlocProvider.of<FilePickerCubit>(context,
+                                    listen: false)
+                                .updateFilePicker(
+                                    media: Map(), filesAttached: 0);
+                            updateImage.sink.add(true);
+                            Provider.of<RoomList>(context, listen: false)
+                                .triggerRerender();
+                          } catch (e) {
+                            print("Exception occured in update icon $e");
+                            setState(() {
+                              errOnUpload = true;
+                            });
+                          }
+                        },
+                      ),
+                    )
+                  : SizedBox(
+                      height: 0,
+                    ),
               BlocBuilder<RoomMetadataCubit, RoomMetadataMap>(
                 builder: (context, state) {
                   return _createForm(
