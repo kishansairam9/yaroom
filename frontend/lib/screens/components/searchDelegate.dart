@@ -41,13 +41,9 @@ class ExchangeSearchDelegate extends SearchDelegate {
     final String? accessToken =
         await Provider.of<AuthorizationService>(context, listen: false)
             .getValidAccessToken();
-    var req = await http.post(Uri.parse('http://localhost:8884/v1/search'),
-        body: jsonEncode(<String, dynamic>{
-          'exchangeId': exchangeId,
-          'msgType': msgType,
-          'limit': limit,
-          'searchString': query.toLowerCase()
-        }),
+    var req = await http.get(
+        Uri.parse(
+            'http://localhost:8884/v1/search?exchangeId=$exchangeId&msgType=$msgType&limit=$limit&searchString=${query.toLowerCase()}'),
         headers: <String, String>{
           'Content-Type': 'application/json',
           'Authorization': "Bearer $accessToken",
