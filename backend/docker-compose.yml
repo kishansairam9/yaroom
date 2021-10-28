@@ -4,7 +4,7 @@ services:
 
   nats-js:
     container_name: yaroom-nats-js
-    image: nats:2.3.2
+    image: nats:2.6.2
     ports:
       - "4222:4222"
       - "8222:8222"
