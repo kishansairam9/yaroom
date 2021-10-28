@@ -105,6 +105,11 @@ type friendRequest struct {
 	Status string `json:"status" binding:"required"`
 }
 
+type deleteChannel struct {
+	RoomId    string `json:"roomId" binding:"required"`
+	ChannelId string `json:"channelId" binding:"required"`
+}
+
 const (
 	SendRequest   = "1"
 	AcceptRequest = "2"
@@ -244,6 +249,38 @@ func updateRoomHandler(g *gin.Context) {
 		sendUpdateOnStream([]string{"ROOM:" + data.Roomid}, encAug)
 	})
 	g.JSON(200, roomDetails{RoomId: data.Roomid, Name: data.Name, Description: *data.Description, RoomIcon: *data.Image, RoomMembers: users_list, ChannelsList: data.Channelslist})
+}
+
+func deleteChannelHandler(g *gin.Context) {
+	var req deleteChannel
+	if err := g.BindJSON(&req); err != nil {
+		log.Info().Str("where", "bind json").Str("type", "failed to parse body to json").Msg(err.Error())
+		return
+	}
+
+	err := deleteChannelsOfRoom(req.RoomId, req.ChannelId)
+	if err != nil {
+		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	obj, err := getRoomMetadata(req.RoomId)
+	if err != nil {
+		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	encObj, err := json.Marshal(obj)
+	if err != nil {
+		g.AbortWithStatusJSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	m := make(map[string]interface{})
+	_ = json.Unmarshal(encObj, &m)
+	m["update"] = "room"
+	m["delChannel"] = req.ChannelId
+	encAug, _ := json.Marshal(m)
+	sendUpdateOnStream([]string{"ROOM:" + req.RoomId}, encAug)
+	g.JSON(200, gin.H{"success": true})
+
 }
 
 func getUserDetailsHandler(g *gin.Context) {

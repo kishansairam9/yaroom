@@ -122,6 +122,8 @@ func main() {
 
 		// Exit Group
 		secured.POST("/exitGroup", exitGroupHandler)
+		// Delete Channel
+		secured.POST("/deleteChannel", deleteChannelHandler)
 
 		//Edit Room
 		secured.POST("/editRoomDetails", updateRoomHandler)
@@ -177,6 +179,8 @@ func main() {
 
 		//Room Details
 		testing.POST("/editRoomDetails", updateRoomHandler)
+		// Delete Channel
+		testing.POST("/deleteChannel", deleteChannelHandler)
 
 		//Exit Room
 		testing.POST("/exitRoom", exitRoomHandler)

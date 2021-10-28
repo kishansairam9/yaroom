@@ -14,7 +14,7 @@ packages:
       name: analyzer
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.7.1"
+    version: "1.7.2"
   analyzer_plugin:
     dependency: transitive
     description:
@@ -42,7 +42,7 @@ packages:
       name: async
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.6.1"
+    version: "2.8.1"
   auth0:
     dependency: "direct main"
     description:
@@ -154,7 +154,7 @@ packages:
       name: charcode
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.2.0"
+    version: "1.3.1"
   checked_yaml:
     dependency: transitive
     description:
@@ -265,10 +265,10 @@ packages:
     description:
       path: "."
       ref: HEAD
-      resolved-ref: "244742f0e5c13e74a887311eff0e8449214d6532"
-      url: "https://github.com/kishansairam9/emoji_picker_flutter"
+      resolved-ref: b42052ea6bafc0fc8ab27e77b9f8994a86d030d3
+      url: "https://github.com/Fintasys/emoji_picker_flutter"
     source: git
-    version: "1.0.7"
+    version: "1.1.0"
   equatable:
     dependency: "direct main"
     description:
@@ -556,7 +556,7 @@ packages:
       name: meta
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.3.0"
+    version: "1.7.0"
   mime:
     dependency: transitive
     description:
@@ -869,7 +869,7 @@ packages:
       name: test_api
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.3.0"
+    version: "0.4.2"
   timezone:
     dependency: transitive
     description:

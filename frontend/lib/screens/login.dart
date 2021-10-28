@@ -83,6 +83,8 @@ class LandingPage extends StatelessWidget {
       final String name =
           await Provider.of<AuthorizationService>(context, listen: false)
               .getName();
+      await Provider.of<AppDb>(context, listen: false).deleteAll();
+      await Provider.of<AppDb>(context, listen: false).createAll();
       // Backend hanldes user new case :)
       // visit route `getUserDetails`
       await fetchUserDetails(accessToken!, name, context);
@@ -105,12 +107,6 @@ class LandingPage extends StatelessWidget {
       }
       Provider.of<ChatMetaCubit>(context, listen: false)
           .setUser(userid, lastMsgRead);
-      Provider.of<ChatMetaCubit>(context, listen: false)
-          .state
-          .lastMsgRead
-          .forEach((k, v) {
-        print("***************** $k last read $v");
-      });
       await Future.delayed(Duration(seconds: 2), () async {
         var groups = await RepositoryProvider.of<AppDb>(context, listen: false)
             .getGroupsMetadata()

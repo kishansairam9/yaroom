@@ -20,7 +20,7 @@ dependencies:
   cupertino_icons: ^1.0.2
   emoji_picker_flutter:
     git:
-      url: https://github.com/kishansairam9/emoji_picker_flutter
+      url: https://github.com/Fintasys/emoji_picker_flutter
   equatable: ^2.0.3
   faker: ^2.0.0
   file_picker: ^3.0.3

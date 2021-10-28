@@ -34,8 +34,7 @@ import 'utils/fetchBackendData.dart';
 import 'blocs/groupMetadata.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'blocs/friendRequestsData.dart';
-
-bool removeExistingDB = true;
+import 'package:moor/moor.dart';
 
 const AndroidNotificationChannel channel = AndroidNotificationChannel(
   'high_importance_channel', // id
@@ -44,9 +43,9 @@ const AndroidNotificationChannel channel = AndroidNotificationChannel(
   importance: Importance.max,
 );
 
-AppDb db = constructDb(logStatements: true, removeExisting: removeExistingDB);
-
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  moorRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+  AppDb db = constructDb(logStatements: true);
   print("Handling a background message: ${message.messageId}");
   HydratedBloc.storage = await HydratedStorage.build(
     storageDirectory: kIsWeb
@@ -63,9 +62,9 @@ Future<void> main() async {
     final license = await rootBundle.loadString('fonts/OFL.txt');
     yield LicenseEntryWithLineBreaks(['google_fonts'], license);
   });
-
   WidgetsFlutterBinding.ensureInitialized();
-
+  moorRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+  AppDb db = constructDb(logStatements: true);
   await Firebase.initializeApp();
 
   String? fcmToken = await FirebaseMessaging.instance.getToken(
@@ -317,6 +316,8 @@ class MyApp extends StatelessWidget {
       if (accessToken == null) {
         return Future.value('/signin');
       }
+      await Provider.of<AppDb>(context, listen: false).deleteAll();
+      await Provider.of<AppDb>(context, listen: false).createAll();
       msgExchangeStream.start('ws://localhost:8884/v1/ws', accessToken);
 
       // Handle refresh token update
@@ -488,18 +489,21 @@ class MaterialAppWrapper extends StatefulWidget {
 class _MaterialAppWrapperState extends State<MaterialAppWrapper>
     with WidgetsBindingObserver {
   late final ActiveStatusNotifier activityNotify;
+  Timer? activeFuture;
   _MaterialAppWrapperState({required this.activityNotify});
 
   @override
   void initState() {
     // Handle refresh token update
     super.initState();
+    activeFuture = Timer.periodic(Duration(seconds: 3), activityNotify.send);
     WidgetsBinding.instance?.addObserver(this);
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance?.removeObserver(this);
+    activeFuture?.cancel();
     super.dispose();
   }
 
@@ -507,13 +511,13 @@ class _MaterialAppWrapperState extends State<MaterialAppWrapper>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       print("Started sending active status!!!");
-      activityNotify.start();
-    } else if (state == AppLifecycleState.detached) {
-      print("Stopped sending active status!!!");
-      activityNotify.stop();
-    } else if (state == AppLifecycleState.paused) {
-      print("Stopped sending active status!!!");
-      activityNotify.stop();
+      activeFuture = Timer.periodic(Duration(seconds: 3), activityNotify.send);
+    } else {
+      if (activeFuture != null) {
+        print("Stopped sending active status!!!");
+        activeFuture!.cancel();
+        activeFuture = null;
+      }
     }
   }
 

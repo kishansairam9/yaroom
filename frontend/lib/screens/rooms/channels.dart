@@ -107,6 +107,21 @@ class ChannelsTileState extends State<ChannelsTile> {
           ),
           actions: [
             ElevatedButton(
+                child: Text("Delete Channel"),
+                onPressed: () async {
+                  var res =
+                      await deleteChannel(widget.roomId, channelid, context);
+                  if (res == null) {
+                    ScaffoldMessenger.of(context).clearSnackBars();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Channel Delete Failed, try again!')),
+                    );
+                    return;
+                  }
+                  Navigator.pop(context);
+                }),
+            ElevatedButton(
                 child: Text("Submit"),
                 onPressed: () async {
                   if (ChannelController.text != '') {
@@ -135,21 +150,6 @@ class ChannelsTileState extends State<ChannelsTile> {
                     }
                     Navigator.pop(context);
                   }
-                }),
-            ElevatedButton(
-                child: Text("Delete Channel"),
-                onPressed: () async {
-                  var res =
-                      await deleteChannel(widget.roomId, channelid, context);
-                  if (res == null) {
-                    ScaffoldMessenger.of(context).clearSnackBars();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Channel Delete Failed, try again!')),
-                    );
-                    return;
-                  }
-                  Navigator.pop(context);
                 })
           ],
         );
