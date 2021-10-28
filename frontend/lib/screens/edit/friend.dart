@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../utils/backendRequests.dart';
+import '../../utils/types.dart';
+import '../../moor/db.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class AddFriend extends StatefulWidget {
   const AddFriend({Key? key}) : super(key: key);
@@ -11,6 +15,14 @@ class AddFriend extends StatefulWidget {
 
 class AddFriendState extends State<AddFriend> {
   final _formKey = GlobalKey<FormState>();
+
+  final myController = TextEditingController();
+
+  @override
+  void dispose() {
+    myController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,8 +38,11 @@ class AddFriendState extends State<AddFriend> {
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.headline6!),
             TextFormField(
+              controller: myController,
               decoration: const InputDecoration(
-                  icon: Icon(Icons.person_add), labelText: 'Enter Username'),
+                icon: Icon(Icons.person_add),
+                labelText: 'Enter Username',
+              ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Please enter username';
@@ -38,10 +53,17 @@ class AddFriendState extends State<AddFriend> {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16.0),
               child: ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   if (_formKey.currentState!.validate()) {
+                    _formKey.currentState!.save();
+                    String uid = myController.text;
+                    await friendRequest(
+                        uid, FriendRequestType.pending.index, context);
+                    await RepositoryProvider.of<AppDb>(context)
+                        .updateFriendRequest(status: 5, userId: uid);
+                    ScaffoldMessenger.of(context).clearSnackBars();
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Processing Data')),
+                      const SnackBar(content: Text('Sent Request')),
                     );
                   }
                 },

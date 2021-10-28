@@ -113,110 +113,141 @@ class _FriendsViewState extends State<FriendsView> {
                         });
                   }).toList()),
                   Scaffold(
-                    bottomSheet: Container(
-                        height: 40,
-                        width: MediaQuery.of(context).size.width,
-                        child: Center(
-                            child: Text(
-                          'Swipe Left or Right to Accept or Delete requests',
-                          style: TextStyle(
-                              color: Theme.of(context).primaryColorLight),
-                        ))),
-                    body: SingleChildScrollView(
-                      // physics: ScrollPhysics(),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          ListView.separated(
-                              shrinkWrap: true,
-                              // scrollDirection: Axis.vertical,
-                              physics: NeverScrollableScrollPhysics(),
-                              itemCount: friendRequestsList.length,
-                              separatorBuilder: (_, index) =>
-                                  friendRequestsList[index].status ==
-                                          FriendRequestType.pending.index
-                                      ? const Divider()
-                                      : SizedBox(
-                                          height: 0,
-                                        ),
-                              itemBuilder: (context, index) {
-                                var result = friendRequestsList[index];
-                                User f = User(
-                                    name: result.name,
-                                    about: result.about,
-                                    userId: result.userId);
-                                if (result.status !=
-                                    FriendRequestType.pending.index)
-                                  return const SizedBox(
-                                    height: 0,
-                                  );
-                                return Dismissible(
-                                  background: Container(
-                                      padding:
-                                          const EdgeInsets.only(left: 10.0),
-                                      child: Align(
-                                          alignment: Alignment.centerLeft,
-                                          child: Icon(Icons.person_remove)),
-                                      color: Colors.red),
-                                  secondaryBackground: Container(
-                                      padding:
-                                          const EdgeInsets.only(right: 10.0),
-                                      child: Align(
-                                          alignment: Alignment.centerRight,
-                                          child: Icon(Icons.person_add)),
-                                      color: Colors.green),
-                                  onDismissed:
-                                      (DismissDirection direction) async {
-                                    await friendRequest(
-                                        f.userId,
-                                        (direction ==
-                                                DismissDirection.endToStart)
-                                            ? FriendRequestType.friend.index
-                                            : FriendRequestType.reject.index,
-                                        context);
-                                    await RepositoryProvider.of<AppDb>(context)
-                                        .updateFriendRequest(
-                                            status: (direction ==
-                                                    DismissDirection.endToStart)
-                                                ? FriendRequestType.friend.index
-                                                : FriendRequestType
-                                                    .pending.index,
-                                            userId: f.userId);
-                                    result.status = (direction ==
-                                            DismissDirection.endToStart)
-                                        ? FriendRequestType.friend.index
-                                        : FriendRequestType.reject.index;
-                                    await Provider.of<DMsList>(context,
-                                            listen: false)
-                                        .updateChats(context);
-                                    friendRequestsList.removeAt(index);
-                                    Provider.of<FriendRequestCubit>(context,
-                                            listen: false)
-                                        .update(result);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                            content: Text(direction ==
-                                                    DismissDirection.endToStart
-                                                ? "Added as Friend!"
-                                                : "Request Deleted.")));
-                                  },
-                                  key: ValueKey<FriendRequestData>(
-                                      friendRequestsList[index]),
-                                  child: ListTile(
-                                    onTap: () => _showContact(context, result),
-                                    leading: CircleAvatar(
-                                        foregroundImage:
-                                            iconImageWrapper(f.userId)),
-                                    title: Text(f.name),
-                                  ),
+                    body: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ListView.separated(
+                            shrinkWrap: true,
+                            physics: NeverScrollableScrollPhysics(),
+                            itemCount: friendRequestsList.length,
+                            separatorBuilder: (_, index) =>
+                                friendRequestsList[index].status ==
+                                        FriendRequestType.pending.index
+                                    ? const Divider()
+                                    : SizedBox(
+                                        height: 0,
+                                      ),
+                            itemBuilder: (context, index) {
+                              var result = friendRequestsList[index];
+                              User f = User(
+                                  name: result.name,
+                                  about: result.about,
+                                  userId: result.userId);
+                              if (result.status !=
+                                  FriendRequestType.pending.index)
+                                return const SizedBox(
+                                  height: 0,
                                 );
-                              }),
-                          SizedBox(
-                            height: 40,
-                          ),
-                        ],
-                      ),
+                              String uid =
+                                  Provider.of<UserId>(context, listen: false);
+                              return ListTile(
+                                  onTap: () => showModalBottomSheet(
+                                      context: context,
+                                      builder: (BuildContext c) {
+                                        return BlocBuilder<FriendRequestCubit,
+                                                FriendRequestDataMap>(
+                                            bloc: null,
+                                            builder: (context, state) {
+                                              if (state.data
+                                                  .containsKey(result.userId)) {
+                                                return ViewContact(
+                                                    state.data[result.userId]!,
+                                                    uid);
+                                              } else {
+                                                return ViewContact(
+                                                    FriendRequestData(
+                                                        userId: result.userId,
+                                                        name: result.name,
+                                                        about: result.about,
+                                                        status: -1),
+                                                    uid);
+                                              }
+                                            });
+                                      }),
+                                  tileColor: Colors.transparent,
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    children: [
+                                      IconButton(
+                                        icon: Icon(Icons.check_circle),
+                                        color: Colors.green,
+                                        onPressed: () async {
+                                          await friendRequest(
+                                              f.userId,
+                                              FriendRequestType.friend.index,
+                                              context);
+                                          await RepositoryProvider.of<AppDb>(
+                                                  context)
+                                              .updateFriendRequest(
+                                                  status: FriendRequestType
+                                                      .friend.index,
+                                                  userId: f.userId);
+                                          result.status =
+                                              FriendRequestType.friend.index;
+                                          await Provider.of<DMsList>(context,
+                                                  listen: false)
+                                              .updateChats(context);
+                                          friendRequestsList.removeAt(index);
+                                          Provider.of<FriendRequestCubit>(
+                                                  context,
+                                                  listen: false)
+                                              .update(result);
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(SnackBar(
+                                                  content: Text(
+                                                      "Added as Friend!")));
+                                        },
+                                      ),
+                                      IconButton(
+                                          icon: Icon(Icons.close),
+                                          color: Colors.red,
+                                          onPressed: () async {
+                                            await friendRequest(
+                                                f.userId,
+                                                FriendRequestType.reject.index,
+                                                context);
+                                            await RepositoryProvider.of<AppDb>(
+                                                    context)
+                                                .updateFriendRequest(
+                                                    status: FriendRequestType
+                                                        .reject.index,
+                                                    userId: f.userId);
+                                            result.status =
+                                                FriendRequestType.reject.index;
+                                            await Provider.of<DMsList>(context,
+                                                    listen: false)
+                                                .updateChats(context);
+                                            friendRequestsList.removeAt(index);
+                                            Provider.of<FriendRequestCubit>(
+                                                    context,
+                                                    listen: false)
+                                                .update(result);
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(SnackBar(
+                                                    content: Text(
+                                                        "Request Deleted.")));
+                                          })
+                                    ],
+                                  ),
+                                  leading: Stack(
+                                    children: [
+                                      CircleAvatar(
+                                        backgroundColor: Colors.grey[350],
+                                        foregroundImage:
+                                            iconImageWrapper(result.userId),
+                                      )
+                                    ],
+                                  ),
+                                  title: Text(
+                                    result.name,
+                                  ));
+                            }),
+                        SizedBox(
+                          height: 40,
+                        ),
+                      ],
                     ),
                   ),
                   AddFriend()
