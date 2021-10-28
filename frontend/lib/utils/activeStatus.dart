@@ -14,7 +14,7 @@ class ActiveStatusNotifier {
       await Future.delayed(Duration(seconds: 3));
       if (running) {
         if (ws.initalized) {
-          print("SENT ACTIVE TRUE");
+          // print("SENT ACTIVE TRUE");
           ws.sendWSMessage(jsonEncode({"type": "Active"}));
         } else {
           print("not sending activity status as ws not yet initalized");

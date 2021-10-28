@@ -248,9 +248,12 @@ class _CreateRoomState extends State<CreateRoom> {
           leading: Builder(
               builder: (context) => IconButton(
                   onPressed: () async {
-                    if (this.widget.data["roomId"] == "")
+                    if (this.widget.data["roomId"] == "" || this.widget.data["roomId"]==null)
                       Navigator.pop(context);
                     else {
+                      print("redirect to room");
+                      print(this.widget.data["roomId"]);
+                      print(this.widget.data["name"]);
                       await Navigator.of(context).pushReplacementNamed('/',
                           arguments: HomePageArguments(
                               index: 0,

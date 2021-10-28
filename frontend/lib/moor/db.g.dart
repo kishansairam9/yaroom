@@ -3799,6 +3799,16 @@ abstract class _$AppDb extends GeneratedDatabase {
     );
   }
 
+  Future<int> deleteChannelFromRoom(
+      {required String roomId, required String channelId}) {
+    return customUpdate(
+      'DELETE FROM RoomsChannels WHERE roomId = ?1 AND channelId = ?2',
+      variables: [Variable<String>(roomId), Variable<String>(channelId)],
+      updates: {roomsChannels},
+      updateKind: UpdateKind.delete,
+    );
+  }
+
   Selectable<RoomsChannel> getChannelsOfRoom({required String roomID}) {
     return customSelect(
         'SELECT RC.* FROM RoomsChannels AS RC WHERE RC.roomId = ?1',

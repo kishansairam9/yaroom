@@ -129,6 +129,32 @@ Future<dynamic> exitRoom(String roomId, BuildContext context) async {
   }
 }
 
+Future<dynamic> deleteChannel(String roomId, String channelId, BuildContext context) async {
+  String? accessToken =
+      await Provider.of<AuthorizationService>(context, listen: false)
+          .getValidAccessToken();
+  if (accessToken == null) {
+    return Future.value('/signin');
+  }
+  try {
+    var response =
+        await http.post(Uri.parse('http://localhost:8884/v1/deleteChannel'),
+            body: jsonEncode(<String, dynamic>{
+              "roomId": roomId,
+              "channelId": channelId
+            }),
+            headers: <String, String>{
+          'Content-Type': 'application/json',
+          'Authorization': "Bearer $accessToken",
+        });
+    print("Channel delete response ${response.statusCode} ${response.body}");
+    return response.body;
+  } catch (e) {
+    print("Exception occured while exiting user from room $e");
+    return null;
+  }
+}
+
 Future<dynamic> friendRequest(
     String userId, int status, BuildContext context) async {
   String? accessToken =

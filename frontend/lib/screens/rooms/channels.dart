@@ -129,7 +129,7 @@ class ChannelsTileState extends State<ChannelsTile> {
                       ScaffoldMessenger.of(context).clearSnackBars();
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                            content: Text('Channel Create Failed, try again!')),
+                            content: Text('Channel Edit Failed, try again!')),
                       );
                       return;
                     }
@@ -139,29 +139,17 @@ class ChannelsTileState extends State<ChannelsTile> {
             ElevatedButton(
                 child: Text("Delete Channel"),
                 onPressed: () async {
-                  var newRoomChannels =
-                        state.data[widget.roomId]!.roomChannels;
-                    newRoomChannels.remove(channelid);
-                    var res = await editRoom(
-                        jsonEncode(<String, dynamic>{
-                          "roomId": widget.roomId,
-                          "name": state.data[widget.roomId]!.name,
-                          "description": state.data[widget.roomId]!.description,
-                          "roomMembers": state.data[widget.roomId]!.roomMembers
-                              .map((e) => e.userId)
-                              .toList(),
-                          "channelsList": newRoomChannels
-                        }),
-                        context);
-                    if (res == null) {
-                      ScaffoldMessenger.of(context).clearSnackBars();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Channel Create Failed, try again!')),
-                      );
-                      return;
-                    }
-                    Navigator.pop(context);
+                  var res =
+                      await deleteChannel(widget.roomId, channelid, context);
+                  if (res == null) {
+                    ScaffoldMessenger.of(context).clearSnackBars();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Channel Delete Failed, try again!')),
+                    );
+                    return;
+                  }
+                  Navigator.pop(context);
                 })
           ],
         );

@@ -182,6 +182,10 @@ Future<void> main() async {
           await db.removeUserFromRoom(
               userId: data['delUser'], roomId: data["Roomid"]);
         }
+        if (data.containsKey('delChannel')) {
+          await db.deleteChannelFromRoom(
+              roomId: data['Roomid'], channelId: data["delChannel"]);
+        }
         var roomChannels = new Map<String, String>();
         if (data["Channelslist"] != null) {
           for (var channel in data["Channelslist"].keys) {
@@ -189,8 +193,12 @@ Future<void> main() async {
                 roomId: data["Roomid"],
                 channelId: channel,
                 channelName: data["Channelslist"][channel]);
-            roomChannels[channel] = data["Channelslist"][channel];
           }
+        }
+        var roomChannelsList =
+            await db.getChannelsOfRoom(roomID: data["Roomid"]).get();
+        for (var channel in roomChannelsList) {
+          roomChannels[channel.channelId] = channel.channelName;
         }
         var roomMembers = await db.getRoomMembers(roomID: data["Roomid"]).get();
         var d = RoomMetadata(

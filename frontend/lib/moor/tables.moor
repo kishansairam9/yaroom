@@ -239,7 +239,7 @@ removeUserFromRoom(:roomId AS TEXT, :userId AS TEXT): DELETE from RoomsUserMappi
 -- Rooms-Channels Mapping Table
 -------------
 addChannelsToRoom(:channelId AS TEXT, :roomId AS TEXT, :channelName as TEXT): INSERT OR REPLACE INTO RoomsChannels VALUES (:roomId, :channelId, :channelName);
-
+deleteChannelFromRoom(:channelId AS TEXT, :roomId AS TEXT): DELETE FROM RoomsChannels WHERE roomId= :roomId AND channelId = :channelId;
 getChannelsOfRoom(:roomID AS TEXT): SELECT RC.* FROM RoomsChannels AS RC WHERE RC.roomId = :roomID;
 getChannelName(:roomId AS TEXT, :channelId AS TEXT): SELECT * FROM RoomsChannels WHERE roomId = :roomId AND channelId = :channelId;
 -------------

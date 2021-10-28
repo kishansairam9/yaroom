@@ -192,7 +192,7 @@ class HomePageState extends State<HomePage> {
     );
   }
 
-  _getEndDrawer(BuildContext context, String? roomId) {
+  _getEndDrawer(BuildContext context, String? roomId, String? roomname) {
     return BlocBuilder<RoomMetadataCubit, RoomMetadataMap>(
         builder: (BuildContext context, state) {
       if (state.data.containsKey(roomId)) {
@@ -216,8 +216,10 @@ class HomePageState extends State<HomePage> {
                             IconButton(
                                 onPressed: () => {
                                       Navigator.pushReplacementNamed(
-                                          context, '/editroom',
-                                          arguments: {"roomId": roomId})
+                                          context, '/editroom', arguments: {
+                                        "roomId": roomId,
+                                        "name": roomname
+                                      })
                                     },
                                 tooltip: "Edit Room",
                                 icon: Icon(Icons.edit)),
@@ -571,7 +573,7 @@ class HomePageState extends State<HomePage> {
                 endDrawer: currentIndex == 0
                     ? (roomflag == false
                         ? (SelectRoomPage())
-                        : _getEndDrawer(context, roomId))
+                        : _getEndDrawer(context, roomId, metastate.data[roomId]!.name))
                     : null,
                 body: SizedBox.expand(
                   child: PageView(
