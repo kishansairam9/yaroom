@@ -29,57 +29,46 @@ func ensureStreamsExist(streams []string) error {
 
 func monitorStreams(userId string, streams []string, inputChan <-chan interface{}, quit <-chan bool) {
 	// Not a fatal errors here, so don't need to close conn to user for this
-	currentActivity := false
-	inactiveCount := 0
-	lastActiveSent := time.Now()
+	currentActivity := true
+	lastGotTrue := time.Now()
+	lastActiveSent := time.Now().AddDate(0, 0, -1)
 	lastSent := false
+	var sendState = func(cur, last bool) bool {
+		if last && (time.Since(lastGotTrue).Seconds() > 10) {
+			fmt.Println("DEBUG PRINT setting inactive after timeout")
+			cur = false
+		}
+		data := ActiveStatus{Userid: userId, Active: cur}
+		enc, _ := json.Marshal(data)
+		err := userSendOnStream(userId, streams, enc)
+		if err != nil {
+			log.Warn().Str("where", "send data on stream").Str("type", "failed to send data").Msg(err.Error())
+		}
+		lastActiveSent = time.Now()
+		return cur
+	}
 	for {
 		select {
 		case data := <-inputChan:
-			unwrap, ok := data.(ActiveStatus)
+			_, ok := data.(ActiveStatus)
 			// if ok, then active status
 			if !ok {
 				enc, _ := json.Marshal(data)
-				// TODO Remove debug print
-				fmt.Println("received from " + userId + "::::\n" + string(enc))
 				err := userSendOnStream(userId, streams, enc)
 				if err != nil {
 					log.Warn().Str("where", "send data on stream").Str("type", "failed to send data").Msg(err.Error())
 				}
 			} else {
-				currentActivity = unwrap.Active
+				currentActivity = true
+				lastGotTrue = time.Now()
 			}
-			if lastSent != currentActivity || time.Since(lastActiveSent).Seconds() > 3 {
-				data := ActiveStatus{Userid: userId, Active: currentActivity}
-				enc, _ := json.Marshal(data)
-				err := userSendOnStream(userId, streams, enc)
-				if err != nil {
-					log.Warn().Str("where", "send data on stream").Str("type", "failed to send data").Msg(err.Error())
-				}
+			if time.Since(lastActiveSent).Seconds() > 3 {
+				currentActivity = sendState(currentActivity, lastSent)
 				lastSent = currentActivity
-				if currentActivity {
-					inactiveCount = 0
-				}
-				lastActiveSent = time.Now()
 			}
-		case <-time.After(15 * time.Second):
-			if time.Since(lastActiveSent).Seconds() < 7 {
-				continue
-			}
-			fmt.Println("DEBUG PRINT SENDING inactive after 10 sec timeout")
-			inactiveCount += 1
-			if inactiveCount > 2 {
-				currentActivity = false
-				data := ActiveStatus{Userid: userId, Active: currentActivity}
-				enc, _ := json.Marshal(data)
-				err := userSendOnStream(userId, streams, enc)
-				if err != nil {
-					log.Warn().Str("where", "send data on stream").Str("type", "failed to send data").Msg(err.Error())
-				}
-				lastSent = currentActivity
-				lastActiveSent = time.Now()
-				inactiveCount = 0
-			}
+		case <-time.After(3 * time.Second):
+			currentActivity = sendState(currentActivity, lastSent)
+			lastSent = currentActivity
 		case <-quit:
 			data := ActiveStatus{Userid: userId, Active: false}
 			enc, _ := json.Marshal(data)
