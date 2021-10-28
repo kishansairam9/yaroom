@@ -32,7 +32,12 @@ func main() {
 	var err error
 	// Jet stream
 	{
-		nc, err := nats.Connect("localhost:4222")
+		nc, err := nats.Connect("localhost:4222", nats.ErrorHandler(func(c *nats.Conn, s *nats.Subscription, e error) {
+			if e.Error() == "nats: slow consumer, messages dropped" {
+				return
+			}
+			log.Error().Str("where", "nats error callback").Str("type", "on subscription "+s.Subject).Msg(err.Error())
+		}))
 		if err != nil {
 			log.Fatal().Str("where", "nats connect").Str("type", "failed to connect to nats").Msg(err.Error())
 		}

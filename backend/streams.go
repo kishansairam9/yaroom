@@ -42,7 +42,7 @@ func monitorStreams(userId string, streams []string, inputChan <-chan interface{
 		enc, _ := json.Marshal(data)
 		err := userSendOnStream(userId, streams, enc)
 		if err != nil {
-			log.Warn().Str("where", "send data on stream").Str("type", "failed to send data").Msg(err.Error())
+			log.Warn().Str("where", "send data on stream").Str("type", "failed to send activity").Msg(err.Error())
 		}
 		lastActiveSent = time.Now()
 		return cur
@@ -74,7 +74,7 @@ func monitorStreams(userId string, streams []string, inputChan <-chan interface{
 			enc, _ := json.Marshal(data)
 			err := userSendOnStream(userId, streams, enc)
 			if err != nil {
-				log.Warn().Str("where", "send data on stream").Str("type", "failed to send data").Msg(err.Error())
+				log.Warn().Str("where", "send data on stream").Str("type", "failed to send active").Msg(err.Error())
 			}
 			return
 		}
