@@ -63,6 +63,11 @@ class RoomsCubit extends HydratedCubit<RoomsState> {
         RoomsState(lastActive: state.lastActive, lastOpened: state.lastOpened));
   }
 
+  void resetChannel(String roomId) {
+    state.lastOpened.remove(roomId);
+    emit(RoomsState(lastActive: state.lastActive, lastOpened: state.lastOpened));
+  }
+
   void reset() {
     emit(RoomsState(lastOpened: Map()));
   }

@@ -110,6 +110,8 @@ class ChannelsTileState extends State<ChannelsTile> {
                 onPressed: () async {
                   var res =
                       await deleteChannel(widget.roomId, channelid, context);
+                  BlocProvider.of<RoomsCubit>(context, listen: false)
+                      .resetChannel(widget.roomId);
                   if (res == null) {
                     ScaffoldMessenger.of(context).clearSnackBars();
                     ScaffoldMessenger.of(context).showSnackBar(
