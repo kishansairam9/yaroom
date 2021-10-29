@@ -74,19 +74,6 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     return false;
   }
 
-  void savefile(data) async {
-    final directory = await getTemporaryDirectory();
-    if (!await directory.exists()) {
-      await directory.create(recursive: true);
-    }
-    print(directory.path + '/' + data['name']);
-    var file = await File(directory.path + '/' + data['name'])
-        .writeAsBytes(Uint8List.fromList(data['bytes'].cast<int>()));
-
-    await saveFileToMediaStore(file, data['name']);
-    await file.delete();
-  }
-
   Future<Widget> _buildSingleMessage(
       BuildContext context, ChatMessage msg, bool isMe) async {
     String? accessToken =
@@ -107,7 +94,7 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
       }
     } else {
       var media = await http.get(
-          Uri.parse('http://localhost:8884/v1/media/' + msg.media!),
+          Uri.parse('$BACKEND_URL/v1/media/' + msg.media!),
           headers: <String, String>{
             'Content-Type': 'application/json',
             'Authorization': "Bearer $accessToken",
@@ -118,7 +105,6 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
         if (['jpg', 'jpeg', 'png'].contains(temp.last)) {
           return Image.memory(Uint8List.fromList(data['bytes'].cast<int>()));
         } else {
-          print('hi');
           return Row(
             children: [
               Text(data['name']),
@@ -126,7 +112,7 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                 icon: const Icon(Icons.file_download),
                 tooltip: 'download',
                 onPressed: () {
-                  savefile(data);
+                  savefile(data, context);
                 },
               ),
             ],
@@ -145,7 +131,7 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                         icon: const Icon(Icons.file_download),
                         tooltip: 'download',
                         onPressed: () {
-                          savefile(data);
+                          savefile(data, context);
                         },
                       ),
                     ],
@@ -190,7 +176,7 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                           if (snapshot.hasData) {
                             return snapshot.data!;
                           }
-                          return CircularProgressIndicator();
+                          return LoadingBar;
                         });
                   },
                 )),
@@ -257,7 +243,7 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
       }
       var req = await http.get(
           Uri.parse(
-              'http://localhost:8884/v1/getOlderMessages?msgType=ChatMessage&lastMsgId=' +
+              '$BACKEND_URL/v1/getOlderMessages?msgType=ChatMessage&lastMsgId=' +
                   msgs[0].msgId +
                   '&exchangeId=' +
                   getExchangeId() +
@@ -497,7 +483,7 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
             return SnackBar(
                 content: Text('Error has occured while reading from local DB'));
           }
-          return CircularProgressIndicator();
+          return LoadingBar;
         });
   }
 }

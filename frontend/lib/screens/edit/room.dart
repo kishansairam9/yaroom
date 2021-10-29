@@ -299,7 +299,7 @@ class _CreateRoomState extends State<CreateRoom> {
                               image:
                                   iconImageWrapper(this.widget.data["roomId"]));
                         }
-                        return CircularProgressIndicator();
+                        return LoadingBar;
                       })
                   : SizedBox(height: 0),
               this.widget.data["roomId"] != ""
@@ -322,8 +322,7 @@ class _CreateRoomState extends State<CreateRoom> {
                             print(encData);
                             print("*************************************");
                             var response = await http.post(
-                                Uri.parse(
-                                    'http://localhost:8884/v1/updateIcon'),
+                                Uri.parse('$BACKEND_URL/v1/updateIcon'),
                                 body: encData,
                                 headers: <String, String>{
                                   'Content-Type': 'application/json',

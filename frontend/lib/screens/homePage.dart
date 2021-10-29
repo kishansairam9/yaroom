@@ -60,17 +60,23 @@ class HomePageState extends State<HomePage> {
   late int currentIndex;
   late PageController _pageController;
   final GlobalKey<ScaffoldState> _scaffoldkey = new GlobalKey();
+  StreamSubscription<String>? foreSub;
+  StreamSubscription<RemoteMessage>? backSub;
 
   HomePageState({required this.currentIndex});
 
   Future<void> notificationInteractionHandler(
-      Map<String, dynamic> content) async {
+      Map<String, dynamic>? content) async {
+    if (content == null) return;
     print("Interaction handling for $content");
     if (content.containsKey('type')) {
       if (content['type'] == 'ChatMessage') {
         List<User> data = await RepositoryProvider.of<AppDb>(context)
             .getUserById(userId: content['fromUser'])
             .get();
+        while (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
         Navigator.pushNamed(context, '/chat',
             arguments:
                 ChatPageArguments(userId: data[0].userId, name: data[0].name));
@@ -78,40 +84,50 @@ class HomePageState extends State<HomePage> {
         List<GroupDM> data = await RepositoryProvider.of<AppDb>(context)
             .getGroupById(groupId: content['groupId'])
             .get();
+        while (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
         Navigator.pushNamed(context, '/groupchat',
             arguments: GroupChatPageArguments(groupId: data[0].groupId));
       } else if (content['type'] == 'RoomMessage') {
         List<RoomsListData> data = await RepositoryProvider.of<AppDb>(context)
             .getRoomDetails(roomId: content['roomId'])
             .get();
-        Navigator.pushNamed(context, '/room',
+        Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/room',
+            (Route<dynamic> route) =>
+                false, // Need to remove everything on stack as we'll push another homepage
             arguments: RoomArguments(
                 roomId: data[0].roomId,
                 roomName: data[0].name,
                 channelId: content['channelId']));
       }
     } else if (content.containsKey('friendRequest')) {
-      await Navigator.pushReplacementNamed(context, '/',
+      await Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/',
+          (Route<dynamic> route) =>
+              false, // Need to remove everything on stack as we'll push another homepage
           arguments: HomePageArguments(index: 3));
     }
   }
 
-  Future<void> foregroundNotifInteractions() async {
-    foregroundNotifSelect?.stream.listen((String content) async {
+  void foregroundNotifInteractions() {
+    foreSub = foregroundNotifSelect?.stream.listen((String content) async {
       await notificationInteractionHandler(jsonDecode(content));
     });
   }
 
-  Future<void> backgroundNotifInteractions() async {
+  void backgroundNotifInteractions() {
     // Get any messages which caused the application to open from a terminated state.
-    RemoteMessage? initialMessage =
-        await FirebaseMessaging.instance.getInitialMessage();
-    if (initialMessage != null) {
-      await notificationInteractionHandler(initialMessage.data);
-    }
+    FirebaseMessaging.instance
+        .getInitialMessage()
+        .then((value) => notificationInteractionHandler(value?.data));
 
     // Handle any interaction when the app is in the background
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) async {
+    backSub = FirebaseMessaging.onMessageOpenedApp
+        .listen((RemoteMessage message) async {
       await notificationInteractionHandler(message.data);
     });
   }
@@ -127,6 +143,8 @@ class HomePageState extends State<HomePage> {
   @override
   void dispose() {
     _pageController.dispose();
+    foreSub?.cancel();
+    backSub?.cancel();
     super.dispose();
   }
 
@@ -135,7 +153,6 @@ class HomePageState extends State<HomePage> {
         builder: (BuildContext context, state) {
       if (state.data.containsKey(roomId)) {
         return ListTile(
-          // leading: Text("#"),
           title: Text(
             "# " + state.data[roomId]!.roomChannels[channelId]!,
             style: TextStyle(fontSize: 20),
@@ -342,7 +359,7 @@ class HomePageState extends State<HomePage> {
           ]),
         );
       }
-      return CircularProgressIndicator();
+      return LoadingBar;
     });
   }
 
@@ -492,7 +509,7 @@ class HomePageState extends State<HomePage> {
                                       showDialog(
                                           context: context,
                                           builder: (BuildContext context) {
-                                            var ChannelController =
+                                            var channelController =
                                                 TextEditingController();
                                             dialogContext = context;
                                             return AlertDialog(
@@ -506,7 +523,7 @@ class HomePageState extends State<HomePage> {
                                                     children: <Widget>[
                                                       TextFormField(
                                                         controller:
-                                                            ChannelController,
+                                                            channelController,
                                                         decoration:
                                                             InputDecoration(
                                                           labelText: 'Name',
@@ -522,7 +539,7 @@ class HomePageState extends State<HomePage> {
                                                 ElevatedButton(
                                                     child: Text("Submit"),
                                                     onPressed: () async {
-                                                      if (ChannelController
+                                                      if (channelController
                                                               .text !=
                                                           '') {
                                                         var newRoomChannels =
@@ -530,7 +547,7 @@ class HomePageState extends State<HomePage> {
                                                                 .data[roomId]!
                                                                 .roomChannels;
                                                         newRoomChannels[""] =
-                                                            ChannelController
+                                                            channelController
                                                                 .text;
 
                                                         var res =

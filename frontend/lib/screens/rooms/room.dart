@@ -124,7 +124,7 @@ class RoomState extends State<Room> {
       }
     } else {
       var media = await http.get(
-          Uri.parse('http://localhost:8884/v1/media/' + msg.media!),
+          Uri.parse('$BACKEND_URL/v1/media/' + msg.media!),
           headers: <String, String>{
             'Content-Type': 'application/json',
             'Authorization': "Bearer $accessToken",
@@ -204,7 +204,9 @@ class RoomState extends State<Room> {
                                         IconButton(
                                           icon: const Icon(Icons.file_download),
                                           tooltip: 'download',
-                                          onPressed: () {},
+                                          onPressed: () {
+                                            savefile(data, context);
+                                          },
                                         ),
                                       ],
                                     )),
@@ -295,7 +297,9 @@ class RoomState extends State<Room> {
                                             icon:
                                                 const Icon(Icons.file_download),
                                             tooltip: 'download',
-                                            onPressed: () {},
+                                            onPressed: () {
+                                              savefile(data, context);
+                                            },
                                           ),
                                         ],
                                       ),
@@ -341,7 +345,7 @@ class RoomState extends State<Room> {
                 if (snapshot.hasData) {
                   return snapshot.data!;
                 }
-                return CircularProgressIndicator();
+                return LoadingBar;
               });
         },
       ),
@@ -439,7 +443,7 @@ class RoomState extends State<Room> {
       if (widget.channelId != null) {
         var req = await http.get(
             Uri.parse(
-                'http://localhost:8884/v1/getOlderMessages?msgType=RoomMessage&lastMsgId=' +
+                '$BACKEND_URL/v1/getOlderMessages?msgType=RoomMessage&lastMsgId=' +
                     msgs[0].msgId +
                     '&exchangeId=' +
                     widget.roomId +
@@ -633,10 +637,10 @@ class RoomState extends State<Room> {
                               }));
                         }
 
-                        return CircularProgressIndicator();
+                        return LoadingBar;
                       });
                 }
-                return CircularProgressIndicator();
+                return LoadingBar;
               });
       },
     );

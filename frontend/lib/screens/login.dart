@@ -14,6 +14,12 @@ import '../utils/fcmToken.dart';
 import '../utils/fetchBackendData.dart';
 import '../blocs/groupMetadata.dart';
 import '../utils/types.dart';
+import 'dart:async';
+import 'package:yaroom/blocs/groupMetadata.dart';
+import 'package:yaroom/blocs/friendRequestsData.dart';
+import 'package:yaroom/blocs/fcmToken.dart';
+import 'package:yaroom/utils/messageExchange.dart';
+import 'package:yaroom/utils/types.dart';
 
 class LandingViewModel extends ChangeNotifier {
   bool _signingIn = false;
@@ -55,7 +61,7 @@ class LandingPage extends StatelessWidget {
           children: <Widget>[
             Image(image: AssetImage('assets/yaroom_full_logo_200x200.png')),
             viewModel.signingIn || viewModel.signedIn
-                ? CircularProgressIndicator()
+                ? LoadingBar
                 : ElevatedButton(
                     style: ButtonStyle(
                         backgroundColor: MaterialStateProperty.all(
@@ -91,8 +97,7 @@ class LandingPage extends StatelessWidget {
       // This must be before fetch is calleed
       Map<String, String> lastMsgRead = Map();
       try {
-        var response = await http.get(
-            Uri.parse('http://localhost:8884/v1/lastRead'),
+        var response = await http.get(Uri.parse('$BACKEND_URL/v1/lastRead'),
             headers: <String, String>{
               'Content-Type': 'application/json',
               'Authorization': "Bearer $accessToken",
@@ -135,11 +140,11 @@ class LandingPage extends StatelessWidget {
                   .getRoomMembers(roomID: room.roomId)
                   .get();
           var roomChannels = new Map<String, String>();
-          var ChannelList =
+          var channelList =
               await RepositoryProvider.of<AppDb>(context, listen: false)
                   .getChannelsOfRoom(roomID: room.roomId)
                   .get();
-          for (var channel in ChannelList) {
+          for (var channel in channelList) {
             roomChannels[channel.channelId] = channel.channelName;
           }
           var d = RoomMetadata(
@@ -152,10 +157,22 @@ class LandingPage extends StatelessWidget {
           print("added room ${room.roomId} to cubit");
         }
       });
-
+      var friendRequests =
+          await RepositoryProvider.of<AppDb>(context, listen: false)
+              .getFriendRequests()
+              .get();
+      for (var friendRequest in friendRequests) {
+        var d = FriendRequestData(
+            userId: friendRequest.userId,
+            name: friendRequest.name,
+            about: friendRequest.about == null ? "" : friendRequest.about!,
+            status: friendRequest.status == null ? 0 : friendRequest.status!);
+        Provider.of<FriendRequestCubit>(context, listen: false).update(d);
+        print(
+            "added friend request ${friendRequest.name} with status ${friendRequest.status} to the cubit");
+      }
       // visit route `getLaterMessages`
       await fetchLaterMessages(accessToken, null, context);
-
       // Start web socket
       Provider.of<MessageExchangeStream>(context, listen: false)
           .start('ws://localhost:8884/v1/ws', accessToken);

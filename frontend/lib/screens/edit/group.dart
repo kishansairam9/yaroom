@@ -285,7 +285,7 @@ class _CreateGroupState extends State<CreateGroup> {
                               image: iconImageWrapper(
                                   this.widget.data["groupId"]));
                         }
-                        return CircularProgressIndicator();
+                        return LoadingBar;
                       })
                   : SizedBox(height: 0),
               this.widget.data['groupId'] != ""
@@ -305,8 +305,7 @@ class _CreateGroupState extends State<CreateGroup> {
                                   .getValidAccessToken();
                           try {
                             var response = await http.post(
-                                Uri.parse(
-                                    'http://localhost:8884/v1/updateIcon'),
+                                Uri.parse('$BACKEND_URL/v1/updateIcon'),
                                 body: encData,
                                 headers: <String, String>{
                                   'Content-Type': 'application/json',

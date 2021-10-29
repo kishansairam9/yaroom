@@ -57,7 +57,7 @@ class ConnectivityCheckState extends State<ConnectivityCheck> {
         bool prevState = hasConnection;
         bool nextState;
         try {
-          var resp = await http.get(Uri.parse('http://localhost:8884/icon'));
+          var resp = await http.get(Uri.parse('$BACKEND_URL/icon'));
           print(resp.statusCode);
           nextState = resp.statusCode == 200;
           print(nextState);

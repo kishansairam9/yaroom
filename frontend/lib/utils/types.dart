@@ -1,21 +1,35 @@
 export '../moor/db.dart';
+export '../config.dart';
 
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:moor/moor.dart';
 import 'dart:async';
-
+import '../config.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:bloc/bloc.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 typedef UserId = String;
 typedef FCMTokenStream = Stream<String>;
 
 enum ConnectivityFlags { wsActive, wsRetrying, closed }
 
+// A 255, R 0, G 179, B 137 ---- Yaroom Logo color
+const LoadingBar =
+    SpinKitSpinningLines(color: Color.fromARGB(255, 0, 179, 137), size: 150);
+
+const AndroidNotificationChannel channel = AndroidNotificationChannel(
+  'yaroom_high_imp_channel', // id
+  'Yaroom Notifications', // title
+  description: 'Channel used for yaroom notifications', // description
+  importance: Importance.max,
+);
+
 ImageProvider iconImageWrapper(String? src) {
-  String url = "http://localhost:8884/icon";
+  String url = "$BACKEND_URL/icon";
   if (src != null) {
     url += "/" + src;
   }
@@ -46,6 +60,20 @@ class MediaStore {
 Future<void> saveFileToMediaStore(File file, String name) async {
   final mediaStore = MediaStore();
   await mediaStore.addItem(file: file, name: name);
+}
+
+void savefile(data, BuildContext context) async {
+  final directory = await getTemporaryDirectory();
+  if (!await directory.exists()) {
+    await directory.create(recursive: true);
+  }
+  print(directory.path + '/' + data['name']);
+  var file = File(directory.path + '/' + data['name']);
+  file.writeAsBytesSync(Uint8List.fromList(data['bytes'].cast<int>()));
+  await saveFileToMediaStore(file, data['name']);
+  await file.delete();
+  ScaffoldMessenger.of(context)
+      .showSnackBar(SnackBar(content: Text('File saved to Downloads!')));
 }
 
 class RoomArguments extends HomePageArguments {

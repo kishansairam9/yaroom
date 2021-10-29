@@ -36,13 +36,6 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'blocs/friendRequestsData.dart';
 import 'package:moor/moor.dart';
 
-const AndroidNotificationChannel channel = AndroidNotificationChannel(
-  'high_importance_channel', // id
-  'Yaroom Notifications', // title
-  description: 'Channel used for messaging notifications', // description
-  importance: Importance.max,
-);
-
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   moorRuntimeOptions.dontWarnAboutMultipleDatabases = true;
   AppDb db = constructDb(logStatements: true);
@@ -336,8 +329,7 @@ class MyApp extends StatelessWidget {
       // This must be before fetch is called
       Map<String, String> lastMsgRead = Map();
       try {
-        var response = await http.get(
-            Uri.parse('http://localhost:8884/v1/lastRead'),
+        var response = await http.get(Uri.parse('$BACKEND_URL/v1/lastRead'),
             headers: <String, String>{
               'Content-Type': 'application/json',
               'Authorization': "Bearer $accessToken",
@@ -465,7 +457,7 @@ class MyApp extends StatelessWidget {
                     return MaterialAppWrapper(
                         initialRoute: snapshot.data!, ws: msgExchangeStream);
                   }
-                  return CircularProgressIndicator();
+                  return LoadingBar;
                 },
               );
             },

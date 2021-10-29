@@ -93,7 +93,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           image: iconImageWrapper(
                               Provider.of<UserId>(context, listen: false)));
                     }
-                    return CircularProgressIndicator();
+                    return LoadingBar;
                   }),
               Container(
                 child: ElevatedButton(
@@ -110,7 +110,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             .getValidAccessToken();
                     try {
                       var response = await http.post(
-                          Uri.parse('http://localhost:8884/v1/updateIcon'),
+                          Uri.parse('$BACKEND_URL/v1/updateIcon'),
                           body: encData,
                           headers: <String, String>{
                             'Content-Type': 'application/json',

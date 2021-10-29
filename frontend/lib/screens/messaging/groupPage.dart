@@ -12,7 +12,6 @@ import '../components/searchDelegate.dart';
 import 'package:provider/provider.dart';
 import '../../utils/messageExchange.dart';
 import '../../utils/types.dart';
-import '../../utils/notifiers.dart';
 import '../../blocs/groupChats.dart';
 import 'package:http/http.dart' as http;
 import '../../blocs/groupMetadata.dart';
@@ -92,7 +91,7 @@ class GroupChatPageState extends State<GroupChatPage>
       }
     } else {
       var media = await http.get(
-          Uri.parse('http://localhost:8884/v1/media/' + msg.media!),
+          Uri.parse('$BACKEND_URL/v1/media/' + msg.media!),
           headers: <String, String>{
             'Content-Type': 'application/json',
             'Authorization': "Bearer $accessToken",
@@ -110,7 +109,9 @@ class GroupChatPageState extends State<GroupChatPage>
                       IconButton(
                         icon: const Icon(Icons.file_download),
                         tooltip: 'download',
-                        onPressed: () {},
+                        onPressed: () {
+                          savefile(data, context);
+                        },
                       ),
                     ],
                   ));
@@ -126,7 +127,9 @@ class GroupChatPageState extends State<GroupChatPage>
                       IconButton(
                         icon: const Icon(Icons.file_download),
                         tooltip: 'download',
-                        onPressed: () {},
+                        onPressed: () {
+                          savefile(data, context);
+                        },
                       ),
                     ],
                   ),
@@ -197,7 +200,7 @@ class GroupChatPageState extends State<GroupChatPage>
                                   if (snapshot.hasData) {
                                     return snapshot.data!;
                                   }
-                                  return CircularProgressIndicator();
+                                  return LoadingBar;
                                 });
                           },
                         ),
@@ -265,7 +268,7 @@ class GroupChatPageState extends State<GroupChatPage>
       }
       var req = await http.get(
           Uri.parse(
-              'http://localhost:8884/v1/getOlderMessages?msgType=GroupMessage&lastMsgId=' +
+              '$BACKEND_URL/v1/getOlderMessages?msgType=GroupMessage&lastMsgId=' +
                   msgs[0].msgId +
                   '&exchangeId=' +
                   widget.groupId +
@@ -550,7 +553,10 @@ class GroupChatPageState extends State<GroupChatPage>
                                                   return BlocBuilder<
                                                           FriendRequestCubit,
                                                           FriendRequestDataMap>(
-                                                      bloc: null,
+                                                      bloc: Provider.of<
+                                                              FriendRequestCubit>(
+                                                          context,
+                                                          listen: false),
                                                       builder:
                                                           (context, state) {
                                                         if (state.data
@@ -685,10 +691,10 @@ class GroupChatPageState extends State<GroupChatPage>
                         content: Text(
                             'Error has occured while reading from local DB'));
                   }
-                  return CircularProgressIndicator();
+                  return LoadingBar;
                 });
           }
-          return CircularProgressIndicator();
+          return LoadingBar;
         });
   }
 }

@@ -13,8 +13,7 @@ Future<dynamic> editUser(dynamic obj, BuildContext context) async {
     return Future.value('/signin');
   }
   try {
-    var response = await http.post(
-        Uri.parse('http://localhost:8884/v1/editUserDetails'),
+    var response = await http.post(Uri.parse('$BACKEND_URL/v1/editUserDetails'),
         body: obj,
         headers: <String, String>{
           'Content-Type': 'application/json',
@@ -37,7 +36,7 @@ Future<dynamic> editGroup(dynamic obj, BuildContext context) async {
   }
   try {
     var response = await http.post(
-        Uri.parse('http://localhost:8884/v1/editGroupDetails'),
+        Uri.parse('$BACKEND_URL/v1/editGroupDetails'),
         body: obj,
         headers: <String, String>{
           'Content-Type': 'application/json',
@@ -61,8 +60,7 @@ Future<dynamic> editRoom(dynamic obj, BuildContext context) async {
   }
   try {
     print(obj);
-    var response = await http.post(
-        Uri.parse('http://localhost:8884/v1/editRoomDetails'),
+    var response = await http.post(Uri.parse('$BACKEND_URL/v1/editRoomDetails'),
         body: obj,
         headers: <String, String>{
           'Content-Type': 'application/json',
@@ -85,13 +83,12 @@ Future<dynamic> exitGroup(String groupId, BuildContext context) async {
     return Future.value('/signin');
   }
   try {
-    var response =
-        await http.post(Uri.parse('http://localhost:8884/v1/exitGroup'),
-            body: jsonEncode(<String, dynamic>{
-              "groupId": groupId,
-              "user": [Provider.of<UserId>(context, listen: false)]
-            }),
-            headers: <String, String>{
+    var response = await http.post(Uri.parse('$BACKEND_URL/v1/exitGroup'),
+        body: jsonEncode(<String, dynamic>{
+          "groupId": groupId,
+          "user": [Provider.of<UserId>(context, listen: false)]
+        }),
+        headers: <String, String>{
           'Content-Type': 'application/json',
           'Authorization': "Bearer $accessToken",
         });
@@ -111,13 +108,12 @@ Future<dynamic> exitRoom(String roomId, BuildContext context) async {
     return Future.value('/signin');
   }
   try {
-    var response =
-        await http.post(Uri.parse('http://localhost:8884/v1/exitRoom'),
-            body: jsonEncode(<String, dynamic>{
-              "roomId": roomId,
-              "user": [Provider.of<UserId>(context, listen: false)]
-            }),
-            headers: <String, String>{
+    var response = await http.post(Uri.parse('$BACKEND_URL/v1/exitRoom'),
+        body: jsonEncode(<String, dynamic>{
+          "roomId": roomId,
+          "user": [Provider.of<UserId>(context, listen: false)]
+        }),
+        headers: <String, String>{
           'Content-Type': 'application/json',
           'Authorization': "Bearer $accessToken",
         });
@@ -129,7 +125,8 @@ Future<dynamic> exitRoom(String roomId, BuildContext context) async {
   }
 }
 
-Future<dynamic> deleteChannel(String roomId, String channelId, BuildContext context) async {
+Future<dynamic> deleteChannel(
+    String roomId, String channelId, BuildContext context) async {
   String? accessToken =
       await Provider.of<AuthorizationService>(context, listen: false)
           .getValidAccessToken();
@@ -137,13 +134,10 @@ Future<dynamic> deleteChannel(String roomId, String channelId, BuildContext cont
     return Future.value('/signin');
   }
   try {
-    var response =
-        await http.post(Uri.parse('http://localhost:8884/v1/deleteChannel'),
-            body: jsonEncode(<String, dynamic>{
-              "roomId": roomId,
-              "channelId": channelId
-            }),
-            headers: <String, String>{
+    var response = await http.post(Uri.parse('$BACKEND_URL/v1/deleteChannel'),
+        body: jsonEncode(
+            <String, dynamic>{"roomId": roomId, "channelId": channelId}),
+        headers: <String, String>{
           'Content-Type': 'application/json',
           'Authorization': "Bearer $accessToken",
         });
@@ -164,8 +158,7 @@ Future<dynamic> friendRequest(
     return Future.value('/signin');
   }
   try {
-    var response = await http.post(
-        Uri.parse('http://localhost:8884/v1/friendRequest'),
+    var response = await http.post(Uri.parse('$BACKEND_URL/v1/friendRequest'),
         body: jsonEncode(
             <String, String>{"userId": userId, "status": status.toString()}),
         headers: <String, String>{

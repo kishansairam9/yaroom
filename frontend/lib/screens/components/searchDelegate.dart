@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../utils/authorizationService.dart';
 import 'package:provider/provider.dart';
+import '../../utils/types.dart';
 
 class ExchangeSearchDelegate extends SearchDelegate {
   late final String exchangeId;
@@ -43,7 +44,7 @@ class ExchangeSearchDelegate extends SearchDelegate {
             .getValidAccessToken();
     var req = await http.get(
         Uri.parse(
-            'http://localhost:8884/v1/search?exchangeId=$exchangeId&msgType=$msgType&limit=$limit&searchString=${query.toLowerCase()}'),
+            '$BACKEND_URL/v1/search?exchangeId=$exchangeId&msgType=$msgType&limit=$limit&searchString=${query.toLowerCase()}'),
         headers: <String, String>{
           'Content-Type': 'application/json',
           'Authorization': "Bearer $accessToken",
@@ -81,9 +82,9 @@ class ExchangeSearchDelegate extends SearchDelegate {
           } else if (snapshot.hasError) {
             print(snapshot.error);
             return SnackBar(
-                content: Text('Error has occured while reading from local DB'));
+                content: Text('Error has occured while performing search'));
           }
-          return CircularProgressIndicator();
+          return LoadingBar;
         });
   }
 
@@ -97,9 +98,9 @@ class ExchangeSearchDelegate extends SearchDelegate {
           } else if (snapshot.hasError) {
             print(snapshot.error);
             return SnackBar(
-                content: Text('Error has occured while reading from local DB'));
+                content: Text('Error has occured while performing search'));
           }
-          return CircularProgressIndicator();
+          return LoadingBar;
         });
   }
 }

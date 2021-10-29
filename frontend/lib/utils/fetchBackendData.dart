@@ -93,10 +93,12 @@ Future<void> populateUserData(data, context) async {
           }
         }
         if (room['Channelslist'] != null) {
-          for (var k in room['Channelslist'].keys){
+          for (var k in room['Channelslist'].keys) {
             await RepositoryProvider.of<AppDb>(context, listen: false)
-                  .addChannelsToRoom(
-                      roomId: room['Roomid'], channelId: k, channelName: room['Channelslist'][k]);
+                .addChannelsToRoom(
+                    roomId: room['Roomid'],
+                    channelId: k,
+                    channelName: room['Channelslist'][k]);
           }
         }
       }
@@ -108,7 +110,7 @@ Future<void> fetchUserDetails(
     String accessToken, String name, BuildContext context) async {
   try {
     var response = await http.get(
-        Uri.parse('http://localhost:8884/v1/getUserDetails?name=$name'),
+        Uri.parse('$BACKEND_URL/v1/getUserDetails?name=$name'),
         headers: <String, String>{
           'Content-Type': 'application/json',
           'Authorization': "Bearer $accessToken",
@@ -125,7 +127,7 @@ Future<void> fetchLaterMessages(
     String accessToken, String? msgId, BuildContext context) async {
   try {
     var response = await http.get(
-        Uri.parse('http://localhost:8884/v1/getLaterMessages?lastMsgId=$msgId'),
+        Uri.parse('$BACKEND_URL/v1/getLaterMessages?lastMsgId=$msgId'),
         headers: <String, String>{
           'Content-Type': 'application/json',
           'Authorization': "Bearer $accessToken",

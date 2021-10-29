@@ -20,7 +20,7 @@ Widget wrapWithUserId(BuildContext context, Widget child) {
         if (snapshot.hasData) {
           return Provider<UserId>(create: (_) => snapshot.data!, child: child);
         } else {
-          return CircularProgressIndicator();
+          return LoadingBar;
         }
       });
 }

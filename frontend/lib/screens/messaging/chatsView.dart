@@ -35,7 +35,7 @@ class ChatViewState extends State<ChatView> {
               return SnackBar(
                   content: Text('Error has occured while reading from DB'));
             }
-            return CircularProgressIndicator();
+            return LoadingBar;
           });
     });
   }
