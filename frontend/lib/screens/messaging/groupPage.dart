@@ -27,8 +27,7 @@ class GroupChatPage extends StatefulWidget {
   GroupChatPageState createState() => new GroupChatPageState();
 }
 
-class GroupChatPageState extends State<GroupChatPage>
-    with WidgetsBindingObserver {
+class GroupChatPageState extends State<GroupChatPage> {
   final inputController = TextEditingController();
   late final webSocketSubscription;
   List<GroupChatMessage> newmsgs = [];
@@ -36,31 +35,14 @@ class GroupChatPageState extends State<GroupChatPage>
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance!.addObserver(this);
   }
 
   @override
   void dispose() {
     // Clean up the controller & subscription when the widget is disposed.
     webSocketSubscription.cancel();
-    WidgetsBinding.instance!.removeObserver(this);
     inputController.dispose();
     super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    print(state.toString());
-    switch (state) {
-      case AppLifecycleState.resumed:
-        Navigator.of(context).pushReplacementNamed('/groupchat',
-            arguments: GroupChatPageArguments(
-              groupId: widget.groupId,
-            ));
-        break;
-      default:
-        break;
-    }
   }
 
   // handling backPress when emoji keyboard is implemented
@@ -286,13 +268,12 @@ class GroupChatPageState extends State<GroupChatPage>
         List<GroupChatMessage> temp = [];
         for (int i = 0; i < results.length; i++) {
           GroupChatMessage msg = GroupChatMessage(
-            fromUser: results[i]['fromUser'],
-            msgId: results[i]['msgId'],
-            groupId: results[i]['groupId'],
-            time: DateTime.parse(results[i]['time']),
-            content: results[i]['content'],
-            // media: results[i]['media']
-          );
+              fromUser: results[i]['fromUser'],
+              msgId: results[i]['msgId'],
+              groupId: results[i]['groupId'],
+              time: DateTime.parse(results[i]['time']),
+              content: results[i]['content'],
+              media: results[i]['media']);
           temp.add(msg);
         }
         temp.sort((a, b) => a.msgId.compareTo(b.msgId));

@@ -74,9 +74,6 @@ class HomePageState extends State<HomePage> {
         List<User> data = await RepositoryProvider.of<AppDb>(context)
             .getUserById(userId: content['fromUser'])
             .get();
-        while (Navigator.canPop(context)) {
-          Navigator.pop(context);
-        }
         Navigator.pushNamed(context, '/chat',
             arguments:
                 ChatPageArguments(userId: data[0].userId, name: data[0].name));
@@ -84,9 +81,6 @@ class HomePageState extends State<HomePage> {
         List<GroupDM> data = await RepositoryProvider.of<AppDb>(context)
             .getGroupById(groupId: content['groupId'])
             .get();
-        while (Navigator.canPop(context)) {
-          Navigator.pop(context);
-        }
         Navigator.pushNamed(context, '/groupchat',
             arguments: GroupChatPageArguments(groupId: data[0].groupId));
       } else if (content['type'] == 'RoomMessage') {
@@ -394,9 +388,8 @@ class HomePageState extends State<HomePage> {
         }
 
         return BlocBuilder<RoomMetadataCubit, RoomMetadataMap>(
-          bloc: Provider.of<RoomMetadataCubit>(context, listen: false),
-          builder: (context, metastate) {
-            if (metastate.data[roomId] != null && roomflag == true) {
+            bloc: Provider.of<RoomMetadataCubit>(context, listen: false),
+            builder: (context, metastate) {
               return SafeArea(
                 child: Scaffold(
                   key: _scaffoldkey,
@@ -668,10 +661,7 @@ class HomePageState extends State<HomePage> {
                       ]),
                 ),
               );
-            }
-            return LoadingBar;
-          },
-        );
+            });
       });
     });
   }

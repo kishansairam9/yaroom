@@ -26,7 +26,7 @@ class ChatMetaState {
     }
     var cmp = !msgMap.containsKey(exchangeId) ? "" : msgMap[exchangeId]!;
     print(
-        "Incoming msgId $msgId, stored last read ${msgMap[exchangeId]}compare with $cmp = ${msgId.compareTo(cmp)}");
+        "Incoming msgId $msgId, stored last read ${msgMap[exchangeId]} compare with $cmp = ${msgId.compareTo(cmp)}");
     bool unread = msgId.compareTo(cmp) > 0;
     statusMap[exchangeId]!
         .addLatest(lastPreview, sender != userId, isUnread: unread);

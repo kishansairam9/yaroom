@@ -1,7 +1,4 @@
-import 'dart:io';
 import 'dart:typed_data';
-import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:yaroom/blocs/friendRequestsData.dart';
 import 'package:yaroom/utils/authorizationService.dart';
 import '../components/searchDelegate.dart';
@@ -29,49 +26,20 @@ class ChatPage extends StatefulWidget {
   ChatPageState createState() => new ChatPageState();
 }
 
-class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
+class ChatPageState extends State<ChatPage> {
   late final webSocketSubscription;
   List<ChatMessage> newmsgs = [];
   bool moreload = true;
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance!.addObserver(this);
   }
 
   @override
   void dispose() {
     // Clean up the controller & subscription when the widget is disposed.
     webSocketSubscription.cancel();
-    WidgetsBinding.instance!.removeObserver(this);
     super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    print(state.toString());
-    switch (state) {
-      case AppLifecycleState.resumed:
-        Navigator.of(context).pushNamedAndRemoveUntil(
-            '/chat', (Route<dynamic> route) => route.isFirst,
-            arguments:
-                ChatPageArguments(name: widget.name, userId: widget.userId));
-        break;
-      default:
-        break;
-    }
-  }
-
-  Future<bool> _requestPermission(Permission permission) async {
-    if (await permission.isGranted) {
-      return true;
-    } else {
-      var result = await permission.request();
-      if (result == PermissionStatus.granted) {
-        return true;
-      }
-    }
-    return false;
   }
 
   Future<Widget> _buildSingleMessage(
@@ -261,13 +229,12 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
         List<ChatMessage> temp = [];
         for (int i = 0; i < results.length; i++) {
           ChatMessage msg = ChatMessage(
-            fromUser: results[i]['fromUser'],
-            msgId: results[i]['msgId'],
-            toUser: results[i]['toUser'],
-            time: DateTime.parse(results[i]['time']),
-            content: results[i]['content'],
-            // media: results[i]['media']
-          );
+              fromUser: results[i]['fromUser'],
+              msgId: results[i]['msgId'],
+              toUser: results[i]['toUser'],
+              time: DateTime.parse(results[i]['time']),
+              content: results[i]['content'],
+              media: results[i]['media']);
           temp.add(msg);
         }
         temp.sort((a, b) => a.msgId.compareTo(b.msgId));
@@ -296,11 +263,7 @@ class ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
               if (scrollInfo.metrics.pixels ==
                   scrollInfo.metrics.maxScrollExtent) {
                 loadMore(msgs);
-                // newmsgs.addAll(msgs);
                 msgs.insertAll(0, newmsgs);
-                // setState(() {
-                //   newmsgs:[];
-                // });
                 return true;
               }
               return false;
