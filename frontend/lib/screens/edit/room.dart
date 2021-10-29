@@ -353,6 +353,7 @@ class _CreateRoomState extends State<CreateRoom> {
                       height: 0,
                     ),
               BlocBuilder<RoomMetadataCubit, RoomMetadataMap>(
+                bloc: Provider.of<RoomMetadataCubit>(context,listen:false),
                 builder: (context, state) {
                   return _createForm(
                       this.widget.data["roomId"],
