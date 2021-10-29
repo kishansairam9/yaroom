@@ -315,9 +315,16 @@ class RoomState extends State<Room> {
 
   _buildMessage(BuildContext context, RoomsMessage msg, bool prevIsSame,
       DateTime? prependDay) {
-    var curUser = Provider.of<List<User>>(context, listen: false)
+    var query = Provider.of<RoomMetadataCubit>(context, listen: false)
+        .state
+        .data[widget.roomId]!
+        .roomMembers
         .where((element) => element.userId == msg.fromUser)
-        .toList()[0];
+        .toList();
+    var curUser = User(name: 'UnknownUser', userId: msg.fromUser);
+    if (!query.isEmpty) {
+      curUser = query[0];
+    }
     final time = TimeOfDay.fromDateTime(msg.time).format(context);
     final double msgSpacing = prevIsSame ? 0 : 11;
     late final dateStr;

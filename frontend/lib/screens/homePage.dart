@@ -233,7 +233,7 @@ class HomePageState extends State<HomePage> {
                               children: [
                                 IconButton(
                                     onPressed: () => {
-                                          Navigator.pushReplacementNamed(
+                                          Navigator.pushNamed(
                                               context, '/editroom', arguments: {
                                             "roomId": roomId,
                                             "name": roomname

@@ -130,9 +130,16 @@ class GroupChatPageState extends State<GroupChatPage> {
 
   _buildMessage(BuildContext context, GroupChatMessage msg, bool prevIsSame,
       DateTime? prependDay) {
-    var curUser = Provider.of<List<User>>(context, listen: false)
+    var query = Provider.of<GroupMetadataCubit>(context, listen: false)
+        .state
+        .data[widget.groupId]!
+        .groupMembers
         .where((element) => element.userId == msg.fromUser)
-        .toList()[0];
+        .toList();
+    var curUser = User(name: 'UnknownUser', userId: msg.fromUser);
+    if (!query.isEmpty) {
+      curUser = query[0];
+    }
     final bool isMe = msg.fromUser == Provider.of<UserId>(context);
     final time = TimeOfDay.fromDateTime(msg.time.toLocal()).format(context);
     final double msgSpacing = prevIsSame ? 5 : 11;
@@ -379,7 +386,7 @@ class GroupChatPageState extends State<GroupChatPage> {
             children: [
               IconButton(
                   onPressed: () => {
-                        Navigator.pushReplacementNamed(context, '/editgroup',
+                        Navigator.pushNamed(context, '/editgroup',
                             arguments: {"groupId": widget.groupId})
                       },
                   tooltip: "Settings",
