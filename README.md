@@ -4,6 +4,8 @@
 
 > Attempt at creating a "chat room" service
 
+Demo video - [Onedrive link](https://iiitaphyd-my.sharepoint.com/:v:/g/personal/kishan_sairam_students_iiit_ac_in/ES0D14k36LxFs2PsDiq8nzYB5oxgm2PP-gpyLS5-8K08xw?e=DtExGl), enable 1080p in player quality for text readability
+
 ## Features
 
 ### Friends & Chat
